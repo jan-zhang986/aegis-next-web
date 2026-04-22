@@ -1,0 +1,10 @@
+export { TaskManageView } from './TaskManageView';
+export { ExecutorView } from './ExecutorView';
+export { ExecutorTaskView } from './ExecutorTaskView';
+export { AccountView } from './AccountView';
+export { MenuView } from './MenuView';
+export { DialListView } from './DialListView';
+export { PlanView } from './PlanView';
+export { PerformanceConfigView } from './PerformanceConfigView';
+export { PerformanceReportView } from './PerformanceReportView';
+export { PerformanceDiagnosisView } from './PerformanceDiagnosisView';

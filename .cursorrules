@@ -1,0 +1,82 @@
+// TypeScript React .cursorrules for keeper-one-web
+
+// Prefer functional components
+const preferFunctionalComponents = true;
+
+// TypeScript React best practices
+const typescriptReactBestPractices = [
+  "Use functional components with explicit return types or type inference",
+  "Utilize useState and useEffect hooks for state and side effects",
+  "Implement proper TypeScript interfaces for props and state",
+  "Use React.memo for performance optimization when needed",
+  "Implement custom hooks for reusable logic (store in src/hooks/)",
+  "Utilize TypeScript's strict mode (already enabled)",
+  "Use type inference where possible to reduce verbosity",
+];
+
+// Folder structure (matches current project)
+const folderStructure = `
+src/
+  components/
+    common/        # Shared/common components
+    features/      # Feature-specific components
+    layouts/       # Layout components
+    ui/           # UI primitives (shadcn/ui)
+  hooks/          # Custom React hooks
+  pages/          # Page components
+  routes/         # Route configuration
+  services/      # API services
+  types/          # TypeScript type definitions
+  utils/          # Utility functions
+  constants/      # Constants
+  styles/         # Global styles
+  App.tsx
+  main.tsx
+`;
+
+// Component patterns
+const componentPatterns = [
+  "Use named function exports for components",
+  "Define props interfaces above component definition",
+  "Use destructuring for props",
+  "Group imports: React -> Third-party -> Internal -> Types -> Utils",
+];
+
+// Additional instructions
+const additionalInstructions = `
+1. Use .tsx extension for files with JSX
+2. TypeScript strict mode is enabled (strict: true)
+3. Use React.lazy and Suspense for code-splitting (already implemented in App.tsx)
+4. Use type inference where possible
+5. Implement error boundaries for robust error handling
+6. Follow React and TypeScript best practices and naming conventions
+7. Use ESLint with TypeScript and React plugins (already configured)
+8. Use path aliases (@/*) for imports
+9. Components should be in PascalCase
+10. Files should be in kebab-case or PascalCase (match existing pattern)
+11. Use Tailwind CSS for styling (already configured)
+12. Use shadcn/ui components from src/components/ui/
+13. Services should be organized by feature in src/services/
+14. Types should be defined in src/types/ with proper interfaces
+`;
+
+// Code style preferences
+const codeStylePreferences = `
+- Prefer arrow functions or function declarations for components
+- Use const for component definitions
+- Use interface for props (not type, unless extending)
+- Use meaningful variable and function names
+- Add JSDoc comments for complex functions/components
+- Keep components focused and single-responsibility
+- Extract reusable logic into custom hooks
+- Use early returns to reduce nesting
+`;
+
+// Communication preferences
+const communicationPreferences = `
+- All responses and explanations must be in Chinese (简体中文)
+- Code comments can be in Chinese or English based on team preference
+- Error messages and user-facing text should be in Chinese
+- Documentation should be in Chinese
+`;
+

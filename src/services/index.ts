@@ -1,0 +1,24 @@
+/**
+ * API 服务层统一导出
+ * 所有服务都在各自的文件中定义，这里统一导出以保持向后兼容
+ */
+
+export { apiTestService } from './api-test';
+export { projectService } from './project';
+export { apiService } from './api';
+export { dataFactoryService } from './data-factory';
+export { mockFactoryService } from './mock-factory';
+export { testReportService } from './test-report';
+export { workflowService } from './workflow';
+export { workflowTestReportService } from './workflow-test-report';
+export { authService } from './auth';
+export { testCaseService } from './test-case';
+export { projectManagementService } from './project-management';
+export { bugManagementService } from './bug-management';
+export { testPlanManagementService } from './test-plan';
+export { caseManagementService } from './case-management';
+export { requirementQualityService } from './requirement-quality';
+export { gateManagementService } from './gate-management';
+export { metadataService } from './metadata';
+export { environmentService } from './environment';
+

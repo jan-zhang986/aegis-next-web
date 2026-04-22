@@ -1,0 +1,87 @@
+/**
+ * Lazy Routes Configuration
+ * 延迟加载路由配置 - 按路由分割代码
+ */
+
+import { lazy, ComponentType, Suspense } from 'react';
+import { RefreshCw } from 'lucide-react';
+
+// 加载中组件
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-screen">
+    <RefreshCw className="w-8 h-8 animate-spin text-blue-400" />
+  </div>
+);
+
+// 创建带 Suspense 的懒加载组件
+export function lazyLoad<T extends ComponentType<any>>(
+  importFunc: () => Promise<{ default: T }>
+) {
+  const LazyComponent = lazy(importFunc);
+  
+  return (props: any) => (
+    <Suspense fallback={<LoadingFallback />}>
+      <LazyComponent {...props} />
+    </Suspense>
+  );
+}
+
+// 消息管理路由
+export const MessageManagementRoute = lazyLoad(() => 
+  import('@/components/features/message-management/MessageManagementPage').then(module => ({
+    default: module.MessageManagementPage
+  }))
+);
+
+// 日志管理路由
+export const LogManagementRoute = lazyLoad(() => 
+  import('@/components/features/log-management/LogManagementPage').then(module => ({
+    default: module.LogManagementPage
+  }))
+);
+
+// 测试计划路由
+export const TestPlanRoute = lazyLoad(() => 
+  import('@/components/features/test-plan/PlanDetailApiCase').then(module => ({
+    default: module.PlanDetailApiCase
+  }))
+);
+
+// 用例管理路由
+export const CaseManagementRoute = lazyLoad(() => 
+  import('@/components/features/case-management/CaseList').then(module => ({
+    default: module.CaseList
+  }))
+);
+
+// 路由配置示例
+export const lazyRoutes = {
+  messageManagement: {
+    path: '/project/:projectId/message',
+    component: MessageManagementRoute,
+    preload: () => import('@/components/features/message-management/MessageManagementPage'),
+  },
+  logManagement: {
+    path: '/project/:projectId/logs',
+    component: LogManagementRoute,
+    preload: () => import('@/components/features/log-management/LogManagementPage'),
+  },
+  testPlan: {
+    path: '/project/:projectId/test-plan',
+    component: TestPlanRoute,
+    preload: () => import('@/components/features/test-plan/PlanDetailApiCase'),
+  },
+  caseManagement: {
+    path: '/project/:projectId/cases',
+    component: CaseManagementRoute,
+    preload: () => import('@/components/features/case-management/CaseList'),
+  },
+};
+
+// 预加载函数 - 可以在用户悬停在链接上时调用
+export function preloadRoute(routeName: keyof typeof lazyRoutes) {
+  const route = lazyRoutes[routeName];
+  if (route && route.preload) {
+    route.preload();
+  }
+}

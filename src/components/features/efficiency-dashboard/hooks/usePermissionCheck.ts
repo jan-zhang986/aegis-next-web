@@ -1,0 +1,154 @@
+/**
+ * Permission Check Hook
+ * 管理权限检查逻辑
+ * 从 EfficiencyDashboard.tsx 提取
+ */
+
+import { useState, useEffect } from 'react';
+import { authService } from '@/services/auth';
+import { projectManagementService } from '@/services/project-management';
+
+interface UsePermissionCheckReturn {
+  hasPermission: boolean | null; // null 表示正在检查
+  isCheckingPermission: boolean;
+}
+
+/**
+ * 权限检查 Hook
+ * @param projectId 可选，当前要检查的项目 ID。传入时优先用此项目查管理员；未传则用 localStorage 的 currentProjectId（用于与页面实际所在项目一致，避免误判无权限）
+ */
+export function usePermissionCheck(projectId?: string): UsePermissionCheckReturn {
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null); // null 表示正在检查
+  const [isCheckingPermission, setIsCheckingPermission] = useState(true);
+
+  useEffect(() => {
+    const checkPermission = async () => {
+      try {
+        setIsCheckingPermission(true);
+
+        // 获取当前用户信息（兼容接口返回 { user }、{ data } 或直接用户对象）
+        const rawUser = await authService.getCurrentUser();
+        const currentUser = (rawUser as any)?.user ?? (rawUser as any)?.data ?? rawUser;
+        if (!currentUser || !(currentUser.id ?? (currentUser as any).userId)) {
+          setHasPermission(false);
+          setIsCheckingPermission(false);
+          return;
+        }
+
+        const u = currentUser as Record<string, unknown>;
+        if (checkIsSystemAdmin(u)) {
+          setHasPermission(true);
+          setIsCheckingPermission(false);
+          return;
+        }
+
+        // 优先使用传入的 projectId（与当前页面所在项目一致），否则用 localStorage
+        const targetProjectId = projectId ?? localStorage.getItem('currentProjectId');
+        if (!targetProjectId) {
+          setHasPermission(false);
+          setIsCheckingPermission(false);
+          return;
+        }
+
+        // 获取项目信息
+        const projectInfo = await projectManagementService.getProjectInfo(targetProjectId);
+        if (projectInfo && Array.isArray(projectInfo.adminList) && projectInfo.adminList.length > 0) {
+          const uid = String(currentUser.id ?? (currentUser as any).userId ?? '');
+          const isProjectAdmin = projectInfo.adminList.some(
+            (admin: any) => String(admin?.id ?? admin ?? '') === uid
+          );
+          setHasPermission(isProjectAdmin);
+        } else {
+          // 项目信息缺失、无 adminList 或后端未返回管理员列表时：以实际接口为准，不拦截（日志等接口会返回 403）
+          setHasPermission(true);
+        }
+      } catch (error) {
+        console.error('检查权限失败:', error);
+        setHasPermission(false);
+      } finally {
+        setIsCheckingPermission(false);
+      }
+    };
+
+    checkPermission();
+  }, [projectId]);
+
+  return {
+    hasPermission,
+    isCheckingPermission,
+  };
+}
+
+/** 判断当前用户是否为系统管理员的内部逻辑（与 usePermissionCheck 一致） */
+function checkIsSystemAdmin(u: Record<string, unknown>): boolean {
+  const roleStr = (v: unknown) => (typeof v === 'string' ? v.toUpperCase() : '');
+  const typeVal = u.type;
+  // 兼容 type 为数字的接口（如 1 表示管理员）
+  const typeIsAdmin =
+    typeVal === 'ADMIN' ||
+    typeVal === 'admin' ||
+    typeVal === 1 ||
+    (typeof typeVal === 'string' && roleStr(typeVal) === 'ADMIN');
+  // MeterSphere：userRoles 为角色对象数组，仅当存在 id===admin 的角色的用户为系统管理员（不按 type===SYSTEM 判断，避免系统成员等其它系统级角色被误判）
+  const hasSystemAdminRole =
+    Array.isArray(u.userRoles) &&
+    (u.userRoles as Record<string, unknown>[]).some((r) => r?.id === 'admin');
+  // MeterSphere：userRoleRelations 中存在 roleId===admin 即为系统管理员
+  const hasAdminRelation =
+    Array.isArray(u.userRoleRelations) &&
+    (u.userRoleRelations as Record<string, unknown>[]).some((r) => r?.roleId === 'admin');
+  return (
+    u.adminFlag === true ||
+    u.isAdmin === true ||
+    u.isSystemAdmin === true ||
+    roleStr(u.userRole) === 'ADMIN' ||
+    roleStr(u.role) === 'ADMIN' ||
+    typeIsAdmin ||
+    hasSystemAdminRole ||
+    hasAdminRelation ||
+    (Array.isArray(u.roles) && u.roles.some((r: unknown) => roleStr(r) === 'ADMIN')) ||
+    (Array.isArray(u.roleList) && u.roleList.some((r: unknown) => roleStr(r) === 'ADMIN')) ||
+    (Array.isArray(u.roleIds) && (u.roleIds as unknown[]).some((r: unknown) => String(r).toUpperCase().includes('ADMIN')))
+  );
+}
+
+export interface UseSystemAdminCheckReturn {
+  isSystemAdmin: boolean | null; // null 表示正在检查
+  isChecking: boolean;
+}
+
+/**
+ * 仅检查当前用户是否为系统管理员（不包含项目管理员）
+ * 用于仅限系统管理员查看的功能（如数据监控大盘中的部分列表）
+ */
+export function useSystemAdminCheck(): UseSystemAdminCheckReturn {
+  const [isSystemAdmin, setIsSystemAdmin] = useState<boolean | null>(null);
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        setIsChecking(true);
+        const rawUser = await authService.getCurrentUser();
+        // 兼容多种后端结构：{ user }, { data }, 或直接用户对象
+        const currentUser =
+          (rawUser as any)?.user ?? (rawUser as any)?.data ?? rawUser;
+        if (!currentUser || !(currentUser.id ?? (currentUser as any).userId)) {
+          if (!cancelled) setIsSystemAdmin(false);
+          return;
+        }
+        const u = currentUser as Record<string, unknown>;
+        if (!cancelled) setIsSystemAdmin(checkIsSystemAdmin(u));
+      } catch {
+        if (!cancelled) setIsSystemAdmin(false);
+      } finally {
+        if (!cancelled) setIsChecking(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, []);
+
+  return { isSystemAdmin, isChecking };
+}

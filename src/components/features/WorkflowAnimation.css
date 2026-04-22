@@ -1,0 +1,35 @@
+.workflow-animation-container {
+  min-height: 600px;
+}
+
+.flow-path {
+  /* 动画通过内联样式设置，这里只保留基础样式 */
+}
+
+.workflow-node-float {
+  animation: nodeFloat 4s ease-in-out infinite;
+}
+
+@keyframes flow {
+  0% {
+    stroke-dashoffset: var(--path-length, 200);
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.6;
+  }
+}
+
+@keyframes nodeFloat {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-6px);
+  }
+}
+

@@ -1,0 +1,44 @@
+# 依赖目录
+node_modules
+npm-debug.log*
+
+# 构建产物（会在 Docker 中重新构建）
+dist
+build
+
+# Git 相关
+.git
+.gitignore
+
+# IDE 相关
+.vscode
+.idea
+*.swp
+*.swo
+
+# 操作系统相关
+.DS_Store
+Thumbs.db
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 日志文件
+logs
+*.log
+
+# 临时文件
+*.tmp
+*.temp
+.cache
+
+# 文档文件（可选，如果需要可以移除）
+*.md
+!README.md
+
+# 测试相关
+coverage
+.nyc_output
+

@@ -1,0 +1,18 @@
+/**
+ * 飞书蓝鸟图标（从 spotter-metersphere 前端 iconfont 引入，仅保留 logo_lark）
+ */
+@font-face {
+  font-family: iconfont;
+  src: url('./iconfont.woff2') format('woff2');
+}
+
+.iconfont {
+  font-family: iconfont !important;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-logo_lark::before {
+  content: '\e75e';
+}
