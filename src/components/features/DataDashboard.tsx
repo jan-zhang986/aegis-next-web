@@ -150,7 +150,7 @@ export function DataDashboard() {
             <h1 className="text-4xl mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               AegisOnes数据监控大屏
             </h1>
-            <p className="text-gray-600 text-lg">API测试与自动化用例数据分析平台</p>
+            <p className="text-gray-600 text-lg">API测试与用例实现数据分析平台</p>
           </div>
           <div className="text-right">
             <div className="text-3xl text-gray-800 mb-1">
@@ -349,11 +349,11 @@ export function DataDashboard() {
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={e2eWorkflowStatus}
+                data={e2eWorkflowStatus as any[]}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) => `${name} ${(Number(percent ?? 0) * 100).toFixed(0)}%`}
                 outerRadius={100}
                 fill="#8884d8"
                 dataKey="count"

@@ -62,6 +62,7 @@ function buildStepsPayload(steps: StepListItem[]): string {
 
 interface CasePreviewAndSavePanelProps {
   projectId: string;
+  spaceId?: string;
   previewAction?: {
     type: 'overwrite' | 'append';
     content: string;
@@ -76,6 +77,7 @@ interface CasePreviewAndSavePanelProps {
 
 export function CasePreviewAndSavePanel({
   projectId,
+  spaceId,
   previewAction,
   onSuccess,
 }: CasePreviewAndSavePanelProps) {
@@ -224,27 +226,62 @@ export function CasePreviewAndSavePanel({
 
       const level = (item.caseLevel ?? 'P0').trim();
       const customFields = [{ fieldId: priorityFieldId, value: level }];
+      const priority = level === 'P0' ? 1 : level === 'P1' ? 2 : level === 'P2' ? 3 : 4;
 
-      const res: any = await caseManagementService.createCaseRequest({
-        request: {
+      const request = {
+        projectId,
+        templateId,
+        name: item.name.trim(),
+        moduleId,
+        prerequisite: (item.prerequisite ?? '').trim(),
+        caseEditType: isTextMode ? 'TEXT' : 'STEP',
+        steps: isTextMode ? '' : stepsStr,
+        textDescription: isTextMode ? textDesc : '',
+        expectedResult: isTextMode ? expectedResult : '',
+        description: (item.description ?? '').trim(),
+        tags: [],
+        customFields,
+        priority,
+        aiCreate: true,
+      };
+      const caseId = await (spaceId
+        ? caseManagementService.saveUnifiedCase({
           projectId,
-          templateId,
-          name: item.name.trim(),
+          spaceId,
           moduleId,
-          prerequisite: (item.prerequisite ?? '').trim(),
-          caseEditType: isTextMode ? 'TEXT' : 'STEP',
-          steps: isTextMode ? '' : stepsStr,
-          textDescription: isTextMode ? textDesc : '',
-          expectedResult: isTextMode ? expectedResult : '',
-          description: (item.description ?? '').trim(),
-          tags: [],
-          customFields,
-          priority: level === 'P0' ? 1 : level === 'P1' ? 2 : level === 'P2' ? 3 : 4,
-          aiCreate: true, // AI 生成用例，与 metersphere-frontend caseDetail.aiCreate 一致
-        },
-        fileList: [],
-      });
-      if (res?.id ?? res?.data?.id) {
+          title: request.name,
+          precondition: request.prerequisite,
+          expectedResult: request.expectedResult,
+          description: request.description,
+          priority,
+          sourceType: 'AI',
+          tags: request.tags,
+          metadata: {
+            templateId,
+            caseEditType: request.caseEditType,
+            aiCreate: true,
+            functionalPriority: level,
+          },
+          realizations: [
+            {
+              realizationType: 'MANUAL',
+              name: `${request.name} [MANUAL]`,
+              workflowDefinition: {
+                caseEditType: request.caseEditType,
+                steps: request.steps,
+                textDescription: request.textDescription,
+                expectedResult: request.expectedResult,
+              },
+              status: 'ACTIVE',
+              enabled: true,
+            },
+          ],
+        })
+        : caseManagementService.createCaseRequest({
+          request,
+          fileList: [],
+        }).then((res: any) => res?.id ?? res?.data?.id ?? ''));
+      if (caseId) {
         toast.success(`「${item.name}」已保存到平台`);
         onSuccess?.(1);
       } else {
@@ -293,28 +330,63 @@ export function CasePreviewAndSavePanel({
       const expectedResult = (item.expectedResult ?? '').trim();
       const level = (item.caseLevel ?? 'P0').trim();
       const customFields = [{ fieldId: priorityFieldId || 'functional_priority', value: level }];
+      const priority = level === 'P0' ? 1 : level === 'P1' ? 2 : level === 'P2' ? 3 : 4;
 
       try {
-        const res: any = await caseManagementService.createCaseRequest({
-          request: {
+        const request = {
+          projectId,
+          templateId,
+          name: item.name.trim(),
+          moduleId,
+          prerequisite: (item.prerequisite ?? '').trim(),
+          caseEditType: isTextMode ? 'TEXT' : 'STEP',
+          steps: isTextMode ? '' : stepsStr,
+          textDescription: isTextMode ? textDesc : '',
+          expectedResult: isTextMode ? expectedResult : '',
+          description: (item.description ?? '').trim(),
+          tags: [],
+          customFields,
+          priority,
+          aiCreate: true,
+        };
+        const caseId = await (spaceId
+          ? caseManagementService.saveUnifiedCase({
             projectId,
-            templateId,
-            name: item.name.trim(),
+            spaceId,
             moduleId,
-            prerequisite: (item.prerequisite ?? '').trim(),
-            caseEditType: isTextMode ? 'TEXT' : 'STEP',
-            steps: isTextMode ? '' : stepsStr,
-            textDescription: isTextMode ? textDesc : '',
-            expectedResult: isTextMode ? expectedResult : '',
-            description: (item.description ?? '').trim(),
-            tags: [],
-            customFields,
-            priority: level === 'P0' ? 1 : level === 'P1' ? 2 : level === 'P2' ? 3 : 4,
-            aiCreate: true,
-          },
-          fileList: [],
-        });
-        if (res?.id ?? res?.data?.id) successCount++;
+            title: request.name,
+            precondition: request.prerequisite,
+            expectedResult: request.expectedResult,
+            description: request.description,
+            priority,
+            sourceType: 'AI',
+            tags: request.tags,
+            metadata: {
+              templateId,
+              caseEditType: request.caseEditType,
+              aiCreate: true,
+              functionalPriority: level,
+            },
+            realizations: [
+              {
+                realizationType: 'MANUAL',
+                name: `${request.name} [MANUAL]`,
+                workflowDefinition: {
+                  caseEditType: request.caseEditType,
+                  steps: request.steps,
+                  textDescription: request.textDescription,
+                  expectedResult: request.expectedResult,
+                },
+                status: 'ACTIVE',
+                enabled: true,
+              },
+            ],
+          })
+          : caseManagementService.createCaseRequest({
+            request,
+            fileList: [],
+          }).then((res: any) => res?.id ?? res?.data?.id ?? ''));
+        if (caseId) successCount++;
       } catch (err: any) {
         toast.error(`保存「${item.name}」失败: ${err?.message ?? '未知错误'}`);
       }

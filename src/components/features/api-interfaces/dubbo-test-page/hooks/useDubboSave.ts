@@ -13,6 +13,7 @@ export interface UseDubboSaveOptions {
   selectedSite: string;
   editor: UseApiEditorResult;
   projectId: string;
+  spaceId?: string;
   onRefresh?: () => void;
   isSyncData: boolean;
   isCase: boolean;
@@ -29,6 +30,7 @@ export function useDubboSave({
   selectedSite,
   editor,
   projectId,
+  spaceId,
   onRefresh,
   isSyncData,
   isCase,
@@ -65,8 +67,8 @@ export function useDubboSave({
       const common = { name, moduleId, description: editor.state.description || undefined, tags: editor.state.tags?.length ? editor.state.tags : undefined };
       const isUpdate = !!editor.state.definitionId && !saveAsTestData;
       const result = isUpdate
-        ? await metadataService.updateDefinition({ id: editor.state.definitionId!, ...common, requestConfig, scriptContent: null } as Parameters<typeof metadataService.updateDefinition>[0])
-        : await metadataService.addDefinition({ ...common, protocol: 'DUBBO', projectId, requestConfig, scriptContent: null, isCase: saveAsTestData ? true : undefined } as Parameters<typeof metadataService.addDefinition>[0]);
+        ? await metadataService.updateDefinition({ id: editor.state.definitionId!, ...(spaceId ? { spaceId } : {}), ...common, requestConfig, scriptContent: null } as Parameters<typeof metadataService.updateDefinition>[0])
+        : await metadataService.addDefinition({ ...common, protocol: 'DUBBO', projectId, ...(spaceId ? { spaceId } : {}), requestConfig, scriptContent: null, isCase: saveAsTestData ? true : undefined } as Parameters<typeof metadataService.addDefinition>[0]);
       if (!result) {
         toast.error('保存失败：服务器返回数据为空');
         return;

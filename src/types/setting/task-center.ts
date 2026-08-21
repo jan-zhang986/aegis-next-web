@@ -106,7 +106,6 @@ export interface TaskCenterTaskDetailItem {
   executor?: string;
   taskName?: string;
   userName?: string;
-  resourceName?: string;
   resourcePoolName?: string;
   triggerMode?: ExecuteTriggerMode; // 触发方式
   lineNum?: number | string; // 行号

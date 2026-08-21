@@ -11,7 +11,7 @@ import { http } from '@/utils/request';
 export interface MetadataModuleNode {
   id: string;
   name: string;
-  type: 'API' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'TCP' | 'WEBSOCKET' | 'FILE' | 'SCRIPT';
+  type: 'API' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'TCP' | 'WEBSOCKET' | 'FILE' | 'SCRIPT' | 'WORKFLOW';
   parentId: string;
   projectId: string;
   children: MetadataModuleNode[];
@@ -26,6 +26,7 @@ export interface MetadataModuleNode {
 export interface MetadataDefinition {
   id: string;
   projectId: string;
+  spaceId?: string;
   moduleId: string;
   name: string;
   protocol: 'HTTP' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'TCP' | 'WEBSOCKET' | 'SCRIPT' | 'FILE';
@@ -48,6 +49,7 @@ export interface MetadataDefinition {
  */
 export interface MetadataDefinitionPageParams {
   projectId: string;
+  spaceId?: string;
   current: number;
   pageSize: number;
   moduleId?: string;
@@ -62,6 +64,7 @@ export interface AddMetadataDefinitionParams {
   name: string;
   protocol: 'HTTP' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'TCP' | 'WEBSOCKET' | 'SCRIPT' | 'FILE';
   projectId: string;
+  spaceId?: string;
   moduleId: string;
   description?: string;
   tags?: string[];
@@ -86,7 +89,8 @@ export interface AddModuleParams {
   projectId: string;
   name: string;
   parentId: string;
-  moduleType: 'API' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'TCP' | 'WEBSOCKET' | 'FILE' | 'SCRIPT';
+  moduleType: 'API' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'TCP' | 'WEBSOCKET' | 'FILE' | 'SCRIPT' | 'WORKFLOW';
+  typeId?: string;
 }
 
 /**
@@ -104,6 +108,7 @@ export interface ImportSwaggerParams {
   url: string;
   serviceCode: string;
   projectId: string;
+  spaceId?: string;
   moduleId: string;
 }
 
@@ -114,6 +119,7 @@ export interface ImportDubboSwaggerParams {
   url: string;
   moduleId: string;
   projectId: string;
+  spaceId?: string;
 }
 
 /**
@@ -122,6 +128,7 @@ export interface ImportDubboSwaggerParams {
 export interface UpdateMetadataDefinitionParams {
   id: string;
   name: string;
+  spaceId?: string;
   moduleId: string;
   description?: string;
   tags?: string[];
@@ -169,13 +176,40 @@ export interface UserProfilePageParams {
   pageSize: number;
 }
 
+export interface MetadataModuleTreeParams {
+  typeId?: string;
+  moduleType?: AddModuleParams['moduleType'];
+}
+
+export interface MetadataFileResource {
+  id: string;
+  projectId: string;
+  spaceId?: string;
+  storageName?: string;
+  storageType?: string;
+  path?: string;
+  fileSize?: number;
+  extension?: string;
+  contentType?: string;
+  checksum?: string;
+  category?: string;
+  createUser?: string;
+  createTime?: number;
+  deletedTime?: number | null;
+}
+
 export const metadataService = {
   /**
    * 获取元数据模块树
    * @param projectId 项目ID
    */
-  getModuleTree: async (projectId: string): Promise<MetadataModuleNode[]> => {
-    return http.get(`/metadata/module/tree/${projectId}`);
+  getModuleTree: async (projectId: string, params?: MetadataModuleTreeParams): Promise<MetadataModuleNode[]> => {
+    return http.get(`/metadata/module/tree/${projectId}`, {
+      params: {
+        ...(params?.typeId ? { typeId: params.typeId } : {}),
+        ...(params?.moduleType ? { moduleType: params.moduleType } : {}),
+      },
+    });
   },
 
   /**
@@ -324,12 +358,16 @@ export const metadataService = {
    * @param file 文件对象
    * @param moduleId 模块ID
    */
-  uploadFile: async (file: File, moduleId: string): Promise<{ fileId: string }> => {
+  uploadFile: async (file: File, projectId: string, spaceId?: string): Promise<{ fileId: string }> => {
     const formData = new FormData();
     formData.append('file', file);
     // 使用 http.post，但需要特殊处理 multipart/form-data
     // axios 会自动设置 Content-Type 为 multipart/form-data，不需要手动设置
-    const response = await http.post(`/metadata/definition/file/upload?id=${moduleId}`, formData, {
+    const params = new URLSearchParams({ id: projectId });
+    if (spaceId) {
+      params.set('spaceId', spaceId);
+    }
+    const response = await http.post(`/metadata/definition/file/upload?${params.toString()}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -363,6 +401,13 @@ export const metadataService = {
     return http.get(`/metadata/definition/file/download/${fileId}`, {
       responseType: 'blob',
     });
+  },
+
+  /**
+   * 查询文件资源列表
+   */
+  listFiles: async (params: { projectId: string; spaceId?: string; category?: string }): Promise<MetadataFileResource[]> => {
+    return http.get('/metadata/definition/file/list', { params });
   },
 };
 
@@ -413,4 +458,3 @@ export const pluginSyncNodeService = {
     return http.post('/workflow/plugin-sync-node/update', params);
   },
 };
-

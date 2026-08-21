@@ -44,7 +44,6 @@ export interface CustomAgentConfig {
   faq_priority_enabled?: boolean;
   faq_direct_answer_threshold?: number;
   faq_score_boost?: number;
-  retrieve_kb_only_when_mentioned?: boolean;
 }
 
 export interface PlaceholderDefinition {

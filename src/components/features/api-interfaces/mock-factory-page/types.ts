@@ -11,7 +11,7 @@ export interface MockRuleFormData extends Partial<MockRule> {
   status: number;
   ruleFeatures: HttpRuleFeatures | DubboRuleFeatures | {};
   respStruct: {
-    responseTypes: 'String' | 'Object' | 'List' | 'Int' | 'Boolean';
+    responseTypes: 'String' | 'Object' | 'List' | 'Int' | 'Boolean' | 'python_script';
     content: any;
   };
   features: {

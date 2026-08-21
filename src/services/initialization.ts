@@ -34,7 +34,7 @@ export const checkOllamaStatus = () =>
 export const listOllamaModels = () =>
     http.get<{ models: OllamaModelInfo[] }>(`${API}/initialization/ollama/models`)
         .then(unwrap)
-        .then(res => res.models || []);
+        .then((res) => ((res as { models?: OllamaModelInfo[] })?.models || []));
 
 // 检查Ollama模型状态
 export const checkOllamaModels = (models: string[]) =>

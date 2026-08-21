@@ -128,7 +128,8 @@ export function parseSingleResponse(
     'application/json';
 
   let responseBody: unknown = def.example ?? def.body ?? def.data;
-  const schema = def.schema ?? (def.content as Record<string, unknown>)?.['application/json']?.schema;
+  const contentDef = def.content as Record<string, { schema?: unknown }> | undefined;
+  const schema = def.schema ?? contentDef?.['application/json']?.schema;
 
   if (schema) {
     const s = schema as Record<string, unknown>;

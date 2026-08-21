@@ -36,6 +36,7 @@ import { Badge } from '@/components/ui/badge';
 import { testPlanManagementService } from '@/services';
 import { UnifiedPagination } from '@/components/ui/unified-pagination';
 import { toast } from 'sonner';
+import { WorkItemProposalDialog } from './WorkItemProposalDialog';
 
 interface PlanDetailApiCaseProps {
     planId: string;
@@ -58,6 +59,9 @@ export function PlanDetailApiCase({ planId, projectId, canEdit, embedInPlanTree,
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize] = useState(10);
     const [selectedCaseIds, setSelectedCaseIds] = useState<string[]>([]);
+    const [proposalDialogOpen, setProposalDialogOpen] = useState(false);
+    const [proposalRow, setProposalRow] = useState<any | null>(null);
+    const [proposalSnapshotMap, setProposalSnapshotMap] = useState<Record<string, { count: number; latestStatus: string | null; latestProposalId: string | null }>>({});
 
     // 获取模块树
     const fetchModuleTree = useCallback(async () => {
@@ -103,6 +107,7 @@ export function PlanDetailApiCase({ planId, projectId, canEdit, embedInPlanTree,
         fetchCaseList();
     }, [fetchCaseList]);
 
+
     useEffect(() => {
         if (!embedInPlanTree) return;
         setSelectedModuleId(defaultModuleId ?? 'all');
@@ -122,7 +127,7 @@ export function PlanDetailApiCase({ planId, projectId, canEdit, embedInPlanTree,
 
     const handleBatchExecute = async () => {
         if (selectedCaseIds.length === 0) {
-            toast.error('请选择要执行的用例');
+            toast.error('请选择要执行的执行项');
             return;
         }
 
@@ -132,51 +137,51 @@ export function PlanDetailApiCase({ planId, projectId, canEdit, embedInPlanTree,
                 testPlanId: planId,
                 selectIds: selectedCaseIds
             });
-            toast.success('批量执行成功', { id: toastId });
+            toast.success('批量执行项成功', { id: toastId });
             fetchCaseList();
             setSelectedCaseIds([]);
         } catch (error) {
             console.error(error);
-            toast.error('批量执行失败', { id: toastId });
+            toast.error('批量执行项失败', { id: toastId });
         }
     };
 
     const handleDisassociate = async (caseId: string) => {
-        if (!confirm('确定要取消关联该接口用例吗？')) return;
-        const toastId = toast.loading('正在取消关联...');
+        if (!confirm('确定要移出活动该接口用例吗？')) return;
+        const toastId = toast.loading('正在移出活动...');
         try {
             await testPlanManagementService.disassociateApiCase({
                 testPlanId: planId,
                 id: caseId
             });
-            toast.success('已取消关联', { id: toastId });
+            toast.success('已移出活动', { id: toastId });
             fetchCaseList();
         } catch (error) {
             console.error(error);
-            toast.error('取消关联失败', { id: toastId });
+            toast.error('移出活动失败', { id: toastId });
         }
     };
 
     const handleBatchDisassociate = async () => {
         if (selectedCaseIds.length === 0) {
-            toast.error('请选择要取消关联的用例');
+            toast.error('请选择要移出活动的用例');
             return;
         }
 
-        if (!confirm(`确定要取消关联选中的 ${selectedCaseIds.length} 个接口用例吗？`)) return;
+        if (!confirm(`确定要移出活动选中的 ${selectedCaseIds.length} 个接口用例吗？`)) return;
 
-        const toastId = toast.loading('正在批量取消关联...');
+        const toastId = toast.loading('正在批量移出活动...');
         try {
             await testPlanManagementService.batchDisassociateApiCase({
                 testPlanId: planId,
                 selectIds: selectedCaseIds
             });
-            toast.success('批量取消关联成功', { id: toastId });
+            toast.success('批量移出活动成功', { id: toastId });
             fetchCaseList();
             setSelectedCaseIds([]);
         } catch (error) {
             console.error(error);
-            toast.error('批量取消关联失败', { id: toastId });
+            toast.error('批量移出活动失败', { id: toastId });
         }
     };
 
@@ -195,6 +200,80 @@ export function PlanDetailApiCase({ planId, projectId, canEdit, embedInPlanTree,
             setSelectedCaseIds(selectedCaseIds.filter(id => id !== caseId));
         }
     };
+
+    const openProposalDialog = (item: any) => {
+        setProposalRow(item);
+        setProposalDialogOpen(true);
+    };
+
+    const normalizeProposalList = (res: any): any[] => {
+        if (Array.isArray(res)) return res;
+        if (Array.isArray(res?.list)) return res.list;
+        if (Array.isArray(res?.data)) return res.data;
+        return [];
+    };
+
+    const loadProposalSnapshots = useCallback(async (items: any[]) => {
+        if (!items?.length) {
+            setProposalSnapshotMap({});
+            return;
+        }
+        const entries = await Promise.all(items.map(async (item) => {
+            try {
+                const res = await testPlanManagementService.getWorkItemProposalList(planId, item.id);
+                const list = normalizeProposalList(res);
+                const latest = list[0] ?? list[list.length - 1] ?? null;
+                return [item.id, { count: list.length, latestStatus: latest?.status ?? null, latestProposalId: latest?.id ?? null }] as const;
+            } catch (error) {
+                return [item.id, { count: 0, latestStatus: null, latestProposalId: null }] as const;
+            }
+        }));
+        setProposalSnapshotMap(Object.fromEntries(entries));
+    }, [planId]);
+
+    const getProposalStatusMeta = (status?: string | null) => {
+        switch (status) {
+            case 'MERGED':
+                return { label: '已合并', className: 'bg-green-50 text-green-600' };
+            case 'SUBMITTED':
+                return { label: '评审中', className: 'bg-blue-50 text-blue-600' };
+            case 'REJECTED':
+                return { label: '已拒绝', className: 'bg-red-50 text-red-600' };
+            case 'DRAFT':
+                return { label: '草稿', className: 'bg-amber-50 text-amber-600' };
+            default:
+                return { label: '未发起', className: 'bg-gray-50 text-gray-500' };
+        }
+    };
+
+    const handleMergeProposalToCase = async (item: any) => {
+        const proposalInfo = proposalSnapshotMap[item.id];
+        const proposalId = proposalInfo?.latestProposalId;
+        if (!proposalId) {
+            toast.error('当前执行项还没有可合并的提案');
+            return;
+        }
+        if (proposalInfo?.latestStatus === 'MERGED') {
+            toast.message('最近提案已经合并');
+            return;
+        }
+        if (!confirm('确定要将最近一次提案合并回 Case 吗？')) return;
+        const toastId = toast.loading('正在合并回 Case...');
+        try {
+            await testPlanManagementService.mergeProposalToCase(proposalId, {
+                targetCaseId: item.caseId || item.apiCaseId || item.apiScenarioId || item.id || undefined,
+            });
+            toast.success('提案已合并回 Case', { id: toastId });
+            fetchCaseList();
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error?.message || '合并回 Case 失败', { id: toastId });
+        }
+    };
+
+    useEffect(() => {
+        loadProposalSnapshots(caseList);
+    }, [caseList, loadProposalSnapshots]);
 
     // 渲染模块树节点
     const renderTreeNode = (node: any, level: number = 0) => {
@@ -283,6 +362,17 @@ export function PlanDetailApiCase({ planId, projectId, canEdit, embedInPlanTree,
 
     const tablePanelContent = (
         <div className="flex flex-col h-full overflow-hidden bg-white">
+            <div className="border-b border-gray-100 bg-gradient-to-r from-slate-50/80 via-white to-blue-50/60 px-4 py-3">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <div className="text-sm font-medium text-slate-900">接口执行项</div>
+                        <div className="mt-1 text-xs leading-5 text-slate-500">这里管理的是本次测试活动里的接口执行项。接口资产沉淀在长期用例里，这里只负责本次活动的执行、分派和移出。</div>
+                    </div>
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-white/80 px-3 py-2 text-xs leading-5 text-slate-500">
+                        这里看的不是长期资产，而是本次活动中的 <span className="font-medium text-blue-600">WorkItem</span>。
+                    </div>
+                </div>
+            </div>
             <div className="p-2.5 border-b border-gray-100 flex items-center justify-between bg-white">
                 <div className="flex items-center gap-2 flex-1 max-w-[360px] pl-2">
                     <div className="relative flex-1">
@@ -312,14 +402,14 @@ export function PlanDetailApiCase({ planId, projectId, canEdit, embedInPlanTree,
                                 className="h-8 text-[11px] border-gray-200 text-gray-600 gap-1.5"
                                 onClick={handleBatchDisassociate}
                             >
-                                取消关联 ({selectedCaseIds.length})
+                                移出活动 ({selectedCaseIds.length})
                             </Button>
                         </>
                     )}
 
                     {canEdit && (
                         <Button size="sm" className="h-8 text-[11px] bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
-                            <LinkIcon className="w-3.5 h-3.5" /> 关联用例
+                            <LinkIcon className="w-3.5 h-3.5" /> 补执行项
                         </Button>
                     )}
 
@@ -360,6 +450,7 @@ export function PlanDetailApiCase({ planId, projectId, canEdit, embedInPlanTree,
                             <TableHead className="w-[100px] font-medium text-gray-500 text-xs">用例等级</TableHead>
                             <TableHead className="w-[120px] font-medium text-gray-500 text-xs">执行人</TableHead>
                             <TableHead className="w-[140px] font-medium text-gray-500 text-xs">更新时间</TableHead>
+                            <TableHead className="w-[120px] text-center font-medium text-gray-500 text-xs">提案</TableHead>
                             <TableHead className="w-[120px] text-center font-medium text-gray-500 text-xs">操作</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -375,7 +466,7 @@ export function PlanDetailApiCase({ planId, projectId, canEdit, embedInPlanTree,
                                 <TableCell colSpan={9} className="h-64 text-center">
                                     <div className="text-gray-400 flex flex-col items-center gap-2">
                                         <FileCode className="w-10 h-10 opacity-20" />
-                                        <span>暂无接口用例</span>
+                                        <span>当前活动下还没有接口执行项</span>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -437,6 +528,29 @@ export function PlanDetailApiCase({ planId, projectId, canEdit, embedInPlanTree,
                                         {item.updateTime || '2026-01-13 11:10:26'}
                                     </TableCell>
                                     <TableCell className="text-center">
+                                        {(() => {
+                                            const proposalInfo = proposalSnapshotMap[item.id] ?? { count: 0, latestStatus: null, latestProposalId: null };
+                                            const proposalMeta = getProposalStatusMeta(proposalInfo.latestStatus);
+                                            return (
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <span className="text-[11px] text-gray-500">{proposalInfo.count} 个提案</span>
+                                                    <Badge className={`${proposalMeta.className} border-0 text-[11px] font-normal`}>
+                                                        {proposalMeta.label}
+                                                    </Badge>
+                                                    {proposalInfo.count > 0 && proposalInfo.latestStatus !== 'MERGED' ? (
+                                                        <button
+                                                            type="button"
+                                                            className="text-[11px] text-blue-600 hover:text-blue-700 hover:underline"
+                                                            onClick={() => handleMergeProposalToCase(item)}
+                                                        >
+                                                            合并回Case
+                                                        </button>
+                                                    ) : null}
+                                                </div>
+                                            );
+                                        })()}
+                                    </TableCell>
+                                    <TableCell className="text-center">
                                         <div className="flex justify-center gap-3">
                                             <span
                                                 className="text-blue-600 cursor-pointer hover:text-blue-700 font-normal hover:underline decoration-blue-200 text-xs"
@@ -451,9 +565,16 @@ export function PlanDetailApiCase({ planId, projectId, canEdit, embedInPlanTree,
                                             <span className="text-gray-300">|</span>
                                             <span
                                                 className="text-blue-600 cursor-pointer hover:text-blue-700 font-normal hover:underline decoration-blue-200 text-xs"
+                                                onClick={() => openProposalDialog(item)}
+                                            >
+                                                发起提案
+                                            </span>
+                                            <span className="text-gray-300">|</span>
+                                            <span
+                                                className="text-blue-600 cursor-pointer hover:text-blue-700 font-normal hover:underline decoration-blue-200 text-xs"
                                                 onClick={() => handleDisassociate(item.id)}
                                             >
-                                                取消关联
+                                                移出活动
                                             </span>
                                         </div>
                                     </TableCell>
@@ -473,6 +594,25 @@ export function PlanDetailApiCase({ planId, projectId, canEdit, embedInPlanTree,
                 className="p-3 border-t border-gray-100 bg-gray-50/30"
             />
         </div>
+    );
+
+    const proposalDialog = (
+        <WorkItemProposalDialog
+            open={proposalDialogOpen}
+            onOpenChange={(open) => {
+                setProposalDialogOpen(open);
+                if (!open) setProposalRow(null);
+            }}
+            campaignId={planId}
+            workItemId={proposalRow?.id ?? null}
+            targetCaseId={proposalRow?.caseId ?? proposalRow?.apiCaseId ?? proposalRow?.id ?? null}
+            defaultTitle={proposalRow ? `沉淀：${proposalRow.name || proposalRow.num || proposalRow.id}` : ''}
+            defaultReason={proposalRow ? '本次测试活动执行过程中发现该接口执行项需要沉淀回长期 Case 资产。' : ''}
+            onSuccess={() => {
+                fetchCaseList();
+                loadProposalSnapshots(caseList);
+            }}
+        />
     );
 
     return (

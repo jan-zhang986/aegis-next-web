@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { ChevronRight, ChevronDown, Search } from 'lucide-react';
 import { metadataModuleService, type MetadataModuleTreeNode } from '@/services/metadata-module';
-import { e2eSpaceService, type E2ESpace } from '@/services/e2e-space';
+import { e2eSpaceService, type CaseRealizationSpace } from '@/services/e2e-space';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 

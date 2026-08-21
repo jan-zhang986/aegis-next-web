@@ -41,6 +41,8 @@ interface UseWorkflowDesignPageParams {
   /** 受控执行环境：父组件（如 E2E 嵌入页）传入后，运行/调试使用当前选中环境 */
   controlledExecutionEnvironmentId?: string;
   setControlledExecutionEnvironmentId?: (id: string) => void;
+  caseId?: string;
+  realizationType?: string;
 }
 
 export function useWorkflowDesignPage({
@@ -53,11 +55,15 @@ export function useWorkflowDesignPage({
   onSaveCallback,
   controlledExecutionEnvironmentId,
   setControlledExecutionEnvironmentId,
+  caseId: externalCaseId,
+  realizationType: externalRealizationType,
 }: UseWorkflowDesignPageParams) {
   const viewMode: 'canvas' | 'steps' = externalViewMode ?? 'canvas';
   const [searchParams] = useSearchParams();
   const workflowId = externalWorkflowId || searchParams.get('id') || undefined;
   const projectId = externalProjectId || localStorage.getItem('currentProjectId') || '';
+  const caseId = externalCaseId || searchParams.get('caseId') || undefined;
+  const realizationType = externalRealizationType || searchParams.get('realizationType') || undefined;
   const [moduleId, setModuleId] = useState<string | undefined>(externalModuleId || searchParams.get('moduleId') || undefined);
   const { user } = useUser();
   const [selectedGlobalEnvironmentId, setSelectedGlobalEnvironmentId] = useState<string | null>(null);
@@ -183,6 +189,8 @@ export function useWorkflowDesignPage({
     originalNodesOrderRef,
     loadWorkflowData,
     onSaveCallback,
+    caseId,
+    realizationType,
   });
 
   const connectWebSocketRef = useRef<((runId: string) => void) | undefined>(undefined);

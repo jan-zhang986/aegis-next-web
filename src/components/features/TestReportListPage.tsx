@@ -244,7 +244,7 @@ export function TestReportListPage({ onViewReport }: TestReportListPageProps) {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl text-gray-900 mb-2">测试报告</h1>
-              <p className="text-gray-600">自动化用例测试报告管理</p>
+              <p className="text-gray-600">用例实现测试报告管理</p>
             </div>
             <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
               <FileText className="w-4 h-4" />

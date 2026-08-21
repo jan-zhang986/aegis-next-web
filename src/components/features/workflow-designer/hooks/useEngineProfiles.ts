@@ -7,6 +7,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { workflowService } from '@/services/workflow';
 
+export interface EngineProfile extends Record<string, unknown> {
+  id?: string | number;
+  name?: string;
+}
+
 interface UseEngineProfilesParams {
   projectId: string;
   selectedGlobalEnvironmentId?: string | null;
@@ -14,7 +19,7 @@ interface UseEngineProfilesParams {
 
 interface UseEngineProfilesReturn {
   // 状态
-  engineProfiles: any[];
+  engineProfiles: EngineProfile[];
   loadingProfiles: boolean;
   globalEnvironment: any;
   setGlobalEnvironment: React.Dispatch<React.SetStateAction<any>>;
@@ -31,7 +36,7 @@ export function useEngineProfiles({
   projectId,
   selectedGlobalEnvironmentId,
 }: UseEngineProfilesParams): UseEngineProfilesReturn {
-  const [engineProfiles, setEngineProfiles] = useState<any[]>([]);
+  const [engineProfiles, setEngineProfiles] = useState<EngineProfile[]>([]);
   const [loadingProfiles, setLoadingProfiles] = useState(false);
   const [globalEnvironment, setGlobalEnvironment] = useState<any>(null);
 

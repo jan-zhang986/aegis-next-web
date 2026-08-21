@@ -10,6 +10,7 @@ import { CaseGenerationChatView } from './CaseGenerationChatView';
 
 interface Props {
   projectId?: string;
+  spaceId?: string;
   chatId: string | null;
   firstQuery?: string | null;
   firstMentionedItems?: Array<{ id: string; name: string; type: string; kb_type?: string }> | null;
@@ -20,6 +21,7 @@ interface Props {
 
 export function CaseGenerationLayout({
   projectId,
+  spaceId,
   chatId,
   firstQuery,
   firstMentionedItems,
@@ -71,6 +73,7 @@ export function CaseGenerationLayout({
         {chatId ? (
           <CaseGenerationChatView
             projectId={projectId ?? localStorage.getItem('currentProjectId') ?? 'default-project'}
+            spaceId={spaceId}
             chatId={chatId}
             firstQuery={firstQuery ?? undefined}
             firstMentionedItems={firstMentionedItems ?? undefined}

@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { metadataModuleService } from '@/services/metadata-module';
-import type { E2ESpace } from '@/services/e2e-space';
+import type { CaseRealizationSpace } from '@/services/e2e-space';
 
 interface TestModule {
   id: string;
@@ -28,7 +28,7 @@ interface TestModule {
 }
 
 interface ModuleTreePanelProps {
-  space: E2ESpace;
+  space: CaseRealizationSpace;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   modules: TestModule[];

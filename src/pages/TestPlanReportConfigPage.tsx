@@ -68,7 +68,7 @@ const SINGLE_CARDS: ConfigCardItem[] = [
   { id: ReportCardTypeEnum.BUG_DETAIL, value: ReportCardTypeEnum.BUG_DETAIL, label: '缺陷明细', type: 'SYSTEM' },
   { id: ReportCardTypeEnum.FUNCTIONAL_DETAIL, value: ReportCardTypeEnum.FUNCTIONAL_DETAIL, label: '功能用例明细', type: 'SYSTEM' },
   { id: ReportCardTypeEnum.API_CASE_DETAIL, value: ReportCardTypeEnum.API_CASE_DETAIL, label: '接口用例明细', type: 'SYSTEM' },
-  { id: ReportCardTypeEnum.SCENARIO_CASE_DETAIL, value: ReportCardTypeEnum.SCENARIO_CASE_DETAIL, label: '自动化用例明细', type: 'SYSTEM' },
+  { id: ReportCardTypeEnum.SCENARIO_CASE_DETAIL, value: ReportCardTypeEnum.SCENARIO_CASE_DETAIL, label: '用例实现明细', type: 'SYSTEM' },
 ];
 
 const GROUP_EXTRA_CARDS: ConfigCardItem[] = [
@@ -186,7 +186,7 @@ function SortableSystemCardRow({
           <PreviewTablePlaceholder
             label={item.label}
             headers={['场景名称', '所属模块', '优先级', '执行结果', '缺陷数']}
-            placeholderText="生成后将展示自动化用例明细"
+            placeholderText="生成后将展示用例实现明细"
           />
         );
       case ReportCardTypeEnum.SUB_PLAN_DETAIL:

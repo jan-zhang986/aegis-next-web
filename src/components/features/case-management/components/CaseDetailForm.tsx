@@ -12,6 +12,8 @@ import { CaseEditTypeToggle } from './CaseEditTypeToggle';
 import { StepEditor } from './StepEditor';
 import { CaseModuleSelect } from './CaseModuleSelect';
 import { CustomFieldsForm } from './CustomFieldsForm';
+import { CaseRealizationSection } from './CaseRealizationSection';
+import { WorkflowSelect } from './WorkflowSelect';
 import { generateId } from '../utils';
 import { getCaseLevel } from '../utils/getCaseLevel';
 import type {
@@ -57,6 +59,11 @@ export interface CaseDetailFormRef {
   resetForm: () => void;
 }
 
+type ExistingCaseAttachment = {
+  fileId: string;
+  fileName: string;
+};
+
 interface CaseDetailFormProps {
   caseId?: string;
   projectId: string;
@@ -69,10 +76,8 @@ interface CaseDetailFormProps {
 }
 
 export const CaseDetailForm = forwardRef<CaseDetailFormRef, CaseDetailFormProps>(
-  function CaseDetailForm(
-    { caseId, projectId, defaultCaseInfo, initialModuleId, value, onChange, onModuleTreeLoaded },
-    ref
-  ) {
+  (props, ref) => {
+    const { caseId, projectId, defaultCaseInfo, initialModuleId, value, onChange, onModuleTreeLoaded } = props;
     const [moduleTree, setModuleTree] = useState<ModuleTreeNode[]>([]);
     const [customFields, setCustomFields] = useState<CaseCustomField[]>([]);
     const [loadingFields, setLoadingFields] = useState(true);
@@ -87,7 +92,10 @@ export const CaseDetailForm = forwardRef<CaseDetailFormRef, CaseDetailFormProps>
     const [tags, setTags] = useState<string[]>([]);
     const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
     const [fileList, setFileList] = useState<File[]>([]);
+    const [existingAttachments, setExistingAttachments] = useState<ExistingCaseAttachment[]>([]);
+    const [unLinkFilesIds, setUnLinkFilesIds] = useState<string[]>([]);
     const [templateId, setTemplateId] = useState('');
+    const [workflowId, setWorkflowId] = useState('');
 
     const initialLoad = useRef(false);
 
@@ -166,6 +174,16 @@ export const CaseDetailForm = forwardRef<CaseDetailFormRef, CaseDetailFormProps>
         const tagVal = res?.tags;
         setTags(Array.isArray(tagVal) ? tagVal : typeof tagVal === 'string' ? (tagVal ? [tagVal] : []) : []);
         if (res?.steps) setSteps(parseSteps(res.steps));
+        const attachments = Array.isArray(res?.attachments) ? res.attachments : [];
+        setExistingAttachments(
+          attachments
+            .map((item: any) => ({
+              fileId: String(item?.fileId || item?.id || item?.attachmentId || ''),
+              fileName: String(item?.fileName || item?.name || item?.fileId || '未命名附件'),
+            }))
+            .filter((item: ExistingCaseAttachment) => item.fileId)
+        );
+        setUnLinkFilesIds([]);
         const cf: Record<string, any> = {};
         (res?.customFields || []).forEach((f: any) => {
           if (f.value !== undefined && f.value !== null) {
@@ -180,6 +198,7 @@ export const CaseDetailForm = forwardRef<CaseDetailFormRef, CaseDetailFormProps>
           const priorityField = customFields.find((f: any) => f.fieldId === 'functional_priority' || f.internalFieldKey === 'functional_priority');
           if (priorityField?.fieldId) cf[priorityField.fieldId] = priorityVal;
         }
+        setWorkflowId(res?.workflowId || '');
         setCustomFieldValues((v) => ({ ...v, ...cf }));
       }
     }, [defaultCaseInfo]);
@@ -212,6 +231,9 @@ export const CaseDetailForm = forwardRef<CaseDetailFormRef, CaseDetailFormProps>
           fieldId,
           value: Array.isArray(value) ? JSON.stringify(value) : String(value ?? ''),
         })),
+        workflowId,
+        relateFileMetaIds: existingAttachments.map((item) => item.fileId),
+        unLinkFilesIds,
       };
       if (caseId) request.id = caseId;
       onChange?.({ ...request, fileList });
@@ -229,6 +251,9 @@ export const CaseDetailForm = forwardRef<CaseDetailFormRef, CaseDetailFormProps>
       tags,
       customFieldValues,
       fileList,
+      existingAttachments,
+      unLinkFilesIds,
+      workflowId,
       caseId,
       onChange,
     ]);
@@ -267,6 +292,9 @@ export const CaseDetailForm = forwardRef<CaseDetailFormRef, CaseDetailFormProps>
           fieldId,
           value: Array.isArray(value) ? JSON.stringify(value) : String(value ?? ''),
         })),
+        workflowId,
+        relateFileMetaIds: existingAttachments.map((item) => item.fileId),
+        unLinkFilesIds,
         fileList,
       }),
       resetForm: () => {
@@ -275,8 +303,10 @@ export const CaseDetailForm = forwardRef<CaseDetailFormRef, CaseDetailFormProps>
         setTextDescription('');
         setExpectedResult('');
         setDescription('');
-        setTags([]);
         setFileList([]);
+        setExistingAttachments([]);
+        setUnLinkFilesIds([]);
+        setWorkflowId('');
       },
     }));
 
@@ -344,6 +374,25 @@ export const CaseDetailForm = forwardRef<CaseDetailFormRef, CaseDetailFormProps>
               minHeight="100px"
             />
           </div>
+
+          <div className="space-y-4 rounded-lg border border-gray-100 bg-gray-50/30 p-4">
+            <Label className="text-sm font-semibold text-gray-900">用例实现绑定</Label>
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-gray-500 font-medium">关联自动化</Label>
+                <WorkflowSelect
+                  projectId={projectId}
+                  value={workflowId}
+                  onChange={setWorkflowId}
+                  placeholder="选择自动化"
+                />
+                <p className="text-[11px] text-gray-400">
+                  绑定后与本条用例一一对应，可从用例直接触发自动化。
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">附件</Label>
             <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
@@ -376,6 +425,31 @@ export const CaseDetailForm = forwardRef<CaseDetailFormRef, CaseDetailFormProps>
                 </ul>
               ) : (
                 <p className="text-sm text-gray-400 mt-2">支持多选，拖拽或点击上传</p>
+              )}
+              {existingAttachments.length > 0 && (
+                <ul className="mt-3 space-y-2">
+                  {existingAttachments.map((attachment) => (
+                    <li
+                      key={attachment.fileId}
+                      className="flex items-center gap-2 text-sm py-1.5 px-2 rounded bg-white border border-gray-100 hover:bg-gray-50"
+                    >
+                      <span className="flex-1 truncate text-gray-700" title={attachment.fileName}>
+                        {attachment.fileName}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExistingAttachments((prev) => prev.filter((item) => item.fileId !== attachment.fileId));
+                          setUnLinkFilesIds((prev) => (prev.includes(attachment.fileId) ? prev : [...prev, attachment.fileId]));
+                        }}
+                        className="text-red-500 hover:text-red-700 text-xs px-1"
+                        title="移除"
+                      >
+                        移除
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           </div>
@@ -410,6 +484,7 @@ export const CaseDetailForm = forwardRef<CaseDetailFormRef, CaseDetailFormProps>
               placeholder="多个标签用逗号分隔"
             />
           </div>
+          <CaseRealizationSection caseId={caseId} />
         </div>
       </div>
     );

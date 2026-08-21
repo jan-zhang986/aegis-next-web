@@ -146,7 +146,6 @@ describe('useRobotManagement - Property Tests', () => {
     expect(result.current.robots[0].id).toBe('robot-2');
     expect(robotService.deleteRobot).toHaveBeenCalledWith('robot-1');
   });
-});
 
   // Feature: project-message-log-migration, Property 10: 机器人状态切换往返
   /**

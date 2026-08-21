@@ -7,10 +7,16 @@ export { WorkspacePage } from './WorkspacePage';
 export { ProjectManagementPage } from './ProjectManagementPage';
 export { BugManagementPage } from './BugManagementPage';
 export { TestPlanPage } from './TestPlanPage';
+export { QualityWorkspacePage } from './QualityWorkspacePage';
+export { RequirementQualityPage } from './RequirementQualityPage';
+export { QualityWorkspaceDetailPage } from './QualityWorkspaceDetailPage';
+export { QualityWorkspaceReportPage, QualityWorkspaceReportDetailPage } from './QualityWorkspaceReportPage';
 export { CaseManagementPage } from './CaseManagementPage';
 export { TestReportPage } from './TestReportPage';
 export { TestReportListPage } from './TestReportListPage';
 export { AIAssistantPage } from './AIAssistantPage';
 export { PrecisionTestPage } from './PrecisionTestPage';
-export { E2EAutomationPage } from './E2EAutomationPage';
+/** Preferred ordinary-user entry for case realizations */
+export { CaseRealizationPage } from './E2EAutomationPage';
+export { SpaceAssetDetailPage } from './SpaceAssetDetailPage';
 export { SystemSettingPage } from './SystemSettingPage';

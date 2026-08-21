@@ -20,9 +20,10 @@ interface FileUploadPageProps {
   definitionId?: string;
   definitions?: MetadataDefinition[];
   onRefresh?: () => void;
+  spaceId?: string;
 }
 
-export function FileUploadPage({ apiName, onClose, definitionId, definitions = [], onRefresh }: FileUploadPageProps) {
+export function FileUploadPage({ apiName, onClose, definitionId, definitions = [], onRefresh, spaceId }: FileUploadPageProps) {
   const [searchParams] = useSearchParams();
   
   // 获取项目ID：优先从 URL 参数，然后从 localStorage，获取不到则报错
@@ -43,6 +44,7 @@ export function FileUploadPage({ apiName, onClose, definitionId, definitions = [
   const editor = useApiEditor({
     protocol: 'FILE',
     projectId: projectId,
+    spaceId,
     onRefresh,
   });
 
@@ -87,7 +89,7 @@ export function FileUploadPage({ apiName, onClose, definitionId, definitions = [
 
     try {
       setIsUploading(true);
-      const response = await metadataService.uploadFile(selectedFile, editor.state.moduleId!);
+      const response = await metadataService.uploadFile(selectedFile, projectId, spaceId);
       setUploadedFileId(response.fileId);
       toast.success('文件上传成功！');
       setSelectedFile(null);
@@ -241,6 +243,7 @@ export function FileUploadPage({ apiName, onClose, definitionId, definitions = [
                     onModuleIdChange={editor.setSelectedModuleId}
                     moduleType="FILE"
                     projectId={projectId}
+                    typeId={spaceId}
                     onModuleTreeRefresh={async () => {
                       // 只刷新模块树，不刷新定义列表（避免清空用户输入的内容）
                       await editor.refreshModuleTree();
@@ -434,6 +437,7 @@ export function FileUploadPage({ apiName, onClose, definitionId, definitions = [
           onModuleChange={editor.setConfirmModuleId}
           moduleType="FILE"
           projectId={projectId}
+          typeId={spaceId}
           onModuleTreeRefresh={async () => {
             // 只刷新模块树，不刷新定义列表（避免清空用户输入的内容）
             await editor.refreshModuleTree();
@@ -494,4 +498,3 @@ export function FileUploadPage({ apiName, onClose, definitionId, definitions = [
     </div>
   );
 }
-

@@ -30,6 +30,7 @@ interface DemandItem {
   id: string;
   demandId: string;
   demandName: string;
+  name?: string;
   demandUrl?: string;
   demandPlatform?: string;
 }

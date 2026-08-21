@@ -109,6 +109,10 @@ function AppContent() {
         }
       />
       <Route
+        path="/test-plan/*"
+        element={<Navigate to="/quality-workspace?menu=quality-workspace&tab=requirements" replace />}
+      />
+      <Route
         path="/*"
         element={
           <ProtectedRoute>

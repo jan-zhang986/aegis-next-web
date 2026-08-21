@@ -326,11 +326,13 @@ export interface MqConfig {
  * 子工作流配置
  * 对应节点定义中的 SubWorkflowConfig
  * workflow_id：选中的引用工作流 ID（仅当前项目），保存时同步到节点 refWorkflowId
+ * workflow_name：历史数据可能残留；新保存不再写入，展示名称由列表/后端解析 workflow_id 得到
  */
 export interface SubWorkflowConfig {
   workflow_id?: string;
   workflow_file?: string;
   workflow_data?: Record<string, any>;
+  /** @deprecated 不再写入配置，仅从旧数据读出作展示兜底 */
   workflow_name?: string;
   input_mapping?: Record<string, string>;
   output_mapping?: Record<string, string>;

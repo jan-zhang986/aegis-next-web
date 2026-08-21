@@ -34,7 +34,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { TruncateWithTooltip } from "@/components/ui/truncate-with-tooltip";
 import { toast } from "sonner";
-import { testPlanManagementService } from "@/services";
+import { testPlanManagementService, qualityWorkspaceService } from "@/services";
 import { requirementQualityService } from "@/services/requirement-quality";
 import { Loader2, ChevronRight, ChevronDown, X, Check, Calendar } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -380,15 +380,42 @@ export function CreateTestPlanSheet({
             }
 
             if (planId) {
-                await testPlanManagementService.updateTestPlan({ ...payload, id: planId });
+                // 编辑模式：调用新接口更新
+                await qualityWorkspaceService.saveWorkspace({
+                    workspaceId: planId,
+                    projectId,
+                    name: values.name,
+                    description: values.description,
+                    targetType: feishuStoryId ? "REQUIREMENT" : "RELEASE_BATCH",
+                    targetId: feishuStoryId || planId,
+                    targetName: feishuStoryId || values.name,
+                    plannedStartTime: values.plannedStartTime,
+                    plannedEndTime: values.plannedEndTime,
+                    tags: values.tags,
+                    metadata: { feishuStoryId }
+                });
                 toast.success("更新成功");
                 onSuccess();
                 onOpenChange(false);
             } else {
-                const res = await testPlanManagementService.addTestPlan(payload) as { id?: string; data?: { id?: string } };
+                // 新建模式
+                const res = await qualityWorkspaceService.saveWorkspace({
+                    projectId,
+                    name: values.name,
+                    description: values.description,
+                    targetType: feishuStoryId ? "REQUIREMENT" : "RELEASE_BATCH",
+                    targetId: feishuStoryId || values.name,
+                    targetName: feishuStoryId || values.name,
+                    plannedStartTime: values.plannedStartTime,
+                    plannedEndTime: values.plannedEndTime,
+                    tags: values.tags,
+                    metadata: { feishuStoryId }
+                }) as any;
+                
                 toast.success("创建成功");
                 onSuccess();
-                const newId = res?.id ?? res?.data?.id;
+                const newId = res?.data || res;
+                
                 if (isContinue) {
                     form.reset({
                         name: "",
@@ -407,7 +434,9 @@ export function CreateTestPlanSheet({
                     setFeishuStoryKeyword("");
                     setSelectedModuleId(values.moduleId || "");
                 } else {
-                    if (newId && onCreatedPlanId) onCreatedPlanId(newId);
+                    if (newId && typeof newId === 'string' && onCreatedPlanId) {
+                        onCreatedPlanId(newId);
+                    }
                     onOpenChange(false);
                 }
             }
@@ -420,10 +449,7 @@ export function CreateTestPlanSheet({
     };
 
     const onSubmit = async (values: FormValues, isContinue?: boolean) => {
-        if (!hasFeishuAssociated) {
-            toast.error("请先关联飞书需求");
-            return;
-        }
+        // 将飞书关联改为非强制，移除原有的强制报错拦截
         await doSubmit(values, isContinue);
     };
 
@@ -742,7 +768,7 @@ export function CreateTestPlanSheet({
                             </div>
 
                             <FormItem>
-                                <FormLabel className="text-[13px] font-semibold text-gray-700">关联飞书需求 <span className="text-red-500">*</span></FormLabel>
+                                <FormLabel className="text-[13px] font-semibold text-gray-700">关联飞书需求</FormLabel>
                                     <div className="space-y-3">
                                         <div className="relative">
                                             <Input
@@ -760,7 +786,7 @@ export function CreateTestPlanSheet({
                                                         loadDefaultFeishuOptions();
                                                     }
                                                 }}
-                                                placeholder="请选择飞书需求（必填），点击可默认展示 10 条"
+                                                placeholder="请选择关联的飞书需求（可选），点击可查看最近需求"
                                                 className="h-9"
                                             />
                                             {storyDropdownOpen && (

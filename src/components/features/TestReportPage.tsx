@@ -268,7 +268,7 @@ export function TestReportPage({ reportId, onBack }: TestReportPageProps) {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl text-gray-900 mb-2">
-                {reportId ? `测试报告 - ${reportId}` : '自动化用例测试报告'}
+                {reportId ? `测试报告 - ${reportId}` : '用例实现测试报告'}
               </h1>
               <p className="text-gray-600">全面的测试执行数据分析与报告</p>
             </div>
@@ -426,7 +426,7 @@ export function TestReportPage({ reportId, onBack }: TestReportPageProps) {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name} ${(Number(percent ?? 0) * 100).toFixed(0)}%`}
                   outerRadius={90}
                   fill="#8884d8"
                   dataKey="value"

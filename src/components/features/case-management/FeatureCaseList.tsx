@@ -1,11 +1,13 @@
 /**
- * 功能用例列表
- * 组合 components、hooks、utils 的主入口
+ * 用例主视图
+ * 用户在这里看到统一的 Case 资产，realization 作为用例下的实现视角呈现
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Layers3, Sparkles, Workflow, Bot } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   ResizableHandle,
   ResizablePanel,
@@ -15,7 +17,7 @@ import type { CaseItem } from './types';
 import { useModuleTree } from './hooks/useModuleTree';
 import { useCaseList, type SortOption } from './hooks/useCaseList';
 import { useCaseManagementPermission } from './hooks/useCaseManagementPermission';
-import { ModuleTreePanel, CaseListToolbar, CaseTableSection, CaseDetailDrawer } from './components';
+import { ModuleTreePanel, CaseListToolbar, CaseTableSection, CaseDetailDrawer, VersionMergeDrawer } from './components';
 import { CaseFilterDrawer, loadSavedViews } from './components/CaseFilterDrawer';
 import { CaseExportDrawer, type ExportType } from './components/CaseExportDrawer';
 import { BatchEditModal } from './components/BatchEditModal';
@@ -29,6 +31,7 @@ import { collectOffspringIds, moduleExistsInTree } from './utils/collectOffsprin
 const EMPTY_OFFSPRING_IDS: string[] = [];
 import { ImportCaseDrawer } from './ImportCaseDrawer';
 import { projectManagementService, caseManagementService } from '@/services';
+import { metadataModuleService } from '@/services/metadata-module';
 import { FeatureCaseMinderView } from './FeatureCaseMinderView';
 import { toast } from 'sonner';
 import {
@@ -44,6 +47,8 @@ import {
 
 interface FeatureCaseListProps {
   projectId?: string;
+  /** 当前 Space。新产品主路径要求先进入 Space，再维护 Case。 */
+  spaceId?: string;
   /** 分享链接打开时，从 URL 传入的 caseId，用于自动打开详情抽屉 */
   initialCaseId?: string | null;
   /** 初始选中的目录 ID（编辑/取消返回后恢复用） */
@@ -59,10 +64,15 @@ interface FeatureCaseListProps {
   onDeleteCase?: (item: CaseItem) => void;
   onNavigateToRecycle?: () => void;
   onAiGenerate?: () => void;
+  /** 是否隐藏内部的模块目录树（配合父组件展示成两栏） */
+  hideModuleTree?: boolean;
+  /** 外部传入的选中模块 ID */
+  externalSelectedModuleId?: string;
 }
 
 export function FeatureCaseList({
   projectId = localStorage.getItem('currentProjectId') || 'default-project',
+  spaceId,
   initialCaseId,
   initialSelectedModuleId,
   onViewCase,
@@ -72,6 +82,8 @@ export function FeatureCaseList({
   onDeleteCase,
   onNavigateToRecycle,
   onAiGenerate,
+  hideModuleTree = false,
+  externalSelectedModuleId,
 }: FeatureCaseListProps) {
   const [urlSearchParams, setUrlSearchParams] = useSearchParams();
   const [searchInput, setSearchInput] = useState(() => urlSearchParams.get('keyword') || '');
@@ -97,10 +109,15 @@ export function FeatureCaseList({
   const [importOpen, setImportOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerCaseId, setDrawerCaseId] = useState<string | null>(initialCaseId ?? null);
+  const [drawerPreferredTab, setDrawerPreferredTab] = useState<'detail' | 'realization'>('detail');
+  const [versionId, setVersionId] = useState<string>('');
+  const [currentVersion, setCurrentVersion] = useState<any>(null);
+  const [mergeDrawerOpen, setMergeDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (initialCaseId) {
       setDrawerCaseId(initialCaseId);
+      setDrawerPreferredTab('detail');
       setDrawerOpen(true);
     } else if (initialCaseId === null) {
       setDrawerCaseId(null);
@@ -108,12 +125,19 @@ export function FeatureCaseList({
     }
   }, [initialCaseId]);
 
+  // 同步外部选中的模块ID
+  useEffect(() => {
+    if (externalSelectedModuleId !== undefined && externalSelectedModuleId !== selectedModuleId) {
+      setSelectedModuleId(externalSelectedModuleId);
+    }
+  }, [externalSelectedModuleId, selectedModuleId]);
+
   // 编辑/取消返回后恢复指定目录
   useEffect(() => {
     if (initialSelectedModuleId != null && initialSelectedModuleId !== '' && initialSelectedModuleId !== selectedModuleId) {
       setSelectedModuleId(initialSelectedModuleId);
     }
-  }, [initialSelectedModuleId]);
+  }, [initialSelectedModuleId, selectedModuleId]);
   const [exportDrawerOpen, setExportDrawerOpen] = useState(false);
   const [exportType, setExportType] = useState<ExportType>('exportExcel');
   const [batchEditOpen, setBatchEditOpen] = useState(false);
@@ -128,6 +152,7 @@ export function FeatureCaseList({
   const [sort, setSort] = useState<SortOption | null>(null);
   const [columnFilter, setColumnFilter] = useState<Record<string, string[]>>({});
   const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
+  const showLegacyVersionControls = !spaceId;
 
   useEffect(() => {
     const views = loadSavedViews();
@@ -165,7 +190,7 @@ export function FeatureCaseList({
     fetchModuleTree,
     fetchModulesCount,
     treeLoaded,
-  } = useModuleTree({ projectId, searchKeyword });
+  } = useModuleTree({ projectId, spaceId, searchKeyword });
 
   // 展开树到选中节点（须在 useModuleTree 之后）
   useEffect(() => {
@@ -222,6 +247,17 @@ export function FeatureCaseList({
     return Number.isFinite(n) && n >= 1 ? n : undefined;
   }, [urlSearchParams]);
 
+  const listFilter = useMemo(() => {
+    const baseFilter = {
+      searchMode: filter?.searchMode ?? 'AND',
+      conditions: filter?.conditions ?? [],
+      ...filter,
+    };
+    return showLegacyVersionControls
+      ? { ...baseFilter, versionId: versionId || undefined }
+      : baseFilter;
+  }, [filter, showLegacyVersionControls, versionId]);
+
   const {
     loading,
     caseList,
@@ -241,12 +277,13 @@ export function FeatureCaseList({
     clearSelection,
   } = useCaseList({
     projectId,
+    spaceId,
     selectedModuleId,
     offspringIds,
     searchKeyword,
     modulesCount,
     viewId,
-    filter,
+    filter: listFilter,
     sort,
     columnFilter,
     onFetchSuccess: fetchModulesCount,
@@ -328,14 +365,18 @@ export function FeatureCaseList({
       return;
     }
     try {
-      await caseManagementService.batchDeleteCase({
-        projectId,
-        selectIds: selectedCases,
-        selectAll: false,
-        excludeIds: [],
-        moduleIds: selectedModuleId === 'all' ? [] : [selectedModuleId, ...offspringIds],
-        condition: filter as any,
-      });
+      if (spaceId) {
+        await caseManagementService.batchDeleteUnifiedCase(selectedCases);
+      } else {
+        await caseManagementService.batchDeleteCase({
+          projectId,
+          selectIds: selectedCases,
+          selectAll: false,
+          excludeIds: [],
+          moduleIds: selectedModuleId === 'all' ? [] : [selectedModuleId, ...offspringIds],
+          condition: filter as any,
+        });
+      }
       clearSelection();
       fetchCaseList({ silent: true });
       fetchModulesCount();
@@ -354,10 +395,14 @@ export function FeatureCaseList({
     async (item: CaseItem) => {
       if (!item?.id) return;
       try {
-        await caseManagementService.deleteCaseRequest({
-          id: item.id,
-          projectId: item.projectId ?? projectId,
-        });
+        if (spaceId || item.spaceId) {
+          await caseManagementService.deleteUnifiedCase(item.caseId || item.id);
+        } else {
+          await caseManagementService.deleteCaseRequest({
+            id: item.id,
+            projectId: item.projectId ?? projectId,
+          });
+        }
         toast.success('删除成功');
         fetchCaseList({ silent: true });
         fetchModulesCount();
@@ -367,11 +412,18 @@ export function FeatureCaseList({
         toast.error(err?.message || '删除失败');
       }
     },
-    [projectId, fetchCaseList, fetchModulesCount, fetchRecycleCount]
+    [projectId, spaceId, fetchCaseList, fetchModulesCount, fetchRecycleCount]
   );
 
   /** 打开用例详情抽屉（查看/编辑均走抽屉） */
   const handleOpenDrawer = (item: CaseItem) => {
+    setDrawerPreferredTab('detail');
+    setDrawerCaseId(item.id);
+    setDrawerOpen(true);
+  };
+
+  const handleOpenRealizationDrawer = (item: CaseItem) => {
+    setDrawerPreferredTab('realization');
     setDrawerCaseId(item.id);
     setDrawerOpen(true);
   };
@@ -450,10 +502,42 @@ export function FeatureCaseList({
     };
   };
 
+  const buildUnifiedInlineSavePayload = (detail: any, overrides: Record<string, unknown>) => {
+    const caseId = detail?.caseId || detail?.id;
+    return {
+      caseId,
+      projectId: detail?.projectId || projectId,
+      spaceId: detail?.spaceId || spaceId,
+      moduleId: detail?.moduleId,
+      title: detail?.title || detail?.name || '',
+      description: detail?.description,
+      precondition: detail?.precondition || detail?.prerequisite,
+      expectedResult: detail?.expectedResult,
+      priority: detail?.priority,
+      ownerId: detail?.ownerId || detail?.createUser,
+      sourceType: detail?.sourceType,
+      lifecycleStatus: detail?.lifecycleStatus || detail?.reviewStatus,
+      workflowId: detail?.workflowId,
+      tags: Array.isArray(detail?.tags) ? detail.tags : [],
+      metadata: detail?.metadata || {},
+      realizations: Array.isArray(detail?.realizations) ? detail.realizations : undefined,
+      ...overrides,
+    };
+  };
+
+  const isUnifiedSpaceCase = (item: CaseItem) => Boolean(spaceId || item.spaceId);
+
   const handleNameChange = async (item: CaseItem, name: string) => {
     try {
+      if (isUnifiedSpaceCase(item)) {
+        const detail: any = await caseManagementService.getUnifiedCaseDetail(item.caseId || item.id);
+        await caseManagementService.saveUnifiedCase(buildUnifiedInlineSavePayload(detail, { title: name }));
+        updateItemInList(item.id, { name, title: name });
+        toast.success('名称已更新');
+        return;
+      }
       const detail: any = await caseManagementService.getCaseDetail(item.id);
-      const payload = buildUpdateRequest(detail, { id: item.id, name });
+      const payload = buildUpdateRequest(detail, { id: item.id, name, title: name });
       await caseManagementService.updateCaseRequest(payload);
       updateItemInList(item.id, { name });
       toast.success('名称已更新');
@@ -485,6 +569,28 @@ export function FeatureCaseList({
 
   const handleCaseLevelChange = async (item: CaseItem, level: string) => {
     try {
+      // 解析为数字优先级 (P0-P3 -> 1-4)
+      let numericPriority: number | undefined;
+      if (level.startsWith('P')) {
+        const num = parseInt(level.substring(1), 10);
+        if (!isNaN(num)) numericPriority = num + 1;
+      }
+
+      if (isUnifiedSpaceCase(item)) {
+        const detail: any = await caseManagementService.getUnifiedCaseDetail(item.caseId || item.id);
+        await caseManagementService.saveUnifiedCase(
+          buildUnifiedInlineSavePayload(detail, {
+            priority: numericPriority,
+            metadata: {
+              ...(detail?.metadata || {}),
+              functionalPriority: level,
+            },
+          })
+        );
+        updateItemInList(item.id, { caseLevel: level, priority: numericPriority, functionalPriority: level });
+        toast.success('用例等级已更新');
+        return;
+      }
       const detail: any = await caseManagementService.getCaseDetail(item.id);
       const { customFields } = detail;
       const customFieldsList = (customFields ?? []).map((f: any) => {
@@ -494,7 +600,13 @@ export function FeatureCaseList({
       });
       const hasPriority = customFieldsList.some((f: any) => f.fieldId === 'functional_priority');
       if (!hasPriority) customFieldsList.push({ fieldId: 'functional_priority', value: level });
-      const payload = buildUpdateRequest(detail, { id: item.id, customFields: customFieldsList });
+
+      const payload = buildUpdateRequest(detail, { 
+        id: item.id, 
+        customFields: customFieldsList,
+        priority: numericPriority,
+        functionalPriority: level 
+      });
       await caseManagementService.updateCaseRequest(payload);
       updateItemInList(item.id, { caseLevel: level });
       toast.success('用例等级已更新');
@@ -505,6 +617,14 @@ export function FeatureCaseList({
 
   const handleModuleChange = async (item: CaseItem, moduleId: string) => {
     try {
+      if (isUnifiedSpaceCase(item)) {
+        const detail: any = await caseManagementService.getUnifiedCaseDetail(item.caseId || item.id);
+        await caseManagementService.saveUnifiedCase(buildUnifiedInlineSavePayload(detail, { moduleId }));
+        updateItemInList(item.id, { moduleId });
+        toast.success('所属模块已更新');
+        fetchModulesCount();
+        return;
+      }
       const detail: any = await caseManagementService.getCaseDetail(item.id);
       const payload = buildUpdateRequest(detail, { id: item.id, moduleId });
       await caseManagementService.updateCaseRequest(payload);
@@ -528,6 +648,282 @@ export function FeatureCaseList({
 
   const allModuleCount = modulesCount['all'] ?? modulesCount['ALL'] ?? total;
 
+  const caseFirstSummary = useMemo(() => {
+    const scopedTotal = total || caseList.length;
+    const automatedCases = caseList.filter((item) => item.realizationSummary?.hasAutomationRealization).length;
+    const fullyAutomatedCases = caseList.filter((item) => item.realizationSummary?.automationCoverageStatus === 'AUTOMATED_ONLY').length;
+    const partialCases = caseList.filter((item) => item.realizationSummary?.automationCoverageStatus === 'PARTIAL').length;
+    const coveredTypes = Array.from(new Set(
+      caseList.flatMap((item) => Array.isArray(item.realizationSummary?.coveredTypes) ? item.realizationSummary?.coveredTypes : [])
+    ));
+    return {
+      scopedTotal,
+      automatedCases,
+      fullyAutomatedCases,
+      partialCases,
+      coveredTypes,
+    };
+  }, [caseList, total]);
+
+  const rightContent = (
+    <Card className="flex-1 flex flex-col gap-0 m-2 min-h-0 overflow-hidden bg-white">
+      <CaseListToolbar
+        searchInput={searchInput}
+        searchKeyword={searchKeyword}
+        loading={loading}
+        showType={showType}
+        viewId={viewId}
+        customViews={customViews}
+        hasActiveFilter={!!filter?.conditions?.length}
+        onSearchInputChange={setSearchInput}
+        onSearch={handleSearch}
+        onClearSearch={handleClearSearch}
+        onRefresh={fetchCaseList}
+        onShowTypeChange={setShowType}
+        onColumnSettingsClick={() => setColumnSettingsOpen(true)}
+        onViewChange={(id) => { setViewId(id); resetPage(); }}
+        onFilterClick={() => setFilterDrawerOpen(true)}
+        onClearFilter={() => { setFilter(undefined); setViewId('all_data'); resetPage(); }}
+        onCreateCase={onCreateCase ? () => onCreateCase(selectedModuleId) : undefined}
+        onImportOpen={() => setImportOpen(true)}
+        onAiGenerate={onAiGenerate}
+        projectId={projectId}
+        showVersionControls={showLegacyVersionControls}
+        versionId={versionId}
+        onVersionChange={setVersionId}
+        onVersionSelect={setCurrentVersion}
+        onMergeClick={() => setMergeDrawerOpen(true)}
+      />
+      <CaseFilterDrawer
+        open={filterDrawerOpen}
+        onOpenChange={setFilterDrawerOpen}
+        viewName={loadSavedViews().find((v) => v.id === viewId)?.name ?? (viewId === 'my_follow' ? '我关注的' : viewId === 'my_create' ? '我创建的' : '全部数据')}
+        moduleTree={moduleTree}
+        memberOptions={memberOptions}
+        initialFilter={filter}
+        onFilter={(f) => {
+          setFilter(f);
+          resetPage();
+          const next = new URLSearchParams(urlSearchParams);
+          if (f && f.conditions?.length > 0) next.set('filter', encodeURIComponent(JSON.stringify(f)));
+          else next.delete('filter');
+          setUrlSearchParams(next, { replace: true });
+        }}
+        onSaveAsView={(name, f, newViewId) => {
+          setFilter(f);
+          setViewId(newViewId);
+          setCustomViews(loadSavedViews().map((v) => ({ id: v.id, name: v.name })));
+          resetPage();
+          const next = new URLSearchParams(urlSearchParams);
+          if (f && f.conditions?.length > 0) next.set('filter', encodeURIComponent(JSON.stringify(f)));
+          else next.delete('filter');
+          setUrlSearchParams(next, { replace: true });
+        }}
+      />
+      <CardContent className="flex-1 flex flex-col p-2 pt-0 min-h-0">
+        <ImportCaseDrawer
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          projectId={projectId}
+          onSuccess={handleImportSuccess}
+        />
+
+        {showType === 'minder' ? (
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <FeatureCaseMinderView
+              projectId={projectId}
+              spaceId={spaceId}
+              moduleId={selectedModuleId !== 'all' ? selectedModuleId : undefined}
+              modulesCount={modulesCount}
+              onViewCase={(caseId) => {
+                const item = caseList.find((c) => c.id === caseId) || ({ id: caseId } as CaseItem);
+                handleOpenDrawer(item);
+              }}
+              onSave={() => {
+                fetchModuleTree();
+                fetchModulesCount();
+                fetchCaseList();
+              }}
+            />
+          </div>
+        ) : (
+          <>
+            <CaseTableSection
+              loading={loading}
+              caseList={caseList}
+              moduleTree={moduleTree}
+              selectedCases={selectedCases}
+              currentPage={currentPage}
+              pageSize={pageSize}
+              onPageSizeChange={handlePageSizeChange}
+              total={total}
+              totalPages={totalPages}
+              isAllSelected={isAllSelected}
+              onSelectAll={(checked) => handleSelectAll(checked === true)}
+              onSelectCase={handleSelectCase}
+              onPageChange={handlePageChange}
+              onViewCase={handleOpenDrawer}
+              onViewRealizationCase={handleOpenRealizationDrawer}
+              onEditCase={(item) => onEditCase?.(item, selectedModuleId)}
+              onCopyCase={(item) => onCopyCase?.(item, selectedModuleId)}
+              onDeleteCase={onDeleteCase ?? handleDeleteCase}
+              onBatchDelete={handleBatchDelete}
+              onBatchExport={handleBatchExport}
+              onBatchEdit={() => setBatchEditOpen(true)}
+              onBatchMove={() => { setBatchMoveCopyIsMove(true); setBatchMoveCopyOpen(true); }}
+              onBatchCopy={() => { setBatchMoveCopyIsMove(false); setBatchMoveCopyOpen(true); }}
+              onClearSelection={clearSelection}
+              onCaseLevelChange={permission.canEdit ? handleCaseLevelChange : undefined}
+              onModuleChange={permission.canEdit ? handleModuleChange : undefined}
+              onNameChange={permission.canEdit ? handleNameChange : undefined}
+              onSortChange={handleSortChange}
+              onDragSort={handleDragSort}
+              onColumnFilterChange={handleColumnFilterChange}
+              onBatchAddDemand={permission.canEdit ? () => setBatchAddDemandOpen(true) : undefined}
+              onBatchLinkDemand={permission.canEdit ? () => setBatchLinkDemandOpen(true) : undefined}
+              onColumnSettingsClick={() => setColumnSettingsOpen(true)}
+              sort={sort}
+              columnFilter={columnFilter}
+              updateUserFilterOptions={memberOptions.map((m) => ({ value: m.id, label: m.name }))}
+              visibleColumns={visibleColumns}
+              columnOrder={columnOrder}
+              columnWidths={columnWidths}
+              onColumnWidthChange={(key, width) => {
+                setColumnWidths((prev) => {
+                  const next = { ...prev, [key]: width };
+                  saveColumnWidths(next);
+                  return next;
+                });
+              }}
+              canEdit={permission.canEdit}
+              canCopy={permission.canCopy}
+              canDelete={permission.canDelete}
+            />
+            <CaseExportDrawer
+              open={exportDrawerOpen}
+              onOpenChange={setExportDrawerOpen}
+              exportType={exportType}
+              selectCount={selectedCases.length > 0 ? selectedCases.length : total}
+              selectAll={selectedCases.length === 0}
+              params={{
+                projectId,
+                selectIds: selectedCases.length > 0 ? selectedCases : [],
+                selectAll: selectedCases.length === 0,
+                excludeIds: [],
+                moduleIds: selectedModuleId === 'all' ? [] : [selectedModuleId, ...offspringIds],
+                condition: filter as Record<string, unknown> | undefined,
+              }}
+              onSuccess={handleBatchSuccess}
+            />
+            <BatchEditModal
+              open={batchEditOpen}
+              onOpenChange={setBatchEditOpen}
+              batchParams={batchParams}
+              onSuccess={handleBatchSuccess}
+            />
+            <BatchMoveCopyDrawer
+              open={batchMoveCopyOpen}
+              onOpenChange={setBatchMoveCopyOpen}
+              isMove={batchMoveCopyIsMove}
+              selectCount={selectedCases.length}
+              params={batchParams}
+              moduleTree={moduleTree}
+              onSuccess={handleBatchSuccess}
+            />
+            <BatchAddDemandModal
+              open={batchAddDemandOpen}
+              onOpenChange={setBatchAddDemandOpen}
+              batchParams={batchParams}
+              onSuccess={handleBatchSuccess}
+            />
+            <BatchLinkDemandDrawer
+              open={batchLinkDemandOpen}
+              onOpenChange={setBatchLinkDemandOpen}
+              batchParams={batchParams}
+              onSuccess={handleBatchSuccess}
+            />
+            <ColumnSettingsSheet
+              open={columnSettingsOpen}
+              onOpenChange={setColumnSettingsOpen}
+              visibleColumns={visibleColumns}
+              onVisibleColumnsChange={setVisibleColumns}
+              columnOrder={columnOrder}
+              onColumnOrderChange={setColumnOrder}
+            />
+          </>
+        )}
+        <CaseDetailDrawer
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+          caseId={drawerCaseId}
+          caseList={caseList}
+          caseIndex={caseList.findIndex((c) => c.id === drawerCaseId)}
+          moduleTree={moduleTree}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          projectId={projectId}
+          onEdit={handleDrawerEdit}
+          onCopy={handleDrawerCopy}
+          onCreate={onCreateCase ? () => onCreateCase(selectedModuleId) : undefined}
+          onSuccess={() => {
+            fetchCaseList();
+            fetchModuleTree();
+            fetchModulesCount();
+          }}
+          preferredTab={drawerPreferredTab}
+          onCaseSelect={(item) => {
+            setDrawerCaseId(item.id);
+            const next = new URLSearchParams(urlSearchParams);
+            next.set('caseId', item.id);
+            setUrlSearchParams(next, { replace: true });
+          }}
+          canEdit={permission.canEdit}
+          canCopy={permission.canCopy}
+          canDelete={permission.canDelete}
+          canShare={permission.canShare}
+          canFollow={permission.canFollow}
+          canComment={permission.canComment}
+        />
+        <AlertDialog open={batchDeleteDialogOpen} onOpenChange={setBatchDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>确认批量删除</AlertDialogTitle>
+              <AlertDialogDescription>
+                将删除选中的 {selectedCases.length} 个用例，用例将进入回收站。确定继续吗？
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>取消</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700"
+                onClick={handleBatchDeleteConfirm}
+              >
+                确认删除
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </CardContent>
+    </Card>
+  );
+
+  if (hideModuleTree) {
+    return (
+      <div className="flex-1 flex flex-col bg-gray-50 min-h-0 overflow-hidden">
+        {rightContent}
+        {showLegacyVersionControls && (
+          <VersionMergeDrawer
+            open={mergeDrawerOpen}
+            onOpenChange={setMergeDrawerOpen}
+            projectId={projectId}
+            onSuccess={fetchCaseList}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col bg-gray-50 min-h-0 overflow-hidden">
       <ResizablePanelGroup direction="horizontal" className="flex-1">
@@ -550,26 +946,44 @@ export function FeatureCaseList({
             recycleCount={recycleCount}
             projectId={projectId}
             onAddSubModule={async (parentId, name) => {
-              await caseManagementService.createCaseModuleTree({ projectId, name, parentId: parentId === 'NONE' ? 'NONE' : parentId });
+              if (spaceId) {
+                await metadataModuleService.createModule({
+                  projectId,
+                  name,
+                  parentId: parentId === 'NONE' ? 'ROOT' : parentId,
+                  moduleType: 'WORKFLOW',
+                  typeId: spaceId,
+                });
+              } else {
+                await caseManagementService.createCaseModuleTree({ projectId, name, parentId: parentId === 'NONE' ? 'NONE' : parentId });
+              }
               toast.success('添加成功');
               fetchModuleTree();
               fetchModulesCount();
             }}
             onRenameModule={async (nodeId, name) => {
-              await caseManagementService.updateCaseModuleTree({ id: nodeId, name });
+              if (spaceId) {
+                await metadataModuleService.updateModule({ id: nodeId, name });
+              } else {
+                await caseManagementService.updateCaseModuleTree({ id: nodeId, name });
+              }
               toast.success('重命名成功');
               fetchModuleTree();
               fetchModulesCount();
             }}
             onDeleteModule={async (nodeId) => {
-              await caseManagementService.deleteCaseModuleTree(nodeId);
+              if (spaceId) {
+                await metadataModuleService.deleteModule(nodeId);
+              } else {
+                await caseManagementService.deleteCaseModuleTree(nodeId);
+              }
               toast.success('删除成功');
               if (selectedModuleId === nodeId) setSelectedModuleId('all');
               fetchModuleTree();
               fetchModulesCount();
               fetchCaseList();
             }}
-            onCopyModule={async (sourceId, targetId) => {
+            onCopyModule={spaceId ? undefined : async (sourceId, targetId) => {
               try {
                 await caseManagementService.copyModuleWithCases({
                   projectId,
@@ -581,18 +995,16 @@ export function FeatureCaseList({
                 fetchModulesCount();
                 fetchCaseList();
               } catch (err: any) {
-                // 将后端返回的具体报错信息透出到界面，例如「该层级已存在同模块名称」
                 const msg =
                   err?.message ||
                   err?.response?.data?.message ||
                   err?.response?.data?.msg ||
                   '复制模块失败';
                 toast.error(msg);
-                // 继续抛出，让上层保持对“失败不关闭弹窗”的控制
                 throw err;
               }
             }}
-            onMoveModule={async (dragNodeId, dropNodeId, dropPosition) => {
+            onMoveModule={spaceId ? undefined : async (dragNodeId, dropNodeId, dropPosition) => {
               await caseManagementService.moveCaseModuleTree({
                 dragNodeId,
                 dropNodeId,
@@ -608,243 +1020,18 @@ export function FeatureCaseList({
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={80} className="flex flex-col min-h-0">
-          <Card className="flex-1 flex flex-col gap-0 m-4 min-h-0 overflow-hidden">
-            <CaseListToolbar
-              searchInput={searchInput}
-              searchKeyword={searchKeyword}
-              loading={loading}
-              showType={showType}
-              viewId={viewId}
-              customViews={customViews}
-              hasActiveFilter={!!filter?.conditions?.length}
-              onSearchInputChange={setSearchInput}
-              onSearch={handleSearch}
-              onClearSearch={handleClearSearch}
-              onRefresh={fetchCaseList}
-              onShowTypeChange={setShowType}
-              onColumnSettingsClick={() => setColumnSettingsOpen(true)}
-              onViewChange={(id) => { setViewId(id); resetPage(); }}
-              onFilterClick={() => setFilterDrawerOpen(true)}
-              onClearFilter={() => { setFilter(undefined); setViewId('all_data'); resetPage(); }}
-              onCreateCase={onCreateCase ? () => onCreateCase(selectedModuleId) : undefined}
-              onImportOpen={() => setImportOpen(true)}
-              onAiGenerate={onAiGenerate}
-            />
-            <CaseFilterDrawer
-              open={filterDrawerOpen}
-              onOpenChange={setFilterDrawerOpen}
-              viewName={loadSavedViews().find((v) => v.id === viewId)?.name ?? (viewId === 'my_follow' ? '我关注的' : viewId === 'my_create' ? '我创建的' : '全部数据')}
-              moduleTree={moduleTree}
-              memberOptions={memberOptions}
-              initialFilter={filter}
-              onFilter={(f) => {
-                setFilter(f);
-                resetPage();
-                const next = new URLSearchParams(urlSearchParams);
-                if (f && f.conditions?.length > 0) next.set('filter', encodeURIComponent(JSON.stringify(f)));
-                else next.delete('filter');
-                setUrlSearchParams(next, { replace: true });
-              }}
-              onSaveAsView={(name, f, newViewId) => {
-                setFilter(f);
-                setViewId(newViewId);
-                setCustomViews(loadSavedViews().map((v) => ({ id: v.id, name: v.name })));
-                resetPage();
-                const next = new URLSearchParams(urlSearchParams);
-                if (f && f.conditions?.length > 0) next.set('filter', encodeURIComponent(JSON.stringify(f)));
-                else next.delete('filter');
-                setUrlSearchParams(next, { replace: true });
-              }}
-            />
-            <CardContent className="flex-1 flex flex-col p-4 pt-0 min-h-0">
-
-              <ImportCaseDrawer
-                open={importOpen}
-                onOpenChange={setImportOpen}
-                projectId={projectId}
-                onSuccess={handleImportSuccess}
-              />
-
-              {showType === 'minder' ? (
-                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                  <FeatureCaseMinderView
-                    projectId={projectId}
-                    moduleId={selectedModuleId !== 'all' ? selectedModuleId : undefined}
-                    modulesCount={modulesCount}
-                    onViewCase={(caseId) => {
-                      const item = caseList.find((c) => c.id === caseId) || ({ id: caseId } as CaseItem);
-                      handleOpenDrawer(item);
-                    }}
-                    onSave={() => {
-                      fetchModuleTree();
-                      fetchModulesCount();
-                      fetchCaseList();
-                    }}
-                  />
-                </div>
-              ) : (
-                <>
-                  <CaseTableSection
-                    loading={loading}
-                    caseList={caseList}
-                    moduleTree={moduleTree}
-                    selectedCases={selectedCases}
-                    currentPage={currentPage}
-                    pageSize={pageSize}
-                    onPageSizeChange={handlePageSizeChange}
-                    total={total}
-                    totalPages={totalPages}
-                    isAllSelected={isAllSelected}
-                    onSelectAll={(checked) => handleSelectAll(checked === true)}
-                    onSelectCase={handleSelectCase}
-                    onPageChange={handlePageChange}
-                    // 点击列表中的用例编号/名称时直接打开右侧详情抽屉，
-                    // 避免依赖 URL 参数导致同一个用例二次点击无反应
-                    onViewCase={handleOpenDrawer}
-                    onEditCase={(item) => onEditCase?.(item, selectedModuleId)}
-                    onCopyCase={(item) => onCopyCase?.(item, selectedModuleId)}
-                    onDeleteCase={onDeleteCase ?? handleDeleteCase}
-                    onBatchDelete={handleBatchDelete}
-                    onBatchExport={handleBatchExport}
-                    onBatchEdit={() => setBatchEditOpen(true)}
-                    onBatchMove={() => { setBatchMoveCopyIsMove(true); setBatchMoveCopyOpen(true); }}
-                    onBatchCopy={() => { setBatchMoveCopyIsMove(false); setBatchMoveCopyOpen(true); }}
-                    onClearSelection={clearSelection}
-                    onCaseLevelChange={permission.canEdit ? handleCaseLevelChange : undefined}
-                    onModuleChange={permission.canEdit ? handleModuleChange : undefined}
-                    onNameChange={permission.canEdit ? handleNameChange : undefined}
-                    onSortChange={handleSortChange}
-                    onDragSort={handleDragSort}
-                    onColumnFilterChange={handleColumnFilterChange}
-                    onBatchAddDemand={permission.canEdit ? () => setBatchAddDemandOpen(true) : undefined}
-                    onBatchLinkDemand={permission.canEdit ? () => setBatchLinkDemandOpen(true) : undefined}
-                    onColumnSettingsClick={() => setColumnSettingsOpen(true)}
-                    sort={sort}
-                    columnFilter={columnFilter}
-                    updateUserFilterOptions={memberOptions.map((m) => ({ value: m.id, label: m.name }))}
-                    visibleColumns={visibleColumns}
-                    columnOrder={columnOrder}
-                    columnWidths={columnWidths}
-                    onColumnWidthChange={(key, width) => {
-                      setColumnWidths((prev) => {
-                        const next = { ...prev, [key]: width };
-                        saveColumnWidths(next);
-                        return next;
-                      });
-                    }}
-                    canEdit={permission.canEdit}
-                    canCopy={permission.canCopy}
-                    canDelete={permission.canDelete}
-                  />
-                  <CaseExportDrawer
-                    open={exportDrawerOpen}
-                    onOpenChange={setExportDrawerOpen}
-                    exportType={exportType}
-                    selectCount={selectedCases.length > 0 ? selectedCases.length : total}
-                    selectAll={selectedCases.length === 0}
-                    params={{
-                      projectId,
-                      selectIds: selectedCases.length > 0 ? selectedCases : [],
-                      selectAll: selectedCases.length === 0,
-                      excludeIds: [],
-                      moduleIds: selectedModuleId === 'all' ? [] : [selectedModuleId, ...offspringIds],
-                      condition: filter as Record<string, unknown> | undefined,
-                    }}
-                    onSuccess={handleBatchSuccess}
-                  />
-                  <BatchEditModal
-                    open={batchEditOpen}
-                    onOpenChange={setBatchEditOpen}
-                    batchParams={batchParams}
-                    onSuccess={handleBatchSuccess}
-                  />
-                  <BatchMoveCopyDrawer
-                    open={batchMoveCopyOpen}
-                    onOpenChange={setBatchMoveCopyOpen}
-                    isMove={batchMoveCopyIsMove}
-                    selectCount={selectedCases.length}
-                    params={batchParams}
-                    moduleTree={moduleTree}
-                    onSuccess={handleBatchSuccess}
-                  />
-                  <BatchAddDemandModal
-                    open={batchAddDemandOpen}
-                    onOpenChange={setBatchAddDemandOpen}
-                    batchParams={batchParams}
-                    onSuccess={handleBatchSuccess}
-                  />
-                  <BatchLinkDemandDrawer
-                    open={batchLinkDemandOpen}
-                    onOpenChange={setBatchLinkDemandOpen}
-                    batchParams={batchParams}
-                    onSuccess={handleBatchSuccess}
-                  />
-                  <ColumnSettingsSheet
-                    open={columnSettingsOpen}
-                    onOpenChange={setColumnSettingsOpen}
-                    visibleColumns={visibleColumns}
-                    onVisibleColumnsChange={setVisibleColumns}
-                    columnOrder={columnOrder}
-                    onColumnOrderChange={setColumnOrder}
-                  />
-                </>
-              )}
-              {/* 用例详情抽屉：列表与思维导图共用，思维导图点「详情」也打开此抽屉 */}
-              <CaseDetailDrawer
-                open={drawerOpen}
-                onOpenChange={setDrawerOpen}
-                caseId={drawerCaseId}
-                caseList={caseList}
-                caseIndex={caseList.findIndex((c) => c.id === drawerCaseId)}
-                moduleTree={moduleTree}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                projectId={projectId}
-                onEdit={handleDrawerEdit}
-                onCopy={handleDrawerCopy}
-                onCreate={onCreateCase ? () => onCreateCase(selectedModuleId) : undefined}
-                onSuccess={() => {
-                  fetchCaseList();
-                  fetchModuleTree();
-                  fetchModulesCount();
-                }}
-                onCaseSelect={(item) => {
-                  setDrawerCaseId(item.id);
-                  const next = new URLSearchParams(urlSearchParams);
-                  next.set('caseId', item.id);
-                  setUrlSearchParams(next, { replace: true });
-                }}
-                canEdit={permission.canEdit}
-                canCopy={permission.canCopy}
-                canDelete={permission.canDelete}
-                canShare={permission.canShare}
-                canFollow={permission.canFollow}
-                canComment={permission.canComment}
-              />
-              <AlertDialog open={batchDeleteDialogOpen} onOpenChange={setBatchDeleteDialogOpen}>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>确认批量删除</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      将删除选中的 {selectedCases.length} 个用例，用例将进入回收站。确定继续吗？
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>取消</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-red-600 hover:bg-red-700"
-                      onClick={handleBatchDeleteConfirm}
-                    >
-                      确认删除
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </CardContent>
-          </Card>
+          {rightContent}
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      {showLegacyVersionControls && (
+        <VersionMergeDrawer
+          open={mergeDrawerOpen}
+          onOpenChange={setMergeDrawerOpen}
+          projectId={projectId}
+          onSuccess={fetchCaseList}
+        />
+      )}
     </div>
   );
 }

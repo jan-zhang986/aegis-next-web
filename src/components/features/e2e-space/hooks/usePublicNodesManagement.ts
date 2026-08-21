@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import type React from 'react';
 import { toast } from 'sonner';
 import { workflowService } from '@/services/workflow';
 
@@ -48,7 +49,7 @@ interface UsePublicNodesManagementReturn {
   category: string;
   setKeyword: (v: string) => void;
   setCategory: (v: string) => void;
-  setCurrent: (v: number) => void;
+  setCurrent: React.Dispatch<React.SetStateAction<number>>;
   loadList: () => Promise<void>;
   editingItem: PublicNodeItem | null;
   isEditDialogOpen: boolean;

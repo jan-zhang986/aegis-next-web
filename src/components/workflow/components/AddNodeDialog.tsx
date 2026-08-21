@@ -64,7 +64,7 @@ const NODE_CATEGORIES: NodeCategory[] = [
     id: 'other',
     name: '其他节点',
     icon: <MessageSquare className="w-4 h-4" />,
-    nodeTypes: [NodeType.XXLJOB, NodeType.ROCKETMQ],
+    nodeTypes: [NodeType.XXLJOB, NodeType.ROCKETMQ, NodeType.SLEEP],
   },
 ];
 
@@ -89,6 +89,7 @@ const NODE_ICONS: Record<NodeType, React.ReactNode> = {
   [NodeType.MONGODB]: <Database className="w-4 h-4" />,
   [NodeType.OSS]: <MessageSquare className="w-4 h-4" />,
   [NodeType.XXLJOB]: <Clock className="w-4 h-4" />,
+  [NodeType.SLEEP]: <Clock className="w-4 h-4" />,
   [NodeType.UI_BROWSER]: <MessageSquare className="w-4 h-4" />,
   [NodeType.UI_ELEMENT]: <MessageSquare className="w-4 h-4" />,
   [NodeType.UI_NAVIGATION]: <MessageSquare className="w-4 h-4" />,

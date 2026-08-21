@@ -12,7 +12,7 @@ interface Node {
   name: string;
   type: 'http' | 'condition' | 'sql' | 'script' | 'assertion';
   color: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   description: string;
   x: number;
   y: number;

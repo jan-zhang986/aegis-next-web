@@ -196,7 +196,7 @@ export function RecycleCaseList({ projectId = localStorage.getItem('currentProje
                   )}
                   <h2 className="text-lg font-medium flex items-center gap-2">
                     <Trash2 className="w-5 h-5" />
-                    功能用例回收站
+                    用例回收站
                   </h2>
                 </div>
                 <div className="flex items-center gap-2 flex-1 max-w-xl">

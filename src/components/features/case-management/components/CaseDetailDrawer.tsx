@@ -4,8 +4,28 @@
  * 完整功能：导航、分享、关注、多 Tab、评论等
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { Pencil, Copy, Trash2, Share2, Star, MoreVertical, ChevronLeft, ChevronRight, Maximize2, Minimize2, Sparkles, Plus, X } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import {
+  Pencil,
+  Copy,
+  Trash2,
+  Share2,
+  Star,
+  MoreVertical,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Maximize2,
+  Minimize2,
+  Sparkles,
+  Plus,
+  X,
+  Bot,
+  Workflow,
+  Layers3,
+  Play,
+} from 'lucide-react';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { toast } from 'sonner';
 import { useUser } from '@/contexts/UserContext';
@@ -65,8 +85,10 @@ import { RichTextContent } from './RichTextContent';
 import { StepEditor } from './StepEditor';
 import { CASE_LEVEL_MAP } from '../constants';
 import { caseManagementService } from '@/services';
+import type { CaseRealizationSpace } from '@/services/e2e-space';
 import { getModulePath } from '../utils';
 import { CaseLevelBadge, CaseLevelOption } from './CaseLevelBadge';
+import WorkflowDesignPageV2, { type WorkflowDesignPageV2Ref } from '@/components/features/WorkflowDesignPageV2';
 import { CaseModuleSelect } from './CaseModuleSelect';
 import {
   TabComments,
@@ -79,7 +101,8 @@ import {
   TabChangeHistory,
 } from './drawer-tabs';
 import { generateId } from '../utils';
-import type { CaseItem, CaseDetail, ModuleTreeNode, StepListItem } from '../types';
+import { getCaseLevel } from '../utils/getCaseLevel';
+import type { CaseItem, CaseDetail, ModuleTreeNode, StepListItem, CaseRealization, CaseRealizationSummary } from '../types';
 
 function parseSteps(stepsStr?: string): { step: string; expected: string }[] {
   if (!stepsStr?.trim()) return [];
@@ -89,6 +112,53 @@ function parseSteps(stepsStr?: string): { step: string; expected: string }[] {
   } catch {
     return [];
   }
+}
+
+/** 列表/详情里只要已挂 workflowDefinitionId 或 realized，就应走「编辑」而非误走「新建」 */
+function isWorkflowSlotBound(slot: CaseRealization | null | undefined): boolean {
+  if (!slot) return false;
+  if (slot.realized) return true;
+  const id = slot.workflowDefinitionId;
+  if (id == null) return false;
+  return String(id).trim().length > 0;
+}
+
+/**
+ * 用 realization/list 结果覆盖摘要中的计数与覆盖状态，避免 /realization/summary 或详情内嵌 summary 滞后导致头部一直 0/0、覆盖类型「暂无实现」
+ */
+function mergeRealizationSummaryFromList(
+  api: CaseRealizationSummary | null,
+  list: CaseRealization[],
+  caseId: string | undefined
+): CaseRealizationSummary | null {
+  if (!caseId || !Array.isArray(list) || list.length === 0) {
+    return api;
+  }
+  const realized = list.filter((r) => r.realized);
+  const realizedCount = realized.length;
+  const nonManualSlots = list.filter((r) => String(r.realizationType || '').toUpperCase() !== 'MANUAL');
+  const nonManualRealized = nonManualSlots.filter((r) => r.realized).length;
+  let automationCoverageStatus: CaseRealizationSummary['automationCoverageStatus'] = 'NONE';
+  if (nonManualRealized > 0) {
+    automationCoverageStatus =
+      nonManualRealized >= nonManualSlots.length ? 'AUTOMATED_ONLY' : 'PARTIAL';
+  }
+  const coveredTypes = [...new Set(realized.map((r) => String(r.realizationType || '')).filter(Boolean))] as CaseRealizationSummary['coveredTypes'];
+  return {
+    ...(api ?? { caseId }),
+    caseId,
+    totalSlots: list.length,
+    realizedCount,
+    coveredTypes,
+    automationCoverageStatus,
+    hasAutomationRealization: nonManualRealized > 0,
+    automationCount: nonManualRealized,
+    flowCount: list.filter((r) => String(r.realizationType || '').toUpperCase() === 'FLOW' && r.realized).length,
+    manualCount: list.filter((r) => String(r.realizationType || '').toUpperCase() === 'MANUAL' && r.realized).length,
+    apiCount: list.filter((r) => String(r.realizationType || '').toUpperCase() === 'API' && r.realized).length,
+    uiAutomationCount: list.filter((r) => String(r.realizationType || '').toUpperCase() === 'UI_AUTOMATION' && r.realized).length,
+    perfCount: list.filter((r) => String(r.realizationType || '').toUpperCase() === 'PERF' && r.realized).length,
+  };
 }
 
 function parseStepsToStepList(stepsStr?: string): StepListItem[] {
@@ -147,13 +217,53 @@ function getUpdateParams(
   };
 }
 
+function mapUnifiedCaseDetailToDrawerShape(detail: any): CaseDetail {
+  const manualRealization = Array.isArray(detail?.realizations)
+    ? detail.realizations.find((item: any) => String(item?.realizationType || '').toUpperCase() === 'MANUAL')
+    : null;
+  const manualImplementation = Array.isArray(detail?.implementations)
+    ? detail.implementations.find((item: any) => String(item?.type || '').toUpperCase() === 'MANUAL')
+    : null;
+  const manualDefinition =
+    manualRealization?.workflowDefinition ||
+    manualImplementation?.definition ||
+    {};
+  const metadata = detail?.metadata || {};
+  const caseEditType =
+    metadata.caseEditType ||
+    manualDefinition.caseEditType ||
+    (manualDefinition.textDescription ? 'TEXT' : 'STEP');
+
+  return {
+    ...detail,
+    id: detail?.caseId || detail?.id,
+    caseId: detail?.caseId || detail?.id,
+    name: detail?.title || detail?.name || '',
+    title: detail?.title || detail?.name || '',
+    prerequisite: detail?.precondition || detail?.prerequisite || '',
+    caseEditType,
+    steps: manualDefinition.steps || detail?.steps || '',
+    textDescription: manualDefinition.textDescription || detail?.textDescription || '',
+    expectedResult: detail?.expectedResult || manualDefinition.expectedResult || '',
+    description: detail?.description || '',
+    reviewStatus: detail?.lifecycleStatus || detail?.reviewStatus,
+    customFields: Array.isArray(detail?.customFields) ? detail.customFields : [],
+    functionalPriority: detail?.functionalPriority || metadata.functionalPriority,
+    caseLevel: detail?.caseLevel || detail?.functionalPriority || metadata.functionalPriority,
+    tags: Array.isArray(detail?.tags) ? detail.tags : [],
+    realizations: Array.isArray(detail?.realizations) ? detail.realizations : [],
+    realizationSummary: detail?.realizationSummary,
+    attachments: Array.isArray(detail?.attachments) ? detail.attachments : [],
+  } as CaseDetail;
+}
+
 interface CaseDetailDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   caseId: string | null;
-  caseList: CaseItem[];
-  caseIndex: number;
-  moduleTree: ModuleTreeNode[];
+  caseList?: CaseItem[];
+  caseIndex?: number;
+  moduleTree?: ModuleTreeNode[];
   currentPage?: number;
   totalPages?: number;
   onPageChange?: (page: number) => void;
@@ -162,6 +272,7 @@ interface CaseDetailDrawerProps {
   onCopy?: (item: CaseItem) => void;
   onCreate?: () => void;
   onSuccess?: () => void;
+  preferredTab?: 'detail' | 'realization';
   /** 切换查看的用例（prev/next 时调用） */
   onCaseSelect?: (item: CaseItem) => void;
   /** 权限控制：为 false 时隐藏对应操作，不传或 true 时显示 */
@@ -175,7 +286,8 @@ interface CaseDetailDrawerProps {
 
 const TAB_LIST = [
   { value: 'basicInfo', label: '基本信息', canHide: false },
-  { value: 'detail', label: '详情', canHide: false },
+  { value: 'detail', label: '内容详情', canHide: false },
+  { value: 'realization', label: '自动化', canHide: true },
   { value: 'case', label: '用例', canHide: true },
   { value: 'requirement', label: '需求', canHide: true },
   { value: 'bug', label: '缺陷', canHide: true },
@@ -189,13 +301,21 @@ const TAB_LIST = [
 const DISPLAY_SETTINGS_KEY = 'case-detail-drawer-tab-settings';
 const TAB_ORDER_KEY = 'case-detail-drawer-tab-order';
 
+function normalizeTabOrder(order: string[] | null | undefined): string[] {
+  const fallback = TAB_LIST.map((t) => t.value);
+  if (!Array.isArray(order) || order.length === 0) return fallback;
+  const valid = order.filter((value, index) => TAB_LIST.some((tab) => tab.value === value) && order.indexOf(value) === index);
+  const missing = fallback.filter((value) => !valid.includes(value));
+  return [...valid, ...missing];
+}
+
 export function CaseDetailDrawer({
   open,
   onOpenChange,
   caseId,
-  caseList,
-  caseIndex,
-  moduleTree,
+  caseList = [],
+  caseIndex = -1,
+  moduleTree = [],
   currentPage = 1,
   totalPages = 1,
   onPageChange,
@@ -204,6 +324,7 @@ export function CaseDetailDrawer({
   onCopy,
   onCreate,
   onSuccess,
+  preferredTab = 'detail',
   onCaseSelect,
   canEdit = true,
   canCopy = true,
@@ -212,8 +333,22 @@ export function CaseDetailDrawer({
   canFollow = true,
   canComment = true,
 }: CaseDetailDrawerProps) {
+  const workflowDesignRef = useRef<WorkflowDesignPageV2Ref>(null);
   const [loading, setLoading] = useState(false);
   const [detail, setDetail] = useState<CaseDetail | null>(null);
+  const [realizationLoading, setRealizationLoading] = useState(false);
+  const [realizations, setRealizations] = useState<CaseRealization[]>([]);
+  const [realizationSummary, setRealizationSummary] = useState<CaseRealizationSummary | null>(null);
+  const [realizationActionLoading, setRealizationActionLoading] = useState<string | null>(null);
+  const [workflowWorkbenchOpen, setWorkflowWorkbenchOpen] = useState(false);
+  const [workflowWorkbenchLoading, setWorkflowWorkbenchLoading] = useState(false);
+  const [workflowViewMode, setWorkflowViewMode] = useState<'canvas' | 'steps'>('canvas');
+  /** 详情「实现」Tab 内嵌流程预览：画布 / 步骤（与全屏工作台数据源一致） */
+  /** 详情内嵌流程默认「步骤」视图（与用例步骤编排场景一致，可手动切画布） */
+  const [realizationPreviewViewMode, setRealizationPreviewViewMode] = useState<'canvas' | 'steps'>('steps');
+  /** 内嵌流程预览是否收起（缩小占位，仅保留标题栏） */
+  const [workflowEmbedCollapsed, setWorkflowEmbedCollapsed] = useState(false);
+  const [workflowRealizationDetail, setWorkflowRealizationDetail] = useState<CaseRealization | null>(null);
   const [activeTab, setActiveTab] = useState('detail');
   const [followFlag, setFollowFlag] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
@@ -225,6 +360,8 @@ export function CaseDetailDrawer({
   const [tagsSaving, setTagsSaving] = useState(false);
   const [levelSaving, setLevelSaving] = useState(false);
   const [moduleSaving, setModuleSaving] = useState(false);
+  const [showRealizationChoiceDialog, setShowRealizationChoiceDialog] = useState(false);
+  const [targetRealizationType, setTargetRealizationType] = useState<string>('FLOW');
   const [showSettingSheet, setShowSettingSheet] = useState(false);
   const [visibleTabs, setVisibleTabs] = useState<Record<string, boolean>>(() => {
     try {
@@ -237,9 +374,9 @@ export function CaseDetailDrawer({
   const [tabOrder, setTabOrder] = useState<string[]>(() => {
     try {
       const s = localStorage.getItem(TAB_ORDER_KEY);
-      return s ? JSON.parse(s) : TAB_LIST.map((t) => t.value);
+      return normalizeTabOrder(s ? JSON.parse(s) : null);
     } catch {
-      return TAB_LIST.map((t) => t.value);
+      return normalizeTabOrder(null);
     }
   });
   const [isEditTitle, setIsEditTitle] = useState(false);
@@ -256,9 +393,171 @@ export function CaseDetailDrawer({
   useEffect(() => {
     if (!open) setIsFullscreen(false);
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    setActiveTab(preferredTab);
+  }, [open, caseId, preferredTab]);
   const userId = user?.id || localStorage.getItem('currentUserId') || localStorage.getItem('userId') || '';
 
-  const currentItem = caseId ? caseList.find((c) => c.id === caseId) : null;
+  const currentItem = caseId ? caseList?.find((c) => c.id === caseId) : null;
+  const isUnifiedCase = Boolean(detail?.caseId || detail?.spaceId || currentItem?.spaceId);
+
+  const formatRealizationType = (type?: string) => {
+    switch (type) {
+      case 'MANUAL':
+        return '手工';
+      case 'API':
+        return 'API';
+      case 'UI_AUTOMATION':
+        return 'UI 自动化';
+      case 'FLOW':
+        return '自动化';
+      case 'PERF':
+        return '性能';
+      default:
+        return type || '-';
+    }
+  };
+
+  const formatRunStatus = (status?: string) => {
+    switch (status) {
+      case 'SUCCESS':
+      case 'PASSED':
+        return '成功';
+      case 'ERROR':
+      case 'FAILED':
+        return '失败';
+      case 'BLOCKED':
+        return '阻塞';
+      case 'PENDING':
+      case 'TODO':
+      case 'READY':
+        return '待执行';
+      default:
+        return status || '未执行';
+    }
+  };
+
+  const getRealizationBadgeClassName = (realization: CaseRealization) => {
+    if (!realization.realized) return 'bg-gray-100 text-gray-600 border-gray-200';
+    if (realization.enabled === false) return 'bg-slate-100 text-slate-600 border-slate-200';
+    const status = realization.lastRunStatus || realization.workflowStatus || realization.status;
+    if (status === 'SUCCESS' || status === 'PASSED' || status === 'PUBLISHED') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    if (status === 'ERROR' || status === 'FAILED') return 'bg-rose-100 text-rose-700 border-rose-200';
+    if (status === 'BLOCKED') return 'bg-amber-100 text-amber-700 border-amber-200';
+    return 'bg-blue-100 text-blue-700 border-blue-200';
+  };
+
+  const formatCoverageStatus = (status?: string) => {
+    switch (status) {
+      case 'AUTOMATED_ONLY':
+        return '全自动化';
+      case 'PARTIAL':
+        return '部分自动化';
+      case 'NONE':
+        return '未自动化';
+      default:
+        return status || '未自动化';
+    }
+  };
+
+  const formatDateTime = (value?: number | string) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString();
+  };
+
+  /** 实现槽位以 /realization/list 为准；不要用详情里的内嵌 realizations（易滞后，导致 FLOW 仍显示未实现） */
+  const resolvedRealizations = useMemo(
+    () => (Array.isArray(realizations) && realizations.length > 0 ? realizations : []),
+    [realizations]
+  );
+  const resolvedRealizationSummary = useMemo(
+    () =>
+      mergeRealizationSummaryFromList(
+        realizationSummary ?? detail?.realizationSummary ?? null,
+        resolvedRealizations,
+        caseId ?? undefined
+      ),
+    [realizationSummary, detail?.realizationSummary, resolvedRealizations, caseId]
+  );
+  const nonManualRealizations = useMemo(
+    () => resolvedRealizations.filter((item) => String(item.realizationType || '').toUpperCase() !== 'MANUAL'),
+    [resolvedRealizations]
+  );
+  const primaryWorkflowRealization = useMemo(() => {
+    const realizedFlow = nonManualRealizations.find((item) => String(item.realizationType || '').toUpperCase() === 'FLOW' && item.realized);
+    if (realizedFlow) return realizedFlow;
+    const boundFlow = nonManualRealizations.find(
+      (item) => String(item.realizationType || '').toUpperCase() === 'FLOW' && isWorkflowSlotBound(item)
+    );
+    if (boundFlow) return boundFlow;
+    const realizedAny = nonManualRealizations.find((item) => item.realized);
+    if (realizedAny) return realizedAny;
+    const flowSlot = nonManualRealizations.find((item) => String(item.realizationType || '').toUpperCase() === 'FLOW');
+    return flowSlot || nonManualRealizations[0] || null;
+  }, [nonManualRealizations]);
+  const workflowSlotBound = useMemo(() => isWorkflowSlotBound(primaryWorkflowRealization), [primaryWorkflowRealization]);
+  const workflowSlotType = primaryWorkflowRealization?.realizationType || 'FLOW';
+  const workflowWorkbenchSpace = useMemo<CaseRealizationSpace>(() => ({
+    id: `case-${caseId || 'unknown'}-workflow`,
+    name: detail?.name ? `${detail.name} · 自动化` : '自动化',
+    projectId: detail?.projectId || projectId,
+    description: detail?.description || '',
+  }), [caseId, detail?.description, detail?.name, detail?.projectId, projectId]);
+  const workflowWorkbenchCase = useMemo(() => {
+    const workflowId =
+      workflowRealizationDetail?.workflowDefinitionId ?? primaryWorkflowRealization?.workflowDefinitionId ?? undefined;
+    if (!workflowId) return null;
+    const lastRunStatus =
+      workflowRealizationDetail?.lastRunStatus ?? primaryWorkflowRealization?.lastRunStatus;
+    const lastRunTime = workflowRealizationDetail?.lastRunTime ?? primaryWorkflowRealization?.lastRunTime;
+    return {
+      id: workflowId,
+      name:
+        workflowRealizationDetail?.workflowName ||
+        primaryWorkflowRealization?.workflowName ||
+        `${detail?.name || '用例'} · 自动化`,
+      description:
+        workflowRealizationDetail?.workflowDefinition?.description || detail?.description || '',
+      category:
+        workflowRealizationDetail?.workflowCategory || primaryWorkflowRealization?.workflowCategory || 'CASE',
+      nodeCount: (() => {
+        const dn = workflowRealizationDetail?.workflowDefinition?.nodes;
+        const ln = primaryWorkflowRealization?.workflowDefinition?.nodes;
+        if (Array.isArray(dn)) return dn.length;
+        if (Array.isArray(ln)) return ln.length;
+        return 0;
+      })(),
+      duration: workflowRealizationDetail?.lastDurationMs ?? primaryWorkflowRealization?.lastDurationMs,
+      status:
+        lastRunStatus === 'SUCCESS' || lastRunStatus === 'PASSED'
+          ? 'success'
+          : lastRunStatus === 'ERROR' || lastRunStatus === 'FAILED'
+            ? 'failed'
+            : 'not-run',
+      lastRun: lastRunTime ? formatDateTime(lastRunTime) : undefined,
+      creator: detail?.createUserName || detail?.createUser || '当前项目',
+    };
+  }, [
+    detail?.createUser,
+    detail?.createUserName,
+    detail?.description,
+    detail?.name,
+    primaryWorkflowRealization,
+    workflowRealizationDetail,
+  ]);
+
+  const workflowPreviewNodes = useMemo((): Record<string, unknown>[] => {
+    const fromDetail = workflowRealizationDetail?.workflowDefinition?.nodes;
+    const fromList = primaryWorkflowRealization?.workflowDefinition?.nodes;
+    const raw = Array.isArray(fromDetail) ? fromDetail : Array.isArray(fromList) ? fromList : [];
+    return raw as Record<string, unknown>[];
+  }, [
+    workflowRealizationDetail?.workflowDefinition?.nodes,
+    primaryWorkflowRealization?.workflowDefinition?.nodes,
+  ]);
 
   const handleUploadImage = useCallback(
     async (file: File): Promise<string> => {
@@ -274,34 +573,192 @@ export function CaseDetailDrawer({
     [projectId]
   );
 
+  const buildUnifiedSavePayload = useCallback(
+    (overrides: Record<string, unknown> = {}) => {
+      if (!detail || !caseId) return null;
+      const next: Record<string, any> = { ...detail, ...overrides };
+      const title = String(overrides.title ?? overrides.name ?? next.title ?? next.name ?? '').trim();
+      const caseEditType = String(next.caseEditType || 'STEP');
+      const manualDefinition: Record<string, any> = {
+        caseEditType,
+        expectedResult: next.expectedResult,
+      };
+      if (caseEditType === 'STEP') {
+        manualDefinition.steps = next.steps;
+      } else {
+        manualDefinition.textDescription = next.textDescription;
+      }
+
+      const sourceRealizations = Array.isArray(resolvedRealizations) && resolvedRealizations.length > 0
+        ? resolvedRealizations
+        : Array.isArray(detail.realizations)
+          ? detail.realizations
+          : [];
+      const hasManual = sourceRealizations.some((item: any) => String(item?.realizationType || '').toUpperCase() === 'MANUAL');
+      const realizations = [
+        ...sourceRealizations.map((item: any) => {
+          if (String(item?.realizationType || '').toUpperCase() !== 'MANUAL') return item;
+          return {
+            ...item,
+            name: item?.name || `${title} [MANUAL]`,
+            workflowDefinition: {
+              ...(item?.workflowDefinition || {}),
+              ...manualDefinition,
+            },
+            status: item?.status || 'ACTIVE',
+            enabled: item?.enabled !== false,
+          };
+        }),
+        ...(!hasManual
+          ? [{
+            realizationType: 'MANUAL',
+            name: `${title} [MANUAL]`,
+            workflowDefinition: manualDefinition,
+            status: 'ACTIVE',
+            enabled: true,
+          }]
+          : []),
+      ];
+
+      return {
+        caseId: detail.caseId || detail.id || caseId,
+        projectId: detail.projectId || projectId,
+        spaceId: detail.spaceId,
+        moduleId: next.moduleId,
+        title,
+        description: next.description,
+        precondition: next.precondition ?? next.prerequisite,
+        expectedResult: next.expectedResult,
+        priority: next.priority,
+        ownerId: next.ownerId || next.createUser,
+        sourceType: next.sourceType,
+        lifecycleStatus: next.lifecycleStatus || next.reviewStatus,
+        workflowId: next.workflowId,
+        tags: Array.isArray(next.tags) ? next.tags : [],
+        metadata: next.metadata || {},
+        realizations,
+      };
+    },
+    [caseId, detail, projectId, resolvedRealizations]
+  );
+
+  const saveUnifiedDrawerCase = useCallback(
+    async (overrides: Record<string, unknown> = {}) => {
+      const payload = buildUnifiedSavePayload(overrides);
+      if (!payload) return;
+      await caseManagementService.saveUnifiedCase(payload);
+    },
+    [buildUnifiedSavePayload]
+  );
+
+  const loadWorkflowRealizationDetail = useCallback(
+    async (realizationType?: string) => {
+      if (!caseId || !realizationType) {
+        setWorkflowRealizationDetail(null);
+        return null;
+      }
+      const result = await caseManagementService.getCaseRealizationDetail(caseId, realizationType);
+      setWorkflowRealizationDetail(result ?? null);
+      return result ?? null;
+    },
+    [caseId]
+  );
+
   const loadDetail = useCallback(() => {
     if (open && caseId) {
       setLoading(true);
-      caseManagementService
-        .getCaseDetail(caseId)
-        .then((res: any) => {
-          setDetail(res);
-          setTitleName(res?.name ?? '');
-          setTags(Array.isArray(res?.tags) ? res.tags : res?.tags ? [res.tags] : []);
-          setFollowFlag(!!res?.followFlag);
-          const cf = (res?.customFields as { fieldId?: string; value?: string }[]) || [];
-          const pf = cf.find((f: any) => f.fieldId === 'functional_priority' || f.internalFieldKey === 'functional_priority');
-          setCaseLevel(pf?.value || res?.functionalPriority || res?.caseLevel || 'P1');
+      setRealizationLoading(true);
+      const detailRequest = caseManagementService
+        .getUnifiedCaseDetail(caseId)
+        .then((res: any) => mapUnifiedCaseDetailToDrawerShape(res))
+        .catch((error: unknown) => {
+          if (currentItem?.spaceId) {
+            throw error;
+          }
+          return caseManagementService.getCaseDetail(caseId);
+        });
+      Promise.allSettled([
+        detailRequest,
+        caseManagementService.getCaseRealizations(caseId),
+        caseManagementService.getCaseRealizationSummary(caseId),
+      ])
+        .then(([detailResult, realizationsResult, summaryResult]) => {
+          let embeddedRealizationsFallback: unknown[] | undefined;
+          if (detailResult.status === 'fulfilled') {
+            try {
+              const res: any = detailResult.value;
+              embeddedRealizationsFallback = Array.isArray(res?.realizations) ? res.realizations : undefined;
+              // 去掉内嵌 realizations / realizationSummary，避免与独立 list、summary 接口不一致时覆盖 UI
+              const { realizations: _embeddedRealizations, realizationSummary: _embeddedSummary, ...detailRest } = res ?? {};
+              setDetail(detailRest);
+              setTitleName(res?.name ?? res?.title ?? '');
+              setTags(Array.isArray(res?.tags) ? res.tags : res?.tags ? [res.tags] : []);
+              setFollowFlag(!!res?.followFlag);
+              const cf = (res?.customFields as { fieldId?: string; value?: string }[]) || [];
+              const pf = cf.find((f: any) => f.fieldId === 'functional_priority' || f.internalFieldKey === 'functional_priority');
+              const parsedLevel = getCaseLevel(res);
+              setCaseLevel(pf?.value || res?.functionalPriority || res?.caseLevel || (parsedLevel !== '-' ? parsedLevel : 'P2'));
+            } catch (e) {
+              console.error('[CaseDetailDrawer] 解析用例详情失败', e);
+            }
+          } else {
+            setDetail(null);
+          }
+
+          if (realizationsResult.status === 'fulfilled') {
+            const raw = realizationsResult.value as unknown;
+            const arr = Array.isArray(raw) ? raw : raw && typeof raw === 'object' && Array.isArray((raw as { data?: unknown }).data) ? (raw as { data: unknown[] }).data : [];
+            setRealizations(arr as CaseRealization[]);
+          } else {
+            setRealizations(
+              Array.isArray(embeddedRealizationsFallback) ? (embeddedRealizationsFallback as CaseRealization[]) : []
+            );
+          }
+
+          if (summaryResult.status === 'fulfilled') {
+            setRealizationSummary(summaryResult.value ?? null);
+          } else {
+            setRealizationSummary(null);
+          }
         })
-        .catch(() => setDetail(null))
-        .finally(() => setLoading(false));
+        .finally(() => {
+          setLoading(false);
+          setRealizationLoading(false);
+        });
     } else {
       setDetail(null);
+      setRealizations([]);
+      setRealizationSummary(null);
     }
-  }, [open, caseId]);
+  }, [open, caseId, currentItem?.spaceId]);
 
   useEffect(() => {
     loadDetail();
   }, [loadDetail]);
 
   useEffect(() => {
+    if (!open || activeTab !== 'realization') return;
+    if (!workflowSlotBound || !primaryWorkflowRealization?.realizationType) {
+      setWorkflowRealizationDetail(null);
+      return;
+    }
+    setWorkflowWorkbenchLoading(true);
+    loadWorkflowRealizationDetail(primaryWorkflowRealization.realizationType)
+      .catch((error) => {
+        console.error(error);
+        toast.error('加载自动化失败');
+      })
+      .finally(() => setWorkflowWorkbenchLoading(false));
+  }, [activeTab, loadWorkflowRealizationDetail, open, primaryWorkflowRealization?.realizationType, workflowSlotBound]);
+
+  useEffect(() => {
     if (!open || !caseId) setIsEditTitle(false);
   }, [open, caseId]);
+
+  useEffect(() => {
+    setWorkflowEmbedCollapsed(false);
+    setRealizationPreviewViewMode('steps');
+  }, [caseId]);
 
   const handleEdit = () => {
     if (currentItem) {
@@ -324,8 +781,10 @@ export function CaseDetailDrawer({
 
   const handleConfirmDelete = () => {
     if (!currentItem) return;
-    caseManagementService
-      .deleteCaseRequest({ id: currentItem.id, projectId: currentItem.projectId || projectId })
+    const request = isUnifiedCase
+      ? caseManagementService.deleteUnifiedCase(currentItem.caseId || currentItem.id)
+      : caseManagementService.deleteCaseRequest({ id: currentItem.id, projectId: currentItem.projectId || projectId });
+    request
       .then(() => {
         setDeleteDialogOpen(false);
         onOpenChange(false);
@@ -396,9 +855,10 @@ export function CaseDetailDrawer({
       editingField === 'steps'
         ? { steps: buildStepsPayload(editingSteps) }
         : { [editingField]: editingValue };
-    const payload = getUpdateParams(detail, caseId, overrides);
-    caseManagementService
-      .updateCaseRequest(payload)
+    const request = isUnifiedCase
+      ? saveUnifiedDrawerCase(overrides)
+      : caseManagementService.updateCaseRequest(getUpdateParams(detail, caseId, overrides));
+    request
       .then(() => {
         setEditingField(null);
         setEditingValue('');
@@ -465,8 +925,18 @@ export function CaseDetailDrawer({
       (m) => m[1]
     );
     setCommentLoading(true);
-    caseManagementService
-      .createCommentItem({
+    const request = isUnifiedCase
+      ? caseManagementService.saveCollabComment({
+        projectId,
+        subjectType: 'CASE',
+        subjectId: caseId,
+        content: html,
+        notifier: '',
+        replyUser: '',
+        parentId: '',
+        uploadFileIds,
+      })
+      : caseManagementService.createCommentItem({
         caseId,
         content: html,
         event: 'COMMENT',
@@ -474,7 +944,8 @@ export function CaseDetailDrawer({
         replyUser: '',
         parentId: '',
         uploadFileIds,
-      })
+      });
+    request
       .then(() => {
         setCommentHtml('');
         setCommentRefreshKey((k) => k + 1);
@@ -505,9 +976,10 @@ export function CaseDetailDrawer({
   const saveTags = (newTags: string[]) => {
     if (!caseId || !detail) return;
     setTagsSaving(true);
-    const payload = getUpdateParams(detail, caseId, { tags: newTags });
-    caseManagementService
-      .updateCaseRequest(payload)
+    const request = isUnifiedCase
+      ? saveUnifiedDrawerCase({ tags: newTags })
+      : caseManagementService.updateCaseRequest(getUpdateParams(detail, caseId, { tags: newTags }));
+    request
       .then(() => {
         loadDetail();
         onSuccess?.();
@@ -520,9 +992,10 @@ export function CaseDetailDrawer({
   const handleModuleChange = (moduleId: string) => {
     if (!caseId || !detail) return;
     setModuleSaving(true);
-    const payload = getUpdateParams(detail, caseId, { moduleId });
-    caseManagementService
-      .updateCaseRequest(payload)
+    const request = isUnifiedCase
+      ? saveUnifiedDrawerCase({ moduleId })
+      : caseManagementService.updateCaseRequest(getUpdateParams(detail, caseId, { moduleId }));
+    request
       .then(() => {
         loadDetail();
         onSuccess?.();
@@ -530,6 +1003,78 @@ export function CaseDetailDrawer({
       })
       .catch((e) => console.error(e))
       .finally(() => setModuleSaving(false));
+  };
+
+  const handleRealizationAction = async (action: 'publish' | 'enable' | 'disable' | 'delete', realization: CaseRealization) => {
+    if (!caseId) return;
+    if (realization.realizationType === 'MANUAL') {
+      toast.info('手工实现无需维护自动化');
+      return;
+    }
+    const actionKey = `${action}:${realization.realizationType}`;
+    setRealizationActionLoading(actionKey);
+    try {
+      if (action === 'publish') {
+        await caseManagementService.publishCaseRealization(caseId, realization.realizationType);
+      } else if (action === 'enable') {
+        await caseManagementService.enableCaseRealization(caseId, realization.realizationType);
+      } else if (action === 'disable') {
+        await caseManagementService.disableCaseRealization(caseId, realization.realizationType);
+      } else if (action === 'delete') {
+        await caseManagementService.deleteCaseRealization(caseId, realization.realizationType);
+      }
+      await Promise.resolve(loadDetail());
+      if (action === 'delete') {
+        setWorkflowRealizationDetail(null);
+      } else {
+        await loadWorkflowRealizationDetail(realization.realizationType).catch(() => null);
+      }
+      const messageMap = {
+        publish: '自动化已发布',
+        enable: '自动化已启用',
+        disable: '自动化已停用',
+        delete: '自动化已删除',
+      } as const;
+      toast.success(messageMap[action]);
+    } catch (error) {
+      console.error(error);
+      toast.error('自动化操作失败，请稍后重试');
+    } finally {
+      setRealizationActionLoading(null);
+    }
+  };
+
+  const handleCreateWorkflowRealization = async () => {
+    setTargetRealizationType('FLOW');
+    setWorkflowViewMode('steps');
+    setRealizationPreviewViewMode('steps');
+    setWorkflowWorkbenchOpen(true);
+    setActiveTab('realization');
+  };
+  const handleOpenWorkflowWorkbench = async () => {
+    if (!caseId) return;
+    if (!workflowSlotBound || !primaryWorkflowRealization?.realizationType) {
+      await handleCreateWorkflowRealization();
+      return;
+    }
+    setWorkflowWorkbenchLoading(true);
+    try {
+      const next = await loadWorkflowRealizationDetail(primaryWorkflowRealization.realizationType);
+      const resolvedWfId =
+        next?.workflowDefinitionId ?? primaryWorkflowRealization.workflowDefinitionId ?? undefined;
+      if (!resolvedWfId) {
+        toast.error('缺少自动化编排，请先创建');
+        return;
+      }
+      setTargetRealizationType(primaryWorkflowRealization.realizationType || 'FLOW');
+      setWorkflowViewMode(realizationPreviewViewMode);
+      setWorkflowWorkbenchOpen(true);
+    } catch (error) {
+      console.error(error);
+      toast.error('打开自动化编辑失败，请稍后重试');
+    } finally {
+      setWorkflowWorkbenchLoading(false);
+    }
   };
 
   const handleCaseLevelChange = (value: string) => {
@@ -544,9 +1089,17 @@ export function CaseDetailDrawer({
       value: f.fieldId === 'functional_priority' || f.internalFieldKey === 'functional_priority' ? value : (f.value ?? ''),
     }));
     if (!hasPriority) customFieldsList.push({ fieldId: 'functional_priority', value });
-    const payload = getUpdateParams(detail, caseId, { customFields: customFieldsList });
-    caseManagementService
-      .updateCaseRequest(payload)
+    const priorityNum = value.startsWith('P') ? Number.parseInt(value.slice(1), 10) + 1 : detail.priority;
+    const request = isUnifiedCase
+      ? saveUnifiedDrawerCase({
+        priority: Number.isFinite(priorityNum) ? priorityNum : detail.priority,
+        metadata: {
+          ...(detail.metadata || {}),
+          functionalPriority: value,
+        },
+      })
+      : caseManagementService.updateCaseRequest(getUpdateParams(detail, caseId, { customFields: customFieldsList }));
+    request
       .then(() => {
         loadDetail();
         onSuccess?.();
@@ -560,8 +1113,10 @@ export function CaseDetailDrawer({
 
   const visibleTabList = tabOrder
     .map((v) => TAB_LIST.find((t) => t.value === v))
-    .filter((t): t is (typeof TAB_LIST)[number] => !!t && visibleTabs[t.value] !== false);
+    .filter((t): t is (typeof TAB_LIST)[number] => !!t && visibleTabs[t.value] !== false)
+    .filter((t) => !(isUnifiedCase && t.value === 'caseReview'));
   const countMap: Record<string, number> = {
+    realization: resolvedRealizationSummary?.realizedCount ?? 0,
     case: detail?.caseCount ?? 0,
     requirement: detail?.demandCount ?? 0,
     bug: detail?.bugCount ?? 0,
@@ -572,6 +1127,15 @@ export function CaseDetailDrawer({
     changeHistory: detail?.historyCount ?? 0,
   };
   const getTabLabel = (t: (typeof TAB_LIST)[number]) => {
+    if (t.value === 'realization') {
+      const realizedCount = resolvedRealizationSummary?.realizedCount ?? 0;
+      const total = resolvedRealizationSummary?.totalSlots ?? resolvedRealizations.length;
+      if (realizedCount > 0 && total > 0) {
+        const tStr = total > 99 ? '99+' : String(total);
+        return `自动化 ${realizedCount}/${tStr}`;
+      }
+      return '自动化';
+    }
     const cnt = countMap[t.value as keyof typeof countMap];
     if (cnt != null && cnt > 0) return `${t.label} ${cnt > 99 ? '99+' : cnt}`;
     return t.label;
@@ -586,9 +1150,10 @@ export function CaseDetailDrawer({
       setIsEditTitle(false);
       return;
     }
-    const payload = getUpdateParams(detail, caseId, { name: titleName.trim() });
-    caseManagementService
-      .updateCaseRequest(payload)
+    const request = isUnifiedCase
+      ? saveUnifiedDrawerCase({ title: titleName.trim(), name: titleName.trim() })
+      : caseManagementService.updateCaseRequest(getUpdateParams(detail, caseId, { name: titleName.trim() }));
+    request
       .then(() => {
         loadDetail();
         setIsEditTitle(false);
@@ -608,9 +1173,10 @@ export function CaseDetailDrawer({
   };
 
   const persistTabOrder = (order: string[]) => {
-    setTabOrder(order);
+    const normalized = normalizeTabOrder(order);
+    setTabOrder(normalized);
     try {
-      localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(order));
+      localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(normalized));
     } catch {
       /* ignore */
     }
@@ -772,6 +1338,53 @@ export function CaseDetailDrawer({
           </div>
         </SheetHeader>
 
+        <div className="border-b border-gray-100 px-4 py-2 shrink-0 bg-slate-50/70">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary" className="h-6 px-1.5 text-[10px] bg-slate-900 text-white hover:bg-slate-900">
+              Case
+            </Badge>
+            <button
+              type="button"
+              onClick={() => setActiveTab('realization')}
+              className="inline-flex max-w-[min(100%,11rem)] items-center gap-1 rounded-md border border-blue-200/90 bg-white px-1.5 py-0.5 text-left transition hover:border-blue-300 hover:bg-blue-50/50"
+            >
+              <Bot className="h-3 w-3 shrink-0 text-blue-600" />
+              <span className="min-w-0 leading-tight">
+                <span className="block text-[10px] leading-3 text-slate-500">自动化</span>
+                <span className="block truncate text-[11px] font-medium text-slate-900">
+                  {formatCoverageStatus(resolvedRealizationSummary?.automationCoverageStatus)}
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('realization')}
+              className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-left transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <Layers3 className="h-3 w-3 shrink-0 text-slate-500" />
+              <span className="leading-tight">
+                <span className="block text-[10px] leading-3 text-slate-500">落实</span>
+                <span className="block text-[11px] font-medium tabular-nums text-slate-900">
+                  {resolvedRealizationSummary?.realizedCount ?? 0}/{resolvedRealizationSummary?.totalSlots ?? resolvedRealizations.length}
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('realization')}
+              className="inline-flex max-w-[min(100%,14rem)] items-center gap-1 rounded-md border border-emerald-200/90 bg-white px-1.5 py-0.5 text-left transition hover:border-emerald-300 hover:bg-emerald-50/50"
+            >
+              <Workflow className="h-3 w-3 shrink-0 text-emerald-600" />
+              <span className="min-w-0 leading-tight">
+                <span className="block text-[10px] leading-3 text-slate-500">类型</span>
+                <span className="block truncate text-[11px] font-medium text-slate-900">
+                  {(resolvedRealizationSummary?.coveredTypes ?? []).map((type) => formatRealizationType(String(type))).join('/') || '暂无'}
+                </span>
+              </span>
+            </button>
+          </div>
+        </div>
+
         {/* Tab 栏 */}
         <div className="border-b border-gray-100 px-4 shrink-0 flex items-center justify-between">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
@@ -905,6 +1518,20 @@ export function CaseDetailDrawer({
                               <span>{f.value ?? f.defaultValue ?? '-'}</span>
                             </div>
                           ))}
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 text-blue-700 border-blue-100 hover:bg-blue-50"
+                            onClick={() => setActiveTab('realization')}
+                          >
+                            <Workflow className="h-4 w-4" />
+                            查看自动化
+                            <Badge variant="secondary" className="h-5 px-1.5 bg-blue-50 text-blue-600 font-mono text-[10px] font-bold">
+                              {resolvedRealizationSummary?.realizedCount ?? 0}
+                            </Badge>
+                          </Button>
                         </div>
                       </>
                       ) : null;
@@ -1081,6 +1708,293 @@ export function CaseDetailDrawer({
                   <div className="py-8 text-center text-gray-500">暂无数据</div>
                 )}
               </TabsContent>
+              <TabsContent value="realization" className="mt-0 m-0">
+                {realizationLoading ? (
+                  <div className="py-8 text-center text-gray-500">加载中...</div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <div className="rounded-md border border-gray-100 bg-gray-50/40 p-3">
+                        <div className="text-xs text-gray-400">状态</div>
+                        <div className="mt-1 text-base font-medium text-gray-900">
+                          {!workflowSlotBound
+                            ? '未配置'
+                            : primaryWorkflowRealization.enabled === false
+                              ? '已停用'
+                              : primaryWorkflowRealization.realized
+                                ? '已就绪'
+                                : '可编辑'}
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500">
+                          {primaryWorkflowRealization?.workflowStatus || (workflowSlotBound ? 'DRAFT' : '等待创建')}
+                        </div>
+                      </div>
+                      <div className="rounded-md border border-gray-100 bg-gray-50/40 p-3">
+                        <div className="text-xs text-gray-400">最近运行</div>
+                        <div className="mt-1 text-base font-medium text-gray-900">
+                          {workflowSlotBound ? formatRunStatus(primaryWorkflowRealization.lastRunStatus) : '未执行'}
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500">
+                          {primaryWorkflowRealization?.lastRunTime ? formatDateTime(primaryWorkflowRealization.lastRunTime) : '保存后可在此运行'}
+                        </div>
+                      </div>
+                      <div className="rounded-md border border-gray-100 bg-gray-50/40 p-3">
+                        <div className="text-xs text-gray-400">复用</div>
+                        <div className="mt-1 text-base font-medium text-gray-900">
+                          {workflowSlotBound ? '可引用片段' : '待配置'}
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500">通用步骤可做成片段复用</div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-md border border-gray-100 overflow-hidden">
+                      <div className="bg-slate-50/70 px-3 py-2 text-[13px] font-medium text-gray-700 border-b border-gray-100 flex items-center justify-between gap-2">
+                        <span>自动化</span>
+                        {!workflowSlotBound ? (
+                          <span className="text-xs font-normal text-gray-500">先新建，再在此编辑</span>
+                        ) : null}
+                      </div>
+                      {workflowSlotBound ? (
+                        <div className="space-y-4 px-4 py-4">
+                          <div className="rounded-lg border border-gray-100 bg-white p-4">
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                              <div className="min-w-0 flex-1 space-y-3">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {workflowRealizationDetail?.workflowName || primaryWorkflowRealization.workflowName || `${detail?.name || '用例'} · 自动化`}
+                                  </span>
+                                  <Badge variant="outline" className={getRealizationBadgeClassName(primaryWorkflowRealization)}>
+                                    {primaryWorkflowRealization.enabled === false
+                                      ? '已停用'
+                                      : primaryWorkflowRealization.realized
+                                        ? '已实现'
+                                        : '已关联'}
+                                  </Badge>
+                                  {primaryWorkflowRealization.workflowStatus && (
+                                    <Badge variant="secondary" className="bg-blue-50 text-blue-700">{primaryWorkflowRealization.workflowStatus}</Badge>
+                                  )}
+                                </div>
+                                {workflowRealizationDetail?.workflowDefinition?.description ? (
+                                  <div className="text-sm leading-6 text-gray-600">
+                                    {String(workflowRealizationDetail.workflowDefinition.description)}
+                                  </div>
+                                ) : null}
+                                <div className="grid grid-cols-1 gap-2 text-xs text-gray-500 md:grid-cols-2">
+                                  <span>类型：{formatRealizationType(primaryWorkflowRealization.realizationType)}</span>
+                                  <span>Workflow ID：{primaryWorkflowRealization.workflowDefinitionId || '-'}</span>
+                                  <span>节点：{workflowPreviewNodes.length > 0 ? `${workflowPreviewNodes.length} 个` : workflowWorkbenchLoading ? '加载中…' : '—'}</span>
+                                  <span>用例编辑模式：{detail?.caseEditType === 'STEP' ? '步骤模式' : '文本模式'}</span>
+                                  <span>运行状态：{formatRunStatus(primaryWorkflowRealization.lastRunStatus)}</span>
+                                  <span>最近运行：{primaryWorkflowRealization.lastRunTime ? formatDateTime(primaryWorkflowRealization.lastRunTime) : '-'}</span>
+                                </div>
+                              </div>
+                              {canEdit && (
+                                <div className="flex flex-wrap gap-2 lg:justify-end">
+                                  <Button
+                                    size="sm"
+                                    className="gap-2"
+                                    disabled={workflowWorkbenchLoading}
+                                    onClick={handleOpenWorkflowWorkbench}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                    编辑
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1.5"
+                                    disabled={workflowWorkbenchLoading}
+                                    title="全屏工作台 · 步骤视图"
+                                    onClick={async () => {
+                                      await handleOpenWorkflowWorkbench();
+                                      setWorkflowViewMode('steps');
+                                    }}
+                                  >
+                                    <Layers3 className="h-3.5 w-3.5" />
+                                    步骤
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1.5"
+                                    disabled={workflowWorkbenchLoading}
+                                    title="全屏工作台 · 画布视图"
+                                    onClick={async () => {
+                                      await handleOpenWorkflowWorkbench();
+                                      setWorkflowViewMode('canvas');
+                                    }}
+                                  >
+                                    <Play className="h-3.5 w-3.5" />
+                                    画布
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                    disabled={realizationActionLoading === `publish:${primaryWorkflowRealization.realizationType}`}
+                                    onClick={() => handleRealizationAction('publish', primaryWorkflowRealization)}
+                                  >
+                                    发布
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                    disabled={realizationActionLoading === `${primaryWorkflowRealization.enabled === false ? 'enable' : 'disable'}:${primaryWorkflowRealization.realizationType}`}
+                                    onClick={() => handleRealizationAction(primaryWorkflowRealization.enabled === false ? 'enable' : 'disable', primaryWorkflowRealization)}
+                                  >
+                                    {primaryWorkflowRealization.enabled === false ? '启用' : '停用'}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2 text-red-600 border-red-200 hover:text-red-700"
+                                    disabled={realizationActionLoading === `delete:${primaryWorkflowRealization.realizationType}`}
+                                    onClick={() => handleRealizationAction('delete', primaryWorkflowRealization)}
+                                  >
+                                    删除
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {workflowWorkbenchCase?.id && !workflowWorkbenchOpen ? (
+                            <div className="rounded-lg border border-slate-200 bg-slate-100/90 overflow-hidden shadow-sm">
+                              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-2 py-2 sm:px-3">
+                                <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 shrink-0 text-slate-600"
+                                    title={workflowEmbedCollapsed ? '展开内嵌预览' : '收起内嵌预览'}
+                                    onClick={() => setWorkflowEmbedCollapsed((c) => !c)}
+                                    aria-expanded={!workflowEmbedCollapsed}
+                                  >
+                                    {workflowEmbedCollapsed ? (
+                                      <ChevronDown className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronUp className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                  <div className="min-w-0 text-sm font-medium text-slate-800">
+                                    <span className="truncate block">自动化（画布 / 步骤）</span>
+                                    {workflowEmbedCollapsed ? (
+                                      <span className="mt-0.5 block truncate text-[11px] font-normal text-slate-500">
+                                        已缩小，仅保留标题栏
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap items-center justify-end gap-2">
+                                  {!workflowEmbedCollapsed ? (
+                                    <div className="inline-flex h-8 rounded-md border border-input bg-muted/60 p-0.5">
+                                      <Button
+                                        type="button"
+                                        variant={realizationPreviewViewMode === 'canvas' ? 'secondary' : 'ghost'}
+                                        size="sm"
+                                        className="h-7 px-2.5 text-xs"
+                                        onClick={() => setRealizationPreviewViewMode('canvas')}
+                                      >
+                                        画布
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant={realizationPreviewViewMode === 'steps' ? 'secondary' : 'ghost'}
+                                        size="sm"
+                                        className="h-7 px-2.5 text-xs"
+                                        onClick={() => setRealizationPreviewViewMode('steps')}
+                                      >
+                                        步骤
+                                      </Button>
+                                    </div>
+                                  ) : null}
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 gap-1 text-xs shrink-0"
+                                    onClick={() => void handleOpenWorkflowWorkbench()}
+                                  >
+                                    <Maximize2 className="h-3.5 w-3.5" />
+                                    全屏编辑
+                                  </Button>
+                                </div>
+                              </div>
+                              {!workflowEmbedCollapsed ? (
+                                <div className="h-[min(62vh,620px)] min-h-[440px] w-full">
+                                  <WorkflowDesignPageV2
+                                    key={`case-detail-wf-embed-${caseId}-${workflowWorkbenchCase.id}`}
+                                    showNodePalette={false}
+                                    viewMode={realizationPreviewViewMode}
+                                    workflowId={workflowWorkbenchCase.id}
+                                    caseId={caseId || undefined}
+                                    realizationType={workflowSlotType}
+                                    moduleId={detail?.moduleId}
+                                    projectId={workflowWorkbenchSpace.projectId}
+                                    onSave={async () => {
+                                      await Promise.resolve(loadDetail());
+                                      await loadWorkflowRealizationDetail(workflowSlotType).catch(() => null);
+                                    }}
+                                  />
+                                </div>
+                              ) : null}
+                            </div>
+                          ) : workflowWorkbenchCase?.id && workflowWorkbenchOpen ? (
+                            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/70 px-4 py-3 text-xs text-slate-600">
+                              全屏编辑中；关闭后可继续在此预览。
+                            </div>
+                          ) : null}
+
+                          {detail?.caseEditType === 'STEP' && steps.length > 0 ? (
+                            <div className="rounded-lg border border-indigo-100 bg-indigo-50/30 p-4">
+                              <div className="text-sm font-medium text-gray-900">用例步骤（步骤模式）</div>
+                              <p className="mt-1 text-xs text-gray-500">
+                                与上方自动化编排对照。
+                              </p>
+                              <ol className="mt-2 max-h-44 space-y-2 overflow-y-auto text-xs text-gray-700">
+                                {steps.map((s, idx) => (
+                                  <li key={idx} className="rounded border border-white/80 bg-white/90 px-2 py-1.5">
+                                    <span className="font-medium text-gray-800">{idx + 1}. </span>
+                                    <span>{s.step || '（无步骤描述）'}</span>
+                                    {s.expected ? <div className="mt-0.5 text-gray-500">预期：{s.expected}</div> : null}
+                                  </li>
+                                ))}
+                              </ol>
+                            </div>
+                          ) : null}
+
+                          <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/60 px-4 py-3 text-xs leading-6 text-gray-500">
+                            <div className="font-medium text-gray-700">说明</div>
+                            <div className="mt-1">在「内容详情」写测什么，在此配怎么自动跑。</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="px-4 py-10 text-center">
+                          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                            <Workflow className="h-6 w-6" />
+                          </div>
+                          <div className="mt-4 text-sm font-medium text-gray-900">尚未配置自动化</div>
+                          <div className="mt-2 text-sm leading-6 text-gray-500">新建后可在本页用画布或步骤编辑、保存和运行。</div>
+                          {canEdit && (
+                            <div className="mt-5 flex flex-wrap justify-center gap-3">
+                              <Button onClick={handleCreateWorkflowRealization} disabled={workflowWorkbenchLoading} className="gap-2">
+                                <Plus className="h-4 w-4" />
+                                新建自动化
+                              </Button>
+                              <Button variant="outline" disabled className="gap-2">
+                                <Layers3 className="h-4 w-4" />
+                                模板生成功能待接入
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
               <TabsContent value="case" className="mt-0 m-0">
                 <TabAssociatedCases caseId={caseId} projectId={projectId} />
               </TabsContent>
@@ -1108,7 +2022,7 @@ export function CaseDetailDrawer({
                 <TabTestPlan caseId={caseId} projectId={projectId} />
               </TabsContent>
               <TabsContent value="comments" className="mt-0 m-0">
-                <TabComments caseId={caseId} projectId={projectId} refreshKey={commentRefreshKey} />
+                <TabComments caseId={caseId} projectId={projectId} unifiedCase={isUnifiedCase} refreshKey={commentRefreshKey} />
               </TabsContent>
               <TabsContent value="changeHistory" className="mt-0 m-0">
                 <TabChangeHistory caseId={caseId} projectId={projectId} />
@@ -1150,6 +2064,91 @@ export function CaseDetailDrawer({
             </div>
           </div>
         )}
+      </SheetContent>
+    </Sheet>
+
+    <Sheet open={workflowWorkbenchOpen} onOpenChange={setWorkflowWorkbenchOpen}>
+      <SheetContent side="right" className="w-[100vw] sm:max-w-[100vw] p-0 gap-0 flex flex-col">
+        <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-5 py-3 shrink-0">
+          <div className="min-w-0">
+            <div className="text-sm font-medium text-gray-900 truncate">
+              {workflowWorkbenchCase?.name || `${detail?.name || '用例'} · 自动化`}
+            </div>
+            <div className="mt-1 text-xs text-gray-500">
+              在此编辑并保存本条用例的自动化。
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                setWorkflowWorkbenchOpen(false);
+                setWorkflowEmbedCollapsed(false);
+              }}
+            >
+              <Minimize2 className="h-4 w-4" />
+              缩小到详情
+            </Button>
+            <Tabs value={workflowViewMode} onValueChange={(value) => setWorkflowViewMode(value as 'canvas' | 'steps')}>
+              <TabsList className="h-9">
+                <TabsTrigger value="canvas" className="text-xs">画布</TabsTrigger>
+                <TabsTrigger value="steps" className="text-xs">步骤</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={async () => {
+                await workflowDesignRef.current?.handleSave();
+                await Promise.resolve(loadDetail());
+                if (workflowSlotType) {
+                  await loadWorkflowRealizationDetail(workflowSlotType).catch(() => null);
+                }
+              }}
+            >
+              保存
+            </Button>
+            <Button
+              size="sm"
+              className="gap-2"
+              onClick={async () => {
+                await workflowDesignRef.current?.handleRunWorkflow();
+                await Promise.resolve(loadDetail());
+                if (workflowSlotType) {
+                  await loadWorkflowRealizationDetail(workflowSlotType).catch(() => null);
+                }
+              }}
+            >
+              <Play className="h-4 w-4" />
+              运行
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1 min-h-0">
+          {(workflowWorkbenchCase || (caseId && targetRealizationType)) ? (
+            <WorkflowDesignPageV2
+              ref={workflowDesignRef}
+              viewMode={workflowViewMode}
+              workflowId={workflowWorkbenchCase?.id}
+              caseId={caseId || undefined}
+              realizationType={targetRealizationType}
+              moduleId={detail?.moduleId}
+              projectId={workflowWorkbenchSpace.projectId}
+              onSave={async () => {
+                await Promise.resolve(loadDetail());
+                if (workflowSlotType) {
+                  await loadWorkflowRealizationDetail(workflowSlotType).catch(() => null);
+                }
+              }}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-gray-500">正在加载…</div>
+          )}
+        </div>
       </SheetContent>
     </Sheet>
 
@@ -1228,4 +2227,3 @@ export function CaseDetailDrawer({
     </>
   );
 }
-

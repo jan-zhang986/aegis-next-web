@@ -1000,7 +1000,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
                                 <NodeRenderer
                                   node={subNode}
                                   selected={nodeOps.selectedNodeId === subNode.id}
-                                  onSelect={() => setSelectedNodeId(subNode.id)}
+                                  onSelect={() => nodeOps.setSelectedNodeId(subNode.id)}
                                   onDelete={() => {
                                     // 从循环配置中删除子节点
                                     if (loopConfig) {
@@ -1110,7 +1110,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
       <AddNodeDialog
         open={nodeOps.isAddNodeDialogOpen}
         onOpenChange={nodeOps.setIsAddNodeDialogOpen}
-        onSelectNode={(nodeType, x, y) => nodeOps.handleAddNode(nodeType, x, y, canvasRef, canvas.zoom, canvas.panOffset)}
+        onSelectNode={(nodeType) => nodeOps.handleAddNode(nodeType, undefined, undefined, canvasRef, canvas.zoom, canvas.panOffset)}
       />
     </div>
   );

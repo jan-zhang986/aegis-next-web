@@ -312,11 +312,11 @@ export function SystemResourcePoolView() {
                 <span className="text-sm">启用</span>
               </label>
               <label className="flex items-center gap-2">
-                <Checkbox checked={formApiTest} onCheckedChange={setFormApiTest} />
+                <Checkbox checked={formApiTest} onCheckedChange={(checked) => setFormApiTest(checked === true)} />
                 <span className="text-sm">支持 API 测试</span>
               </label>
               <label className="flex items-center gap-2">
-                <Checkbox checked={formUiTest} onCheckedChange={setFormUiTest} />
+                <Checkbox checked={formUiTest} onCheckedChange={(checked) => setFormUiTest(checked === true)} />
                 <span className="text-sm">支持 UI 测试</span>
               </label>
             </div>

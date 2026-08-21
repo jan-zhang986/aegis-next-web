@@ -24,7 +24,7 @@ interface TopNavigationProps {
     | 'project-management'
     | 'workspace'
     | 'case-management'
-    | 'test-plan'
+    | 'quality-workspace'
     | 'system-setting'
     | 'aegis-agent'
     | 'dial-management'
@@ -182,16 +182,19 @@ export function TopNavigation({ selectedTopMenu = 'api', onSelectTopMenu, showSe
 
   // 用例管理的二级菜单项（从 spotter-metersphere 迁移）
   const caseManagementNavItems = [
-    { id: 'feature-case', label: '功能用例' },
-    { id: 'e2e-auto', label: '自动化用例' },
+    { id: 'space', label: '空间' },
+    { id: 'feature-case', label: '用例库' },
+    { id: 'test-suite', label: '测试套件' },
+    { id: 'gate-binding', label: '门禁绑定' },
     { id: 'case-review', label: '用例评审' },
     { id: 'case-generation', label: '用例生成' },
   ];
 
-  // 测试计划的二级菜单项（测试报告为测试计划执行报告，与测试工厂的 E2E 报告不同）
-  const testPlanNavItems = [
-    { id: 'plan', label: '测试计划' },
-    { id: 'test-report', label: '测试报告' },
+  // 质量工作台的二级菜单项
+  const qualityWorkspaceNavItems = [
+    { id: 'requirements', label: '需求列表' },
+    { id: 'workspace', label: '工作台' },
+    { id: 'test-report', label: '报告中心' },
   ];
 
   // 系统设置的二级菜单项（与测试工厂二级菜单设计一致）
@@ -239,7 +242,7 @@ export function TopNavigation({ selectedTopMenu = 'api', onSelectTopMenu, showSe
     menuType === 'project-management' ? projectManagementNavItems :
       menuType === 'workspace' ? workspaceNavItems :
         menuType === 'case-management' ? caseManagementNavItems :
-          menuType === 'test-plan' ? testPlanNavItems :
+          menuType === 'quality-workspace' ? qualityWorkspaceNavItems :
             menuType === 'system-setting' ? settingNavItems :
               menuType === 'aegis-agent' ? aegisAgentNavItems :
                 menuType === 'dial-management' ? dialManagementNavItems :

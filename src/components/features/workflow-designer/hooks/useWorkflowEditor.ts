@@ -22,6 +22,8 @@ interface UseWorkflowEditorParams {
 /** 静默重载：不先清空界面（避免名称变「加载中」、节点被清空）；失败时保留当前数据并提示用户再次保存 */
 export interface LoadWorkflowDataOptions {
   silent?: boolean;
+  /** 首次保存后 props 上的 workflowId 可能尚未更新，用本次保存返回的 ID 拉取详情，避免误走「无 ID」分支把画布清空 */
+  workflowId?: string;
 }
 
 interface UseWorkflowEditorReturn {
@@ -68,15 +70,19 @@ export function useWorkflowEditor({
   // silent: 保存后的静默重载，不先清空界面；失败时保留当前数据并提示「请再次点击保存」
   const loadWorkflowData = useCallback(async (options?: LoadWorkflowDataOptions) => {
     const isSilentReload = options?.silent === true;
+    const idToLoad = options?.workflowId ?? workflowId;
 
-    if (!workflowId) {
-      setWorkflowMetadata(null);
-      setWorkflow({
-        name: '新建工作流',
-        description: '',
-        nodes: [],
-        connections: [],
-      });
+    if (!idToLoad) {
+      // 无 ID：仅非静默加载时重置为「新建」空白画布；静默重载无 ID 时不应清空（常见于刚保存、父组件尚未传入 workflowId）
+      if (!isSilentReload) {
+        setWorkflowMetadata(null);
+        setWorkflow({
+          name: '新建工作流',
+          description: '',
+          nodes: [],
+          connections: [],
+        });
+      }
       return;
     }
 
@@ -92,7 +98,7 @@ export function useWorkflowEditor({
 
     setLoading(true);
     try {
-      const data = await workflowService.getWorkflowDetail(workflowId);
+      const data = await workflowService.getWorkflowDetail(String(idToLoad));
       if (data) {
         // 如果外部没有传入 moduleId，从工作流详情中获取
         if (!moduleId && data.moduleId && setModuleId) {
@@ -101,12 +107,7 @@ export function useWorkflowEditor({
 
         // 转换后端数据格式，并验证元数据引用
         const nodes = (data.nodes || []).map((n: any) => {
-          let refMode = n.refMode || 'NONE';
-          // 如果节点有 refMetadataId 但 refMode 是 'REF_METADATA'，且工作流名称包含 "_copy"，
-          // 说明这是复制的工作流，应该改为 'COPY'（但后端应该已经处理了，这里作为兜底）
-          if (refMode === 'REF_METADATA' && n.refMetadataId && data.name?.includes('_copy')) {
-            refMode = 'COPY';
-          }
+          const refMode = n.refMode || 'NONE';
 
           // 处理节点配置：对于HTTP节点，将paramType转换为bodyType（前端使用bodyType）
           let nodeConfig = n.config || {};
@@ -180,7 +181,7 @@ export function useWorkflowEditor({
 
         const loadedWorkflow: WorkflowData = {
           id: data.workflowId,
-          name: data.name || '未命名工作流',
+          name: data.name || data.workflowId || '未命名工作流',
           description: data.description || '',
           nodes: finalNodes,
           connections: (data.connections || []).map((c: any) => ({

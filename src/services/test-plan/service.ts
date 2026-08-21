@@ -242,6 +242,27 @@ export function disassociateCase(data: { testPlanId: string; id: string }) {
   return http.post(testPlanUrls.DisassociateCaseUrl, data);
 }
 
+/**
+ * 获取执行项提案列表
+ */
+export function getWorkItemProposalList(workspaceId: string, workItemId: string) {
+  return http.get(`/api/quality-workspace/${workspaceId}/work-item/${workItemId}/proposal/list`);
+}
+
+/**
+ * 从执行项发起沉淀提案
+ */
+export function saveWorkItemProposal(workspaceId: string, workItemId: string, data: any) {
+  return http.post(`/api/quality-workspace/${workspaceId}/work-item/${workItemId}/proposal/save`, data);
+}
+
+/**
+ * 将提案合并回统一 Case
+ */
+export function mergeProposalToCase(proposalId: string, data?: any) {
+  return http.post(`/api/proposal/${proposalId}/merge-to-case`, data ?? {});
+}
+
 // ==================== 测试计划组 ====================
 
 /**
@@ -545,7 +566,9 @@ function findL1IndexByCategory(editList: PlanMinderEditListItem[], category: Pla
           n.name === '场景用例' ||
           n.text === '场景用例' ||
           n.name === '自动化用例' ||
-          n.text === '自动化用例')
+          n.text === '自动化用例' ||
+          n.name === '用例实现' ||
+          n.text === '用例实现')
     );
   }
   return -1;

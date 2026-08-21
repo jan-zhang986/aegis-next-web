@@ -14,3 +14,5 @@ export { BatchMoveCopyDrawer } from './BatchMoveCopyDrawer';
 // 思维导图相关组件
 export { MinderFloatMenu } from './MinderFloatMenu';
 export { MinderDetailSidebar } from './MinderDetailSidebar';
+export { VersionMergeDrawer } from './VersionMergeDrawer';
+export { ProjectVersionSelect } from './ProjectVersionSelect';

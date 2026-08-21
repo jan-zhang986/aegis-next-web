@@ -9,8 +9,10 @@ import type { UseApiEditorResult } from '@/hooks/useApiEditor';
 
 export interface UseTestPageSaveOptions {
   buildRequestConfig: () => Record<string, unknown>;
+  url?: string;
   editor: UseApiEditorResult;
   projectId: string;
+  spaceId?: string;
   definitionId?: string;
   onRefresh?: () => void;
   isSyncData: boolean;
@@ -25,6 +27,7 @@ export function useTestPageSave({
   url,
   editor,
   projectId,
+  spaceId,
   onRefresh,
   isSyncData,
   isCase,
@@ -71,6 +74,7 @@ export function useTestPageSave({
       if (isUpdate) {
         result = await metadataService.updateDefinition({
           id: editor.state.definitionId!,
+          ...(spaceId ? { spaceId } : {}),
           ...common,
           requestConfig,
         } as Parameters<typeof metadataService.updateDefinition>[0]);
@@ -79,6 +83,7 @@ export function useTestPageSave({
           ...common,
           protocol: 'HTTP',
           projectId,
+          ...(spaceId ? { spaceId } : {}),
           requestConfig,
           isCase: saveAsTestData ? true : undefined,
         } as Parameters<typeof metadataService.addDefinition>[0]);

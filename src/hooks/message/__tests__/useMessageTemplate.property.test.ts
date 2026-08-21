@@ -220,7 +220,6 @@ describe('useMessageTemplate - Property Tests', () => {
     expect(result.current.editedTemplate).toBe('${userName}${eventName}');
     expect(result.current.cursorPosition).toBe(24); // 11 + 13
   });
-});
 
   // Feature: project-message-log-migration, Property 13: 模板保存往返
   /**

@@ -35,6 +35,8 @@ export interface SessionItem {
   title?: string;
   created_at?: string;
   updated_at?: string;
+  create_time?: string;
+  update_time?: string;
 }
 
 /** 获取会话列表（分页，走 axios 拦截器自动加认证） */

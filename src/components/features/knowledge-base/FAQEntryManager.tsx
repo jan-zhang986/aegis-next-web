@@ -17,6 +17,7 @@ import { FAQEditorModal } from './FAQEditorModal';
 
 interface FAQEntryManagerProps {
   kbId: string;
+  onOpenSettings?: () => void;
 }
 
 export function FAQEntryManager({ kbId }: FAQEntryManagerProps) {

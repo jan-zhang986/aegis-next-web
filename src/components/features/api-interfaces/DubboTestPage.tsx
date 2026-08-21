@@ -33,9 +33,10 @@ interface DubboTestPageProps {
   definitionId?: string; // 定义ID，用于获取详细信息
   definitions?: MetadataDefinition[]; // 定义列表，用于查找详细信息
   onRefresh?: () => void; // 刷新列表的回调函数
+  spaceId?: string;
 }
 
-export function DubboTestPage({ apiName, onClose, definitionId, definitions = [], onRefresh }: DubboTestPageProps) {
+export function DubboTestPage({ apiName, onClose, definitionId, definitions = [], onRefresh, spaceId }: DubboTestPageProps) {
   const [searchParams] = useSearchParams();
   
   // 获取项目ID：优先从 URL 参数，然后从 localStorage，获取不到则报错
@@ -52,7 +53,7 @@ export function DubboTestPage({ apiName, onClose, definitionId, definitions = []
     return finalProjectId || '';
   }, [searchParams]);
   
-  const editor = useApiEditor({ protocol: 'DUBBO', projectId, onRefresh });
+  const editor = useApiEditor({ protocol: 'DUBBO', projectId, spaceId, onRefresh });
 
   // 获取当前 definition 的 isCase 字段
   const currentDefinition = useMemo(() => {
@@ -66,7 +67,7 @@ export function DubboTestPage({ apiName, onClose, definitionId, definitions = []
   
   // 判断是否是同步数据场景
   const isSyncData = useMemo(() => {
-    return currentDefinition?.moduleId === 'plugin-sync' || currentDefinition?.id?.startsWith('sync-');
+    return !!(currentDefinition?.moduleId === 'plugin-sync' || currentDefinition?.id?.startsWith('sync-'));
   }, [currentDefinition]);
   
   // 从 definition.id 中提取 nodeId（如果是 sync- 前缀，需要去掉）
@@ -119,6 +120,7 @@ export function DubboTestPage({ apiName, onClose, definitionId, definitions = []
     selectedSite: sites.selectedSite,
     editor,
     projectId,
+    spaceId,
     onRefresh,
     isSyncData,
     isCase,
@@ -534,6 +536,7 @@ onChange={(e) => form.updateParameter(index, 'enabled', e.target.checked)}
         onModuleChange={editor.setConfirmModuleId}
         moduleType="DUBBO"
         projectId={projectId}
+        typeId={spaceId}
         onModuleTreeRefresh={async () => {
           if (onRefresh) {
             onRefresh();
@@ -573,6 +576,7 @@ onChange={(e) => form.updateParameter(index, 'enabled', e.target.checked)}
         }}
         moduleType="DUBBO"
         projectId={projectId}
+        typeId={spaceId}
         onModuleTreeRefresh={async () => {
           // 只刷新模块树，不刷新定义列表（避免清空用户输入的内容）
           await editor.refreshModuleTree();

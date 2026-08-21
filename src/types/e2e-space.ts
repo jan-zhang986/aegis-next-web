@@ -1,6 +1,6 @@
 /**
- * E2E 空间相关类型定义
- * 从 E2ESpaceDetailPage.tsx 提取
+ * 用例实现空间相关类型定义
+ * 从 CaseRealizationSpaceDetailPage 提取；保留 E2E 命名兼容别名
  */
 
 /**
@@ -32,18 +32,24 @@ export interface TestCase {
 }
 
 /**
- * 用户信息（E2E 空间）
+ * 用户信息（用例实现空间）
  */
-export interface E2EUserInfo {
+export interface CaseRealizationUserInfo {
   id: string;
   name: string;
   email: string;
 }
 
 /**
- * E2E 空间详情页 Props
+ * 用例实现空间详情页 Props
  */
-export interface E2ESpaceDetailPageProps {
+export interface CaseRealizationSpaceDetailPageProps {
   space: any; // E2ESpace 类型从服务导入
   onBack: () => void;
 }
+
+/** @deprecated compatibility alias; prefer CaseRealizationUserInfo */
+export type E2EUserInfo = CaseRealizationUserInfo;
+
+/** @deprecated compatibility alias; prefer CaseRealizationSpaceDetailPageProps */
+export type E2ESpaceDetailPageProps = CaseRealizationSpaceDetailPageProps;

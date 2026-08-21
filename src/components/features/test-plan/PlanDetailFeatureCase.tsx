@@ -37,11 +37,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { BatchExecuteDialog } from './BatchExecuteDialog';
 import { BatchUpdateExecutorModal } from './BatchUpdateExecutorModal';
 import { TestPlanAssociateFeatureCaseDrawer } from './TestPlanAssociateFeatureCaseDrawer';
 import { AssociateBugDialog } from './AssociateBugDialog';
 import { CreateBugDialog } from './CreateBugDialog';
+import { WorkItemProposalDialog } from './WorkItemProposalDialog';
 import {
     Table,
     TableBody,
@@ -163,11 +165,11 @@ interface PlanDetailFeatureCaseProps {
     embedInPlanTree?: boolean;
     /** 嵌入模式下使用的测试点 ID（collectionId），为空或 'all' 表示全部 */
     defaultCollectionId?: string | null;
-    /** 为 true 时首次挂载后自动打开「关联用例」抽屉（如从测试规划页「去关联用例」进入） */
+    /** 为 true 时首次挂载后自动打开「补执行项」抽屉（如从测试规划页「去补执行项」进入） */
     openAssociateOnce?: boolean;
     /** 打开关联抽屉后回调，用于父组件清除 openAssociateOnce */
     onOpenAssociateConsumed?: () => void;
-    /** 嵌入测试规划时，关联用例成功后仅刷新左侧规划树，不触发整页 onRefresh */
+    /** 嵌入测试规划时，补执行项成功后仅刷新左侧规划树，不触发整页 onRefresh */
     onRefreshPlanTree?: () => void;
     /** 从执行页返回时恢复：当前为测试点或模块 tab */
     initialTreeTab?: 'points' | 'modules';
@@ -216,13 +218,16 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
     const [associateBugRow, setAssociateBugRow] = useState<{ caseId: string; testPlanCaseId: string } | null>(null);
     /** 当前打开新建缺陷弹窗的行 */
     const [createBugRow, setCreateBugRow] = useState<{ caseId: string; testPlanCaseId: string } | null>(null);
+    const [proposalDialogOpen, setProposalDialogOpen] = useState(false);
+    const [proposalRow, setProposalRow] = useState<any | null>(null);
+    const [proposalSnapshotMap, setProposalSnapshotMap] = useState<Record<string, { count: number; latestStatus: string | null; latestProposalId: string | null }>>({});
     /** 各模块/测试点下的用例数量（用于左侧树展示） */
     const [modulesCount, setModulesCount] = useState<Record<string, number>>({});
     const [associateDrawerOpen, setAssociateDrawerOpen] = useState(false);
-    /** 取消关联确认：待取消的行 id */
+    /** 移出活动确认：待取消的行 id */
     const [disassociateTarget, setDisassociateTarget] = useState<string | null>(null);
     const [disassociateLoading, setDisassociateLoading] = useState(false);
-    /** 批量取消关联确认弹窗 */
+    /** 批量移出活动确认弹窗 */
     const [batchDisassociateOpen, setBatchDisassociateOpen] = useState(false);
     const [batchDisassociateLoading, setBatchDisassociateLoading] = useState(false);
     /** 表格筛选：执行结果、用例等级、执行人（多选） */
@@ -415,6 +420,7 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
         fetchCaseList();
     }, [fetchCaseList]);
 
+
     useEffect(() => {
         fetchExecutorOptions();
     }, [fetchExecutorOptions]);
@@ -463,7 +469,7 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
         }
     }, [embedInPlanTree, initialTreeTab, initialCollectionId, initialModuleId, moduleTree, moduleTreeForColumn]);
 
-    // 外部请求「直接进入关联用例」时自动打开关联抽屉（仅消费一次）
+    // 外部请求「直接进入补执行项」时自动打开关联抽屉（仅消费一次）
     useEffect(() => {
         if (!openAssociateOnce) return;
         setAssociateDrawerOpen(true);
@@ -508,18 +514,18 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
 
     const handleDisassociate = async (caseId: string) => {
         setDisassociateLoading(true);
-        const toastId = toast.loading('正在取消关联...');
+        const toastId = toast.loading('正在移出活动...');
         try {
             await testPlanManagementService.disassociateCase({
                 testPlanId: planId,
                 id: caseId
             });
-            toast.success('已取消关联', { id: toastId });
+            toast.success('已移出活动', { id: toastId });
             setDisassociateTarget(null);
             fetchCaseList();
         } catch (error) {
             console.error(error);
-            toast.error('取消关联失败', { id: toastId });
+            toast.error('移出活动失败', { id: toastId });
         } finally {
             setDisassociateLoading(false);
         }
@@ -547,7 +553,7 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
     const handleBatchDisassociate = async () => {
         if (selectedCaseIds.length === 0) return;
         setBatchDisassociateLoading(true);
-        const toastId = toast.loading(`正在取消关联 ${selectedCaseIds.length} 个用例...`);
+        const toastId = toast.loading(`正在移出活动 ${selectedCaseIds.length} 个用例...`);
         try {
             await testPlanManagementService.batchDisassociateCase({
                 testPlanId: planId,
@@ -556,13 +562,13 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
                 selectAll: false,
                 excludeIds: []
             });
-            toast.success(`已取消关联 ${selectedCaseIds.length} 个用例`, { id: toastId });
+            toast.success(`已移出活动 ${selectedCaseIds.length} 个用例`, { id: toastId });
             setBatchDisassociateOpen(false);
             setSelectedCaseIds([]);
             fetchCaseList();
         } catch (error) {
             console.error(error);
-            toast.error('批量取消关联失败', { id: toastId });
+            toast.error('批量移出活动失败', { id: toastId });
         } finally {
             setBatchDisassociateLoading(false);
         }
@@ -630,7 +636,7 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
 
     const handleBatchExecute = () => {
         if (selectedCaseIds.length === 0) {
-            toast.error('请选择要执行的用例');
+            toast.error('请选择要执行的执行项');
             return;
         }
         setBatchExecuteOpen(true);
@@ -662,6 +668,80 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
         setAssociateBugRow(null);
         setAssociateBugOpen(true);
     };
+
+    const openProposalDialog = (item: any) => {
+        setProposalRow(item);
+        setProposalDialogOpen(true);
+    };
+
+    const normalizeProposalList = (res: any): any[] => {
+        if (Array.isArray(res)) return res;
+        if (Array.isArray(res?.list)) return res.list;
+        if (Array.isArray(res?.data)) return res.data;
+        return [];
+    };
+
+    const loadProposalSnapshots = useCallback(async (items: any[]) => {
+        if (!items?.length) {
+            setProposalSnapshotMap({});
+            return;
+        }
+        const entries = await Promise.all(items.map(async (item) => {
+            try {
+                const res = await testPlanManagementService.getWorkItemProposalList(planId, item.id);
+                const list = normalizeProposalList(res);
+                const latest = list[0] ?? list[list.length - 1] ?? null;
+                return [item.id, { count: list.length, latestStatus: latest?.status ?? null, latestProposalId: latest?.id ?? null }] as const;
+            } catch (error) {
+                return [item.id, { count: 0, latestStatus: null, latestProposalId: null }] as const;
+            }
+        }));
+        setProposalSnapshotMap(Object.fromEntries(entries));
+    }, [planId]);
+
+    const getProposalStatusMeta = (status?: string | null) => {
+        switch (status) {
+            case 'MERGED':
+                return { label: '已合并', className: 'bg-green-50 text-green-600' };
+            case 'SUBMITTED':
+                return { label: '评审中', className: 'bg-blue-50 text-blue-600' };
+            case 'REJECTED':
+                return { label: '已拒绝', className: 'bg-red-50 text-red-600' };
+            case 'DRAFT':
+                return { label: '草稿', className: 'bg-amber-50 text-amber-600' };
+            default:
+                return { label: '未发起', className: 'bg-gray-50 text-gray-500' };
+        }
+    };
+
+    const handleMergeProposalToCase = async (item: any) => {
+        const proposalInfo = proposalSnapshotMap[item.id];
+        const proposalId = proposalInfo?.latestProposalId;
+        if (!proposalId) {
+            toast.error('当前执行项还没有可合并的提案');
+            return;
+        }
+        if (proposalInfo?.latestStatus === 'MERGED') {
+            toast.message('最近提案已经合并');
+            return;
+        }
+        if (!confirm('确定要将最近一次提案合并回 Case 吗？')) return;
+        const toastId = toast.loading('正在合并回 Case...');
+        try {
+            await testPlanManagementService.mergeProposalToCase(proposalId, {
+                targetCaseId: item.caseId || item.apiCaseId || item.apiScenarioId || item.id || undefined,
+            });
+            toast.success('提案已合并回 Case', { id: toastId });
+            fetchCaseList();
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error?.message || '合并回 Case 失败', { id: toastId });
+        }
+    };
+
+    useEffect(() => {
+        loadProposalSnapshots(caseList);
+    }, [caseList, loadProposalSnapshots]);
 
     const handleBatchCreateBug = () => {
         if (selectedCaseIds.length === 0) {
@@ -722,6 +802,17 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
 
     const tablePanelContent = (
         <div className="flex flex-col h-full overflow-hidden bg-white">
+            <div className="border-b border-gray-100 bg-gradient-to-r from-slate-50/80 via-white to-blue-50/60 px-4 py-3">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <div className="text-sm font-medium text-slate-900">功能用例执行项</div>
+                        <div className="mt-1 text-xs leading-5 text-slate-500">这里管理的是本次测试活动里的功能用例执行项。长期资产仍然在 Case 库里，这里只关注本次活动怎么执行、谁来执行、执行结果如何。</div>
+                    </div>
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-white/80 px-3 py-2 text-xs leading-5 text-slate-500">
+                        这里看的不是长期资产，而是本次活动中的 <span className="font-medium text-blue-600">WorkItem</span>。
+                    </div>
+                </div>
+            </div>
             <div className="p-2.5 border-b border-gray-100 flex items-center justify-between bg-white">
                 <div className="flex items-center gap-2 flex-1 max-w-[360px] pl-2">
                     <div className="relative flex-1">
@@ -743,7 +834,7 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
                             className="h-8 text-sm border-gray-200 text-gray-600 gap-1.5"
                             onClick={() => setAssociateDrawerOpen(true)}
                         >
-                            <Link className="w-3.5 h-3.5" /> 关联用例
+                            <Link className="w-3.5 h-3.5" /> 补执行项
                         </Button>
                     )}
                     {selectedCaseIds.length > 0 && (
@@ -786,7 +877,7 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
                                 className="h-8 text-sm border-gray-200 text-red-500 hover:text-red-600 hover:border-red-200 gap-1 px-2"
                                 onClick={() => setBatchDisassociateOpen(true)}
                             >
-                                <Unlink className="w-3 h-3" /> 取消关联
+                                <Unlink className="w-3 h-3" /> 移出活动
                             </Button>
                         </div>
                     )}
@@ -989,6 +1080,7 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
                                 </button>
                             </TableHead>
                             <TableHead className="w-[140px] font-medium text-gray-500">更新时间</TableHead>
+                            <TableHead className="w-[120px] text-center font-medium text-gray-500">提案</TableHead>
                             <TableHead className="w-[90px] text-center font-medium text-gray-500">操作</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -1004,7 +1096,7 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
                                 <TableCell colSpan={13} className="h-64 text-center">
                                     <div className="text-gray-400 flex flex-col items-center gap-2">
                                         <Inbox className="w-10 h-10 opacity-20" />
-                                        <span>暂无数据</span>
+                                        <span>当前活动下还没有功能用例执行项</span>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -1108,7 +1200,30 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
                                     <TableCell className="py-0 text-gray-400 tabular-nums">
                                         {item.updateTime ? formatTimestampBeijing(item.updateTime) : '-'}
                                     </TableCell>
-                                    {/* 操作列：「执行」文字按钮 + 「···」菜单（修改执行人 + 取消关联） */}
+                                    {/* 操作列：「执行」文字按钮 + 「···」菜单（修改执行人 + 移出活动） */}
+                                    <TableCell className="py-0 text-center">
+                                        {(() => {
+                                            const proposalInfo = proposalSnapshotMap[item.id] ?? { count: 0, latestStatus: null, latestProposalId: null };
+                                            const proposalMeta = getProposalStatusMeta(proposalInfo.latestStatus);
+                                            return (
+                                                <div className="flex flex-col items-center gap-1 py-1">
+                                                    <span className="text-[11px] text-gray-500">{proposalInfo.count} 个提案</span>
+                                                    <Badge className={`${proposalMeta.className} border-0 text-[11px] font-normal`}>
+                                                        {proposalMeta.label}
+                                                    </Badge>
+                                                    {proposalInfo.count > 0 && proposalInfo.latestStatus !== 'MERGED' ? (
+                                                        <button
+                                                            type="button"
+                                                            className="text-[11px] text-blue-600 hover:text-blue-700 hover:underline"
+                                                            onClick={() => handleMergeProposalToCase(item)}
+                                                        >
+                                                            合并回Case
+                                                        </button>
+                                                    ) : null}
+                                                </div>
+                                            );
+                                        })()}
+                                    </TableCell>
                                     <TableCell className="py-0 text-center">
                                         <div className="flex items-center justify-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
@@ -1134,12 +1249,18 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
                                                     >
                                                         <User className="w-3.5 h-3.5 text-gray-400" /> 修改执行人
                                                     </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        className="text-xs gap-2 cursor-pointer"
+                                                        onClick={() => openProposalDialog(item)}
+                                                    >
+                                                        <PlusCircle className="w-3.5 h-3.5 text-gray-400" /> 发起沉淀提案
+                                                    </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem
                                                         className="text-xs gap-2 cursor-pointer text-red-500 focus:text-red-600"
                                                         onClick={() => setDisassociateTarget(item.id)}
                                                     >
-                                                        <Unlink className="w-3.5 h-3.5" /> 取消关联
+                                                        <Unlink className="w-3.5 h-3.5" /> 移出活动
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -1254,6 +1375,7 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
                 selectedCaseIds={selectedCaseIds}
                 onSuccess={() => {
                     fetchCaseList();
+                loadProposalSnapshots(caseList);
                     setSelectedCaseIds([]);
                 }}
             />
@@ -1285,6 +1407,23 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
                     if (selectedCaseIds.length > 0) setSelectedCaseIds([]);
                 }}
             />
+            <WorkItemProposalDialog
+                open={proposalDialogOpen}
+                onOpenChange={(open) => {
+                    setProposalDialogOpen(open);
+                    if (!open) setProposalRow(null);
+                }}
+                campaignId={planId}
+                workItemId={proposalRow?.id ?? null}
+                targetCaseId={proposalRow?.caseId ?? proposalRow?.id ?? null}
+                defaultTitle={proposalRow ? `沉淀：${proposalRow.name || proposalRow.num || proposalRow.id}` : ''}
+                defaultReason={proposalRow ? '本次测试活动执行过程中发现该执行项需要沉淀回长期 Case 资产。' : ''}
+                onSuccess={() => {
+                    fetchCaseList();
+                    onRefresh?.();
+                }}
+            />
+
             <CreateBugDialog
                 open={createBugOpen}
                 onOpenChange={(open) => {
@@ -1300,13 +1439,13 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
                     if (selectedCaseIds.length > 0) setSelectedCaseIds([]);
                 }}
             />
-            {/* 取消关联确认弹窗（对齐原项目 MsPopconfirm 效果） */}
+            {/* 移出活动确认弹窗（对齐原项目 MsPopconfirm 效果） */}
             <AlertDialog open={!!disassociateTarget} onOpenChange={(o) => !o && setDisassociateTarget(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>确认取消关联？</AlertDialogTitle>
+                        <AlertDialogTitle>确认移出活动？</AlertDialogTitle>
                         <AlertDialogDescription>
-                            取消关联后，该用例将从测试计划中移除，不影响用例库原数据。
+                            移出活动后，该用例将从测试计划中移除，不影响用例库原数据。
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -1316,18 +1455,18 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
                             disabled={disassociateLoading}
                             onClick={() => disassociateTarget && handleDisassociate(disassociateTarget)}
                         >
-                            确认取消关联
+                            确认移出活动
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            {/* 批量取消关联确认弹窗（对齐原项目 openModal warning） */}
+            {/* 批量移出活动确认弹窗（对齐原项目 openModal warning） */}
             <AlertDialog open={batchDisassociateOpen} onOpenChange={(o) => !o && setBatchDisassociateOpen(false)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>确认批量取消关联？</AlertDialogTitle>
+                        <AlertDialogTitle>确认批量移出活动？</AlertDialogTitle>
                         <AlertDialogDescription>
-                            已选中 <span className="font-semibold text-gray-700">{selectedCaseIds.length}</span> 个用例，取消关联后将从测试计划中移除，不影响用例库原数据。
+                            已选中 <span className="font-semibold text-gray-700">{selectedCaseIds.length}</span> 个用例，移出活动后将从测试计划中移除，不影响用例库原数据。
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -1337,7 +1476,7 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
                             disabled={batchDisassociateLoading}
                             onClick={handleBatchDisassociate}
                         >
-                            确认取消关联
+                            确认移出活动
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1353,7 +1492,7 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
                         fetchCaseList();
                         fetchModuleTree();
                         fetchModuleTreeForColumn();
-                        // 刷新测试计划规划树和详情，确保“去关联用例”提示栏等依赖 functionalCaseCount 的视图实时更新
+                        // 刷新测试计划规划树和详情，确保“去补执行项”提示栏等依赖 functionalCaseCount 的视图实时更新
                         onRefreshPlanTree?.();
                         onRefresh?.();
                     }}

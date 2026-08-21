@@ -30,6 +30,7 @@ interface RocketMQTestPageProps {
   definitionId?: string; // 定义ID，用于获取详细信息
   definitions?: MetadataDefinition[]; // 定义列表，用于查找详细信息
   onRefresh?: () => void; // 刷新目录回调
+  spaceId?: string;
 }
 
 export function RocketMQTestPage({
@@ -38,6 +39,7 @@ export function RocketMQTestPage({
   definitionId,
   definitions = [],
   onRefresh,
+  spaceId,
 }: RocketMQTestPageProps) {
   const [searchParams] = useSearchParams();
   
@@ -55,7 +57,7 @@ export function RocketMQTestPage({
     return finalProjectId || '';
   }, [searchParams]);
 
-  const editor = useApiEditor({ protocol: 'ROCKETMQ', projectId, onRefresh });
+  const editor = useApiEditor({ protocol: 'ROCKETMQ', projectId, spaceId, onRefresh });
 
   const currentDefinition = useMemo(() => (definitionId && definitions.length ? definitions.find((d) => d.id === definitionId) ?? null : null), [definitionId, definitions]);
   const isSyncData = useMemo(() => currentDefinition?.moduleId === 'plugin-sync' || (currentDefinition?.id ?? '').startsWith('sync-'), [currentDefinition]);
@@ -76,6 +78,7 @@ export function RocketMQTestPage({
     selectedSite: sites.selectedSite,
     editor,
     projectId,
+    spaceId,
     onRefresh,
     isSyncData,
     nodeId,
@@ -304,6 +307,7 @@ export function RocketMQTestPage({
         onModuleChange={editor.setConfirmModuleId}
         moduleType="ROCKETMQ"
         projectId={projectId}
+        typeId={spaceId}
         onModuleTreeRefresh={async () => {
           if (onRefresh) {
             onRefresh();
@@ -343,6 +347,7 @@ export function RocketMQTestPage({
         }}
         moduleType="ROCKETMQ"
         projectId={projectId}
+        typeId={spaceId}
         onModuleTreeRefresh={async () => {
           // 只刷新模块树，不刷新定义列表（避免清空用户输入的内容）
           await editor.refreshModuleTree();

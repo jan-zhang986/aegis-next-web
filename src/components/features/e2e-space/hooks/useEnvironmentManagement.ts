@@ -8,10 +8,10 @@ import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { workflowService } from '@/services/workflow';
 import type { Environment, EngineType, EnvCode } from '@/services/environment';
-import type { E2ESpace } from '@/services/e2e-space';
+import type { CaseRealizationSpace } from '@/services/e2e-space';
 
 interface UseEnvironmentManagementParams {
-  space: E2ESpace;
+  space: CaseRealizationSpace;
 }
 
 interface UseEnvironmentManagementReturn {

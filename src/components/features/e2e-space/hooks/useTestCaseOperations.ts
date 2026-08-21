@@ -7,7 +7,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { workflowService } from '@/services/workflow';
-import type { E2ESpace } from '@/services/e2e-space';
+import type { CaseRealizationSpace } from '@/services/e2e-space';
 import type { WorkflowDesignPageV2Ref } from '@/components/features/WorkflowDesignPageV2';
 
 interface TestCase {
@@ -23,7 +23,7 @@ interface TestCase {
 }
 
 interface UseTestCaseOperationsParams {
-  space: E2ESpace;
+  space: CaseRealizationSpace;
   selectedModule: string | null;
   filteredTestCases: TestCase[];
   loadTestCases: (moduleId?: string) => Promise<void>;
@@ -161,8 +161,7 @@ export function useTestCaseOperations({
       await workflowService.saveWorkflow({
         projectId,
         moduleId: selectedModule,
-        name: newTestCaseName.trim(),
-        description: newTestCaseDescription.trim() || undefined,
+        description: [newTestCaseName.trim(), newTestCaseDescription.trim()].filter(Boolean).join('\n\n') || undefined,
         category: newTestCaseCategory || 'API',
         type: 'TEST_CASE',
         nodes: [],
@@ -281,8 +280,7 @@ export function useTestCaseOperations({
         workflowId: editingTestCase.id,
         projectId: detail.projectId,
         moduleId: detail.moduleId,
-        name: editTestCaseName.trim(),
-        description: editTestCaseDescription.trim() || undefined,
+        description: [editTestCaseName.trim(), editTestCaseDescription.trim()].filter(Boolean).join('\n\n') || undefined,
         category: editTestCaseCategory || 'API',
         type: detail.type,
         globalVars: detail.globalVars,
@@ -338,13 +336,15 @@ export function useTestCaseOperations({
     try {
       setLoading(true);
       const detail = await workflowService.getWorkflowDetail(testCase.id);
-      
+      const lines = String(detail.description || '').split(/\r?\n/);
+      const rest = lines.slice(1).join('\n').trim();
+      const nextDescription = [editingTestCaseName.trim(), rest].filter(Boolean).join('\n\n');
+
       await workflowService.saveWorkflow({
         workflowId: testCase.id,
         projectId: detail.projectId,
         moduleId: detail.moduleId,
-        name: editingTestCaseName.trim(),
-        description: detail.description,
+        description: nextDescription || undefined,
         category: detail.category,
         type: detail.type,
         globalVars: detail.globalVars,

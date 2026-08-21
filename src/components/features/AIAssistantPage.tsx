@@ -82,13 +82,13 @@ interface MCPTool {
   status?: 'connected' | 'disconnected' | 'error';
 }
 
-type Context = 'test-factory' | 'e2e-automation' | 'data-dashboard' | 'test-report' | 'metadata' | 'general';
-
+type AIAssistantContext = 'test-factory' | 'realization' | 'data-dashboard' | 'test-report' | 'metadata' | 'general';
 interface AIAssistantPageProps {
-  currentContext?: Context;
+  currentContext?: AIAssistantContext;
 }
 
 export function AIAssistantPage({ currentContext = 'general' }: AIAssistantPageProps) {
+  const normalizedContext: AIAssistantContext = currentContext;
   const [isTyping, setIsTyping] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -504,12 +504,12 @@ export function AIAssistantPage({ currentContext = 'general' }: AIAssistantPageP
           <Badge variant="secondary" className="gap-1.5 bg-blue-50 text-blue-600 border-blue-200">
             <Sparkles className="w-3 h-3" />
             <span className="text-xs">
-              {currentContext === 'test-factory' && '测试工厂'}
-              {currentContext === 'e2e-automation' && '自动化用例'}
-              {currentContext === 'data-dashboard' && '数据大屏'}
-              {currentContext === 'test-report' && '测试报告'}
-              {currentContext === 'metadata' && '元数据管理'}
-              {currentContext === 'general' && '通用助手'}
+              {normalizedContext === 'test-factory' && '测试工厂'}
+              {normalizedContext === 'realization' && '用例实现'}
+              {normalizedContext === 'data-dashboard' && '数据大屏'}
+              {normalizedContext === 'test-report' && '测试报告'}
+              {normalizedContext === 'metadata' && '元数据管理'}
+              {normalizedContext === 'general' && '通用助手'}
             </span>
           </Badge>
         </div>

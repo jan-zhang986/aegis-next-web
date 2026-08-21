@@ -203,7 +203,6 @@ describe('LogTable - Property Tests', () => {
       { numRuns: 20 }
     );
   });
-});
 
   // Feature: project-message-log-migration, Property 25: 时间排序正确性
   /**

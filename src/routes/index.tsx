@@ -13,8 +13,9 @@ import type { RouteObject } from 'react-router-dom';
 const WorkspacePage = lazy(() => import('@/pages/WorkspacePage').then(m => ({ default: m.WorkspacePage })));
 const ProjectManagementPage = lazy(() => import('@/pages/ProjectManagementPage').then(m => ({ default: m.ProjectManagementPage })));
 const BugManagementPage = lazy(() => import('@/pages/BugManagementPage').then(m => ({ default: m.BugManagementPage })));
-const TestPlanPage = lazy(() => import('@/pages/TestPlanPage').then(m => ({ default: m.TestPlanPage })));
-const TestPlanDetailPage = lazy(() => import('@/pages/TestPlanDetailPage').then(m => ({ default: m.TestPlanDetailPage })));
+const RequirementQualityPage = lazy(() => import('@/pages/RequirementQualityPage').then(m => ({ default: m.RequirementQualityPage })));
+const QualityWorkspacePage = lazy(() => import('@/pages/QualityWorkspacePage').then(m => ({ default: m.QualityWorkspacePage })));
+const QualityWorkspaceDetailPage = lazy(() => import('@/pages/QualityWorkspaceDetailPage').then(m => ({ default: m.QualityWorkspaceDetailPage })));
 const CaseManagementPage = lazy(() => import('@/pages/CaseManagementPage').then(m => ({ default: m.CaseManagementPage })));
 const MainContent = lazy(() => import('@/components/features/MainContent').then(m => ({ default: m.MainContent })));
 const TestReportListPage = lazy(() => import('@/pages/TestReportListPage').then(m => ({ default: m.TestReportListPage })));
@@ -42,15 +43,15 @@ export const routes: RouteObject[] = [
     element: <BugManagementPage />,
   },
   {
-    path: '/test-plan',
+    path: '/quality-workspace',
     children: [
       {
         index: true,
-        element: <TestPlanPage />,
+        element: <RequirementQualityPage />,
       },
       {
         path: ':planId',
-        element: <TestPlanDetailPage />,
+        element: <QualityWorkspaceDetailPage />,
       }
     ]
   },
@@ -76,10 +77,6 @@ export const routes: RouteObject[] = [
       {
         path: 'data-factory',
         element: <MainContent selectedTopMenu="data-factory" />,
-      },
-      {
-        path: 'e2e-auto',
-        element: <Navigate to="/case-management?menu=test-case&tab=e2e-auto" replace />,
       },
       {
         path: 'performance',
@@ -108,6 +105,7 @@ export const routes: RouteObject[] = [
 // 路由映射配置（用于兼容旧的URL参数方式）
 export const routeMap: Record<string, { path: string; params?: Record<string, string> }> = {
   'workspace': { path: '/workspace' },
+  'quality-workspace': { path: '/quality-workspace' },
   'project-management': { path: '/project-management' },
   'bug-management': { path: '/bug-management' },
   'gate-management': { path: '/gate-management' },

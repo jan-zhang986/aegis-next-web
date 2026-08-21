@@ -5,7 +5,8 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
-import { FileText, RefreshCw, Trash2, Download, Pencil, FolderInput, Copy, ArrowUpDown, ArrowUp, ArrowDown, Filter, GripVertical, MoreHorizontal, Link2, Plus, Sparkles, Settings } from 'lucide-react';
+import { FileText, RefreshCw, Trash2, Download, Pencil, FolderInput, Copy, ArrowUpDown, ArrowUp, ArrowDown, Filter, GripVertical, MoreHorizontal, Link2, Plus, Sparkles, Settings, Play, Loader2 } from 'lucide-react';
+import { caseManagementService } from '@/services';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -101,6 +102,7 @@ interface CaseTableSectionProps {
   onSelectCase: (caseId: string, checked: boolean) => void;
   onPageChange: (page: number) => void;
   onViewCase?: (item: CaseItem, selectedModuleId?: string) => void;
+  onViewRealizationCase?: (item: CaseItem, selectedModuleId?: string) => void;
   onEditCase?: (item: CaseItem) => void;
   onCopyCase?: (item: CaseItem, selectedModuleId?: string) => void;
   onDeleteCase?: (item: CaseItem) => void;
@@ -147,6 +149,26 @@ function getExecuteResultLabel(result?: string) {
 }
 function getExecuteResultColor(result?: string) {
   return EXECUTE_RESULT_MAP[result || '']?.color || 'bg-gray-100 text-gray-800';
+}
+function getCoverageBadgeClass(status?: string) {
+  switch (status) {
+    case 'AUTOMATED_ONLY':
+      return 'bg-emerald-100 text-emerald-700';
+    case 'PARTIAL':
+      return 'bg-blue-100 text-blue-700';
+    default:
+      return 'bg-gray-100 text-gray-600';
+  }
+}
+function getCoverageLabel(status?: string) {
+  switch (status) {
+    case 'AUTOMATED_ONLY':
+      return '全自动化';
+    case 'PARTIAL':
+      return '部分自动化';
+    default:
+      return '';
+  }
 }
 
 /** 可排序列头（筛选支持多选：filterValue 为数组，点击选项为切换选中） */
@@ -331,7 +353,7 @@ function SortableTableRow({
     <tr
       ref={setNodeRef}
       style={style}
-      className={`group border-b transition-colors [&_td]:transition-colors [&_td]:group-hover:bg-[#f2f3f5] border-gray-200 h-11 ${isDragging ? 'opacity-50 bg-gray-50' : ''}`}
+      className={`group border-b transition-colors [&_td]:transition-colors [&_td]:group-hover:bg-[#f2f3f5] border-gray-200 h-10 ${isDragging ? 'opacity-50 bg-gray-50' : ''}`}
     >
       {hasDrag && (
         <TableCell className="w-8 px-1 cursor-grab active:cursor-grabbing border-r-0" {...attributes} {...listeners}>
@@ -360,6 +382,7 @@ export function CaseTableSection({
   onSelectCase,
   onPageChange,
   onViewCase,
+  onViewRealizationCase,
   onEditCase,
   onCopyCase,
   onDeleteCase,
@@ -421,6 +444,37 @@ export function CaseTableSection({
   const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState('');
+  const [executingIds, setExecutingIds] = useState<Set<string>>(new Set());
+
+  const handleExecute = async (item: CaseItem) => {
+    if (!item.id || !item.workflowId) {
+      toast.error('该用例未绑定自动化');
+      return;
+    }
+    
+    setExecutingIds(prev => new Set(prev).add(item.id));
+    const toastId = toast.loading(`正在触发用例 [${item.name}] 的自动化执行...`);
+    try {
+      const res: any = await caseManagementService.executeCaseWorkflow(item.id);
+      toast.success(`触发成功！`, {
+        id: toastId,
+        description: `运行ID: ${res?.runId || 'N/A'}`,
+        action: res?.runId ? {
+          label: '查看任务',
+          onClick: () => window.open(`/workflow/run/${res.runId}`, '_blank')
+        } : undefined
+      });
+    } catch (error: any) {
+      console.error('Execute failed', error);
+      toast.error(error.response?.data?.message || error.message || '触发执行失败', { id: toastId });
+    } finally {
+      setExecutingIds(prev => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -566,8 +620,8 @@ export function CaseTableSection({
               accessibility={{ container: typeof document !== 'undefined' ? document.body : undefined }}
             >
               <Table className="[&_th]:px-4 [&_th]:py-3 [&_td]:px-4 [&_td]:py-3 [&_th]:text-[13px] [&_th]:font-semibold [&_th]:text-gray-600 [&_td]:text-[13px] [&_td]:text-gray-900" style={{ tableLayout: 'fixed' }}>
-                <TableHeader className="bg-[#f7f8fa] sticky top-0 z-10 border-b border-gray-200 shadow-sm">
-                  <TableRow className="hover:bg-transparent border-none h-11">
+                <TableHeader className="bg-slate-50/50 sticky top-0 z-10 border-b border-slate-200">
+                  <TableRow className="hover:bg-transparent border-none h-9">
                     {!!onDragSort && <TableHead className="w-8 !px-2" />}
                     <TableHead className="w-12 !px-2">
                       <Checkbox checked={isAllSelected} onCheckedChange={onSelectAll} className="rounded-[2px] opacity-60" />
@@ -696,15 +750,15 @@ export function CaseTableSection({
                               className="rounded-[2px] border-gray-300"
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="w-24">
                             <button
-                              className="text-blue-600 font-medium cursor-pointer hover:underline decoration-blue-600/30 font-mono"
+                              className="text-slate-400 hover:text-blue-600 font-mono text-[11px] font-medium transition-colors tracking-tight"
                               onClick={() => handleView(item)}
                             >
-                              {item.num ?? item.id?.slice(0, 8)}
+                              {item.num ? `#${item.num}` : (item.id?.slice(0, 7) || 'untagged')}
                             </button>
                           </TableCell>
-                          <TableCell className="max-w-[200px]">
+                          <TableCell>
                             <div className="flex items-center gap-2 min-w-0">
                               {canEdit && onNameChange && editingNameId === item.id ? (
                                 <Input
@@ -728,6 +782,14 @@ export function CaseTableSection({
                                 >
                                   {item.name || '-'}
                                 </button>
+                              )}
+                              {item.realizationSummary?.automationCoverageStatus && getCoverageLabel(item.realizationSummary.automationCoverageStatus) && (
+                                <span
+                                  className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs shrink-0 ${getCoverageBadgeClass(item.realizationSummary.automationCoverageStatus)}`}
+                                  title={`已覆盖类型：${(item.realizationSummary.coveredTypes ?? []).join(' / ') || '暂无'}`}
+                                >
+                                  {getCoverageLabel(item.realizationSummary.automationCoverageStatus)}
+                                </span>
                               )}
                               {item.aiCreate && (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-violet-100 text-violet-700 shrink-0" title="AI 创建">
@@ -850,48 +912,85 @@ export function CaseTableSection({
                                 return null;
                             }
                           })}
-                          <TableCell className="text-right !pl-4 !pr-5 w-[200px] min-w-[200px] sticky right-0 bg-white group-hover:bg-[#f2f3f5] border-l border-[#e5e6eb] shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.05)] z-10">
-                            <div className="flex items-center justify-end gap-2">
+                          <TableCell className="text-right !pl-4 !pr-6 w-[220px] min-w-[220px] sticky right-0 bg-white group-hover:bg-slate-50 transition-colors border-l border-slate-100 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.03)] z-10">
+                            <div className="flex items-center justify-end gap-2.5">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      disabled={executingIds.has(item.id) || !item.workflowId}
+                                      className={cn(
+                                        "inline-flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 shadow-sm",
+                                        !item.workflowId 
+                                          ? "bg-slate-50 text-slate-300 cursor-not-allowed opacity-50"
+                                          : executingIds.has(item.id)
+                                            ? "bg-blue-50 text-blue-400 animate-pulse"
+                                            : "bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white hover:shadow-md active:scale-95"
+                                      )}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleExecute(item);
+                                      }}
+                                    >
+                                      {executingIds.has(item.id) ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <Play className={cn("w-4 h-4", item.workflowId && "fill-current")} />
+                                      )}
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">
+                                    {item.workflowId ? "一键执行自动化" : "未绑定自动化"}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              <div className="h-4 w-px bg-slate-200 mx-0.5" />
+
                               {canEdit && (
                                 <button
                                   type="button"
-                                  className="text-xs font-medium text-[#165DFF] underline decoration-[#165DFF]/50 hover:decoration-[#165DFF] hover:text-[#165DFF]/90 transition-colors"
+                                  className="text-[13px] font-semibold text-[#165DFF] hover:text-[#165DFF]/80 transition-colors px-1"
                                   onClick={() => handleEdit(item)}
                                 >
                                   编辑
                                 </button>
                               )}
+                              
                               {canCopy && (
-                                <>
-                                  <span className="text-gray-300 mx-0.5">|</span>
-                                  <button
-                                    type="button"
-                                    className="text-xs font-medium text-[#165DFF] underline decoration-[#165DFF]/50 hover:decoration-[#165DFF] hover:text-[#165DFF]/90 transition-colors"
-                                    onClick={() => handleCopy(item)}
-                                  >
-                                    复制
-                                  </button>
-                                </>
+                                <button
+                                  type="button"
+                                  className="text-[13px] font-semibold text-slate-500 hover:text-slate-700 transition-colors px-1"
+                                  onClick={() => handleCopy(item)}
+                                >
+                                  复制
+                                </button>
                               )}
-                              <span className="text-gray-300 mx-0.5 select-none">|</span>
+
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <button
                                     type="button"
-                                    className="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-                                    aria-label="更多操作"
+                                    className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
                                   >
-                                    <MoreHorizontal className="w-3.5 h-3.5" />
+                                    <MoreHorizontal className="w-4 h-4" />
                                   </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleView(item)}>
-                                    查看
+                                <DropdownMenuContent align="end" className="w-32">
+                                  <DropdownMenuItem onClick={() => handleView(item)} className="gap-2">
+                                    <FileText className="w-4 h-4" /> 查看详情
                                   </DropdownMenuItem>
                                   {canDelete && (
-                                    <DropdownMenuItem onClick={() => handleDelete(item)} className="text-red-500 focus:text-red-600">
-                                      删除
-                                    </DropdownMenuItem>
+                                    <>
+                                      <div className="h-px bg-slate-100 my-1" />
+                                      <DropdownMenuItem 
+                                        onClick={() => handleDelete(item)} 
+                                        className="text-red-500 focus:text-red-600 gap-2"
+                                      >
+                                        <Trash2 className="w-4 h-4" /> 删除
+                                      </DropdownMenuItem>
+                                    </>
                                   )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -902,7 +1001,7 @@ export function CaseTableSection({
                     </SortableContext>
                   ) : (
                     safeCaseList.map((item) => (
-                      <TableRow key={item.id} className="group transition-colors [&_td]:transition-colors [&_td]:group-hover:bg-[#f2f3f5] border-b border-gray-200 h-11">
+                      <TableRow key={item.id} className="group transition-colors [&_td]:transition-colors [&_td]:group-hover:bg-[#f2f3f5] border-b border-gray-200 h-10">
                         <TableCell className="!px-2">
                           <Checkbox
                             checked={selectedCases.includes(item.id)}
@@ -918,7 +1017,7 @@ export function CaseTableSection({
                             {item.num ?? item.id?.slice(0, 8)}
                           </button>
                         </TableCell>
-                        <TableCell className="max-w-[200px]">
+                        <TableCell>
                           <div className="flex items-center gap-2 min-w-0">
                             {canEdit && onNameChange && editingNameId === item.id ? (
                               <Input
@@ -942,6 +1041,14 @@ export function CaseTableSection({
                               >
                                 {item.name || '-'}
                               </button>
+                            )}
+                            {item.realizationSummary?.automationCoverageStatus && getCoverageLabel(item.realizationSummary.automationCoverageStatus) && (
+                              <span
+                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs shrink-0 ${getCoverageBadgeClass(item.realizationSummary.automationCoverageStatus)}`}
+                                title={`已覆盖类型：${(item.realizationSummary.coveredTypes ?? []).join(' / ') || '暂无'}`}
+                              >
+                                {getCoverageLabel(item.realizationSummary.automationCoverageStatus)}
+                              </span>
                             )}
                             {item.aiCreate && (
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-violet-100 text-violet-700 shrink-0" title="AI 创建">
@@ -1120,7 +1227,7 @@ export function CaseTableSection({
           ) : (
             <Table className="[&_th]:px-4 [&_th]:py-3 [&_td]:px-4 [&_td]:py-3 [&_th]:text-[13px] [&_th]:font-semibold [&_th]:text-gray-600 [&_td]:text-[13px] [&_td]:text-gray-900" style={{ tableLayout: 'fixed' }}>
               <TableHeader className="bg-[#f7f8fa] sticky top-0 z-10 border-b border-gray-200 shadow-sm">
-                <TableRow className="hover:bg-transparent border-none h-11">
+                <TableRow className="hover:bg-transparent border-none h-10">
                   <TableHead className="w-12 !px-2">
                     <Checkbox checked={isAllSelected} onCheckedChange={onSelectAll} className="rounded-[2px] opacity-60" />
                   </TableHead>
@@ -1220,7 +1327,7 @@ export function CaseTableSection({
                   </TableRow>
                 ) : (
                   safeCaseList.map((item) => (
-                    <TableRow key={item.id} className="group transition-colors [&_td]:transition-colors [&_td]:group-hover:bg-[#f2f3f5] border-b border-gray-200 h-11">
+                    <TableRow key={item.id} className="group transition-colors [&_td]:transition-colors [&_td]:group-hover:bg-[#f2f3f5] border-b border-gray-200 h-10">
                       <TableCell className="!px-2">
                         <Checkbox
                           checked={selectedCases.includes(item.id)}
@@ -1228,12 +1335,12 @@ export function CaseTableSection({
                           className="rounded-[2px] border-gray-300"
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-24">
                         <button
-                          className="text-blue-600 font-medium cursor-pointer hover:underline decoration-blue-600/30 font-mono"
+                          className="text-slate-400 hover:text-blue-600 font-mono text-[11px] font-medium transition-colors tracking-tight"
                           onClick={() => handleView(item)}
                         >
-                          {item.num ?? item.id?.slice(0, 8)}
+                          {item.num ? `#${item.num}` : (item.id?.slice(0, 7) || 'untagged')}
                         </button>
                       </TableCell>
                       <TableCell className="max-w-[200px]">

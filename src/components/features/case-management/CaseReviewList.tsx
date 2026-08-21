@@ -1582,7 +1582,7 @@ export function CaseReviewList({
               </div>
               <div className="space-y-2">
                 {filterConditions.map((row, idx) => {
-                  const opOptions = row.field === 'moduleId' ? [{ value: 'in', label: '属于' }] : ['caseCount', 'passRate'].includes(row.field) ? [{ value: 'equals', label: '等于' }, { value: 'gt', label: '大于' }, { value: 'gte', label: '大于等于' }, { value: 'lt', label: '小于' }, { value: 'lte', label: '小于等于' }] : [{ value: 'contains', label: '包含' }, { value: 'equals', label: '等于' }];
+                  const opOptions: Array<{ value: string; label: string }> = row.field === 'moduleId' ? [{ value: 'in', label: '属于' }] : ['caseCount', 'passRate'].includes(row.field) ? [{ value: 'equals', label: '等于' }, { value: 'gt', label: '大于' }, { value: 'gte', label: '大于等于' }, { value: 'lt', label: '小于' }, { value: 'lte', label: '小于等于' }] : [{ value: 'contains', label: '包含' }, { value: 'equals', label: '等于' }];
                   return (
                     <div key={idx} className="flex items-center gap-2 flex-wrap">
                       <Select
@@ -1616,7 +1616,7 @@ export function CaseReviewList({
                         </SelectTrigger>
                         <SelectContent>
                           {opOptions.map((o) => (
-                            <SelectItem key={o.value} value={o.value}>{typeof o === 'object' ? o.label : o.value}</SelectItem>
+                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

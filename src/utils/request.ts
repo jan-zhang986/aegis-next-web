@@ -198,7 +198,6 @@ request.interceptors.request.use(
         '/metrics/efficiency', // 数据监控大盘 - Aegis 后端
         '/metrics/requirement-quality',
         '/functional/case/metrics',
-        '/project',
         '/system/user',
         '/user/profile',
         '/lark',

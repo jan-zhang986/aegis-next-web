@@ -1,5 +1,5 @@
 /**
- * 测试计划详情 - 自动化用例
+ * 测试计划详情 - 用例实现
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -36,13 +36,14 @@ import { Badge } from '@/components/ui/badge';
 import { testPlanManagementService } from '@/services';
 import { toast } from 'sonner';
 import { UnifiedPagination } from '@/components/ui/unified-pagination';
+import { WorkItemProposalDialog } from './WorkItemProposalDialog';
 
 interface PlanDetailScenarioCaseProps {
     planId: string;
     projectId: string;
     canEdit: boolean;
     onRefresh?: () => void;
-    /** 嵌入测试规划右侧：隐藏左侧树，仅展示自动化用例列表，由外部传入模块 id 筛选 */
+    /** 嵌入测试规划右侧：隐藏左侧树，仅展示用例实现列表，由外部传入模块 id 筛选 */
     embedInPlanTree?: boolean;
     /** 嵌入模式下使用的模块 id，为空或 'all' 表示全部 */
     defaultModuleId?: string | null;
@@ -59,6 +60,9 @@ export function PlanDetailScenarioCase({ planId, projectId, canEdit, onRefresh, 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize] = useState(10);
     const [selectedCaseIds, setSelectedCaseIds] = useState<string[]>([]);
+    const [proposalDialogOpen, setProposalDialogOpen] = useState(false);
+    const [proposalRow, setProposalRow] = useState<any | null>(null);
+    const [proposalSnapshotMap, setProposalSnapshotMap] = useState<Record<string, { count: number; latestStatus: string | null; latestProposalId: string | null }>>({});
 
     // 获取模块树
     const fetchModuleTree = useCallback(async () => {
@@ -73,7 +77,7 @@ export function PlanDetailScenarioCase({ planId, projectId, canEdit, onRefresh, 
         }
     }, [planId]);
 
-    // 获取自动化用例列表
+    // 获取用例实现列表
     const fetchCaseList = useCallback(async () => {
         setLoading(true);
         try {
@@ -89,8 +93,8 @@ export function PlanDetailScenarioCase({ planId, projectId, canEdit, onRefresh, 
             setCaseList(res.list || []);
             setTotal(res.total || 0);
         } catch (error) {
-            console.error('获取自动化用例列表失败:', error);
-            toast.error('获取自动化用例列表失败');
+            console.error('获取用例实现列表失败:', error);
+            toast.error('获取用例实现列表失败');
         } finally {
             setLoading(false);
         }
@@ -104,13 +108,14 @@ export function PlanDetailScenarioCase({ planId, projectId, canEdit, onRefresh, 
         fetchCaseList();
     }, [fetchCaseList]);
 
+
     useEffect(() => {
         if (!embedInPlanTree) return;
         setSelectedModuleId(defaultModuleId ?? 'all');
     }, [embedInPlanTree, defaultModuleId]);
 
     const handleExecuteCase = async (caseId: string) => {
-        const toastId = toast.loading('正在执行自动化用例...');
+        const toastId = toast.loading('正在执行用例实现...');
         try {
             await testPlanManagementService.runApiScenario(caseId);
             toast.success('执行成功', { id: toastId });
@@ -124,64 +129,64 @@ export function PlanDetailScenarioCase({ planId, projectId, canEdit, onRefresh, 
 
     const handleBatchExecute = async () => {
         if (selectedCaseIds.length === 0) {
-            toast.error('请选择要执行的用例');
+            toast.error('请选择要执行的执行项');
             return;
         }
 
-        const toastId = toast.loading(`正在批量执行 ${selectedCaseIds.length} 个自动化用例...`);
+        const toastId = toast.loading(`正在批量执行 ${selectedCaseIds.length} 个用例实现...`);
         try {
             await testPlanManagementService.batchRunApiScenario({
                 testPlanId: planId,
                 selectIds: selectedCaseIds
             });
-            toast.success('批量执行成功', { id: toastId });
+            toast.success('批量执行项成功', { id: toastId });
             fetchCaseList();
             setSelectedCaseIds([]);
             onRefresh?.();
         } catch (error) {
             console.error(error);
-            toast.error('批量执行失败', { id: toastId });
+            toast.error('批量执行项失败', { id: toastId });
         }
     };
 
     const handleDisassociate = async (caseId: string) => {
-        if (!confirm('确定要取消关联该自动化用例吗？')) return;
-        const toastId = toast.loading('正在取消关联...');
+        if (!confirm('确定要移出活动该用例实现吗？')) return;
+        const toastId = toast.loading('正在移出活动...');
         try {
             await testPlanManagementService.disassociateApiScenario({
                 testPlanId: planId,
                 id: caseId
             });
-            toast.success('已取消关联', { id: toastId });
+            toast.success('已移出活动', { id: toastId });
             fetchCaseList();
             onRefresh?.();
         } catch (error) {
             console.error(error);
-            toast.error('取消关联失败', { id: toastId });
+            toast.error('移出活动失败', { id: toastId });
         }
     };
 
     const handleBatchDisassociate = async () => {
         if (selectedCaseIds.length === 0) {
-            toast.error('请选择要取消关联的用例');
+            toast.error('请选择要移出活动的用例');
             return;
         }
 
-        if (!confirm(`确定要取消关联选中的 ${selectedCaseIds.length} 个自动化用例吗？`)) return;
+        if (!confirm(`确定要移出活动选中的 ${selectedCaseIds.length} 个用例实现吗？`)) return;
 
-        const toastId = toast.loading('正在批量取消关联...');
+        const toastId = toast.loading('正在批量移出活动...');
         try {
             await testPlanManagementService.batchDisassociateApiScenario({
                 testPlanId: planId,
                 selectIds: selectedCaseIds
             });
-            toast.success('批量取消关联成功', { id: toastId });
+            toast.success('批量移出活动成功', { id: toastId });
             fetchCaseList();
             setSelectedCaseIds([]);
             onRefresh?.();
         } catch (error) {
             console.error(error);
-            toast.error('批量取消关联失败', { id: toastId });
+            toast.error('批量移出活动失败', { id: toastId });
         }
     };
 
@@ -200,6 +205,80 @@ export function PlanDetailScenarioCase({ planId, projectId, canEdit, onRefresh, 
             setSelectedCaseIds(selectedCaseIds.filter(id => id !== caseId));
         }
     };
+
+    const openProposalDialog = (item: any) => {
+        setProposalRow(item);
+        setProposalDialogOpen(true);
+    };
+
+    const normalizeProposalList = (res: any): any[] => {
+        if (Array.isArray(res)) return res;
+        if (Array.isArray(res?.list)) return res.list;
+        if (Array.isArray(res?.data)) return res.data;
+        return [];
+    };
+
+    const loadProposalSnapshots = useCallback(async (items: any[]) => {
+        if (!items?.length) {
+            setProposalSnapshotMap({});
+            return;
+        }
+        const entries = await Promise.all(items.map(async (item) => {
+            try {
+                const res = await testPlanManagementService.getWorkItemProposalList(planId, item.id);
+                const list = normalizeProposalList(res);
+                const latest = list[0] ?? list[list.length - 1] ?? null;
+                return [item.id, { count: list.length, latestStatus: latest?.status ?? null, latestProposalId: latest?.id ?? null }] as const;
+            } catch (error) {
+                return [item.id, { count: 0, latestStatus: null, latestProposalId: null }] as const;
+            }
+        }));
+        setProposalSnapshotMap(Object.fromEntries(entries));
+    }, [planId]);
+
+    const getProposalStatusMeta = (status?: string | null) => {
+        switch (status) {
+            case 'MERGED':
+                return { label: '已合并', className: 'bg-green-50 text-green-600' };
+            case 'SUBMITTED':
+                return { label: '评审中', className: 'bg-blue-50 text-blue-600' };
+            case 'REJECTED':
+                return { label: '已拒绝', className: 'bg-red-50 text-red-600' };
+            case 'DRAFT':
+                return { label: '草稿', className: 'bg-amber-50 text-amber-600' };
+            default:
+                return { label: '未发起', className: 'bg-gray-50 text-gray-500' };
+        }
+    };
+
+    const handleMergeProposalToCase = async (item: any) => {
+        const proposalInfo = proposalSnapshotMap[item.id];
+        const proposalId = proposalInfo?.latestProposalId;
+        if (!proposalId) {
+            toast.error('当前执行项还没有可合并的提案');
+            return;
+        }
+        if (proposalInfo?.latestStatus === 'MERGED') {
+            toast.message('最近提案已经合并');
+            return;
+        }
+        if (!confirm('确定要将最近一次提案合并回 Case 吗？')) return;
+        const toastId = toast.loading('正在合并回 Case...');
+        try {
+            await testPlanManagementService.mergeProposalToCase(proposalId, {
+                targetCaseId: item.caseId || item.apiCaseId || item.apiScenarioId || item.id || undefined,
+            });
+            toast.success('提案已合并回 Case', { id: toastId });
+            fetchCaseList();
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error?.message || '合并回 Case 失败', { id: toastId });
+        }
+    };
+
+    useEffect(() => {
+        loadProposalSnapshots(caseList);
+    }, [caseList, loadProposalSnapshots]);
 
     // 渲染模块树节点
     const renderTreeNode = (node: any, level: number = 0) => {
@@ -278,6 +357,17 @@ export function PlanDetailScenarioCase({ planId, projectId, canEdit, onRefresh, 
 
     const tablePanelContent = (
         <div className="flex flex-col h-full overflow-hidden bg-white">
+            <div className="border-b border-gray-100 bg-gradient-to-r from-slate-50/80 via-white to-blue-50/60 px-4 py-3">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <div className="text-sm font-medium text-slate-900">用例实现执行项</div>
+                        <div className="mt-1 text-xs leading-5 text-slate-500">这里管理的是本次测试活动里的用例实现执行项。实现本身沉淀在 Case realization 里，这里只负责本次活动的执行、分派和移出。</div>
+                    </div>
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-white/80 px-3 py-2 text-xs leading-5 text-slate-500">
+                        这里看的不是长期资产，而是本次活动中的 <span className="font-medium text-blue-600">WorkItem</span>。
+                    </div>
+                </div>
+            </div>
             <div className="p-2.5 border-b border-gray-100 flex items-center justify-between bg-white">
                 <div className="flex items-center gap-2 flex-1 max-w-[360px] pl-2">
                     <div className="relative flex-1">
@@ -307,14 +397,14 @@ export function PlanDetailScenarioCase({ planId, projectId, canEdit, onRefresh, 
                                 className="h-8 text-[11px] border-gray-200 text-gray-600 gap-1.5"
                                 onClick={handleBatchDisassociate}
                             >
-                                取消关联 ({selectedCaseIds.length})
+                                移出活动 ({selectedCaseIds.length})
                             </Button>
                         </>
                     )}
 
                     {canEdit && (
                         <Button size="sm" className="h-8 text-[11px] bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
-                            <LinkIcon className="w-3.5 h-3.5" /> 关联用例
+                            <LinkIcon className="w-3.5 h-3.5" /> 补执行项
                         </Button>
                     )}
 
@@ -354,22 +444,23 @@ export function PlanDetailScenarioCase({ planId, projectId, canEdit, onRefresh, 
                             <TableHead className="w-[100px] font-medium text-gray-500 text-xs">用例等级</TableHead>
                             <TableHead className="w-[120px] font-medium text-gray-500 text-xs">执行人</TableHead>
                             <TableHead className="w-[140px] font-medium text-gray-500 text-xs">更新时间</TableHead>
+                            <TableHead className="w-[120px] text-center font-medium text-gray-500 text-xs">提案</TableHead>
                             <TableHead className="w-[120px] text-center font-medium text-gray-500 text-xs">操作</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="h-64 text-center">
+                                <TableCell colSpan={9} className="h-64 text-center">
                                     <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-400" />
                                 </TableCell>
                             </TableRow>
                         ) : caseList.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="h-64 text-center">
+                                <TableCell colSpan={9} className="h-64 text-center">
                                     <div className="text-gray-400 flex flex-col items-center gap-2">
                                         <Workflow className="w-10 h-10 opacity-20" />
-                                        <span>暂无自动化用例</span>
+                                        <span>当前活动下还没有用例实现执行项</span>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -426,6 +517,29 @@ export function PlanDetailScenarioCase({ planId, projectId, canEdit, onRefresh, 
                                         {item.updateTime || '2026-01-13 11:10:26'}
                                     </TableCell>
                                     <TableCell className="text-center">
+                                        {(() => {
+                                            const proposalInfo = proposalSnapshotMap[item.id] ?? { count: 0, latestStatus: null, latestProposalId: null };
+                                            const proposalMeta = getProposalStatusMeta(proposalInfo.latestStatus);
+                                            return (
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <span className="text-[11px] text-gray-500">{proposalInfo.count} 个提案</span>
+                                                    <Badge className={`${proposalMeta.className} border-0 text-[11px] font-normal`}>
+                                                        {proposalMeta.label}
+                                                    </Badge>
+                                                    {proposalInfo.count > 0 && proposalInfo.latestStatus !== 'MERGED' ? (
+                                                        <button
+                                                            type="button"
+                                                            className="text-[11px] text-blue-600 hover:text-blue-700 hover:underline"
+                                                            onClick={() => handleMergeProposalToCase(item)}
+                                                        >
+                                                            合并回Case
+                                                        </button>
+                                                    ) : null}
+                                                </div>
+                                            );
+                                        })()}
+                                    </TableCell>
+                                    <TableCell className="text-center">
                                         <div className="flex justify-center gap-3">
                                             <span
                                                 className="text-blue-600 cursor-pointer hover:text-blue-700 font-normal hover:underline decoration-blue-200 text-xs"
@@ -440,9 +554,16 @@ export function PlanDetailScenarioCase({ planId, projectId, canEdit, onRefresh, 
                                             <span className="text-gray-300">|</span>
                                             <span
                                                 className="text-blue-600 cursor-pointer hover:text-blue-700 font-normal hover:underline decoration-blue-200 text-xs"
+                                                onClick={() => openProposalDialog(item)}
+                                            >
+                                                发起提案
+                                            </span>
+                                            <span className="text-gray-300">|</span>
+                                            <span
+                                                className="text-blue-600 cursor-pointer hover:text-blue-700 font-normal hover:underline decoration-blue-200 text-xs"
                                                 onClick={() => handleDisassociate(item.id)}
                                             >
-                                                取消关联
+                                                移出活动
                                             </span>
                                         </div>
                                     </TableCell>
@@ -462,6 +583,26 @@ export function PlanDetailScenarioCase({ planId, projectId, canEdit, onRefresh, 
                 className="p-3 border-t border-gray-100 bg-gray-50/30"
             />
         </div>
+    );
+
+    const proposalDialog = (
+        <WorkItemProposalDialog
+            open={proposalDialogOpen}
+            onOpenChange={(open) => {
+                setProposalDialogOpen(open);
+                if (!open) setProposalRow(null);
+            }}
+            campaignId={planId}
+            workItemId={proposalRow?.id ?? null}
+            targetCaseId={proposalRow?.caseId ?? proposalRow?.apiScenarioId ?? proposalRow?.id ?? null}
+            defaultTitle={proposalRow ? `沉淀：${proposalRow.name || proposalRow.num || proposalRow.id}` : ''}
+            defaultReason={proposalRow ? '本次测试活动执行过程中发现该用例实现执行项需要沉淀回长期 Case 资产。' : ''}
+            onSuccess={() => {
+                fetchCaseList();
+                loadProposalSnapshots(caseList);
+                onRefresh?.();
+            }}
+        />
     );
 
     return (
@@ -514,7 +655,7 @@ export function PlanDetailScenarioCase({ planId, projectId, canEdit, onRefresh, 
                                 >
                                     <div className="flex items-center gap-2.5">
                                         <Workflow className={`w-4 h-4 ${selectedModuleId === 'all' ? 'text-[#165DFF]' : 'text-gray-400'}`} />
-                                        <span className="text-sm">全部自动化用例 ({total})</span>
+                                        <span className="text-sm">全部用例实现 ({total})</span>
                                     </div>
                                 </div>
                                 {moduleTree.length === 0 ? (

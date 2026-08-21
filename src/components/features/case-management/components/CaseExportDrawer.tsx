@@ -562,7 +562,7 @@ export function CaseExportDrawer({
           onClick: () => handleCancelExport(),
         },
       });
-      setExportingMessageId(messageId);
+      setExportingMessageId(String(messageId));
     } catch (err: any) {
       console.error('导出失败:', err);
       toast.error(err?.message || '导出失败');

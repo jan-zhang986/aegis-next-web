@@ -19,8 +19,10 @@ interface UseWorkflowSaveParams {
   viewMode?: 'canvas' | 'steps';
   selectedGlobalEnvironmentId?: string | null;
   originalNodesOrderRef: React.MutableRefObject<Map<string, number>>;
-  loadWorkflowData?: (options?: { silent?: boolean }) => Promise<void>;
+  loadWorkflowData?: (options?: { silent?: boolean; workflowId?: string }) => Promise<void>;
   onSaveCallback?: () => void | Promise<void>;
+  caseId?: string;
+  realizationType?: string;
 }
 
 interface UseWorkflowSaveReturn {
@@ -45,6 +47,8 @@ export function useWorkflowSave({
   originalNodesOrderRef,
   loadWorkflowData,
   onSaveCallback,
+  caseId,
+  realizationType,
 }: UseWorkflowSaveParams): UseWorkflowSaveReturn {
   const [saving, setSaving] = useState(false);
 
@@ -172,10 +176,18 @@ export function useWorkflowSave({
         // 引用子节点：refWorkflowId 来自 config.workflow_id 或节点 refWorkflowId
         const refWorkflowId =
           n.type === NodeType.SUB_WORKFLOW
-            ? (nodeConfig?.workflow_id ?? n.refWorkflowId) || null
+            ? (((nodeConfig as Record<string, unknown> | undefined)?.workflow_id as string | number | null | undefined) ?? n.refWorkflowId) || null
             : n.refWorkflowId !== undefined ? n.refWorkflowId : null;
         const refMode =
           n.type === NodeType.SUB_WORKFLOW && refWorkflowId ? 'REF_WORKFLOW' : (n.refMode || 'NONE');
+
+        if (n.type === NodeType.SUB_WORKFLOW && nodeConfig && typeof nodeConfig === 'object' && !Array.isArray(nodeConfig)) {
+          const cfg = nodeConfig as Record<string, unknown>;
+          if ('workflow_name' in cfg) {
+            const { workflow_name: _unused, ...rest } = cfg;
+            nodeConfig = rest as WorkflowNodeData['config'];
+          }
+        }
 
         return {
           id: n.id,
@@ -189,7 +201,7 @@ export function useWorkflowSave({
           refMode,
           refMetadataId:
             n.refMetadataId !== undefined ? n.refMetadataId : null, // 确保 null 而不是 undefined（数据库使用 null）
-          refWorkflowId: refWorkflowId !== undefined && refWorkflowId !== null ? refWorkflowId : null,
+          refWorkflowId: refWorkflowId !== undefined && refWorkflowId !== null ? String(refWorkflowId) : null,
         };
       });
 
@@ -197,7 +209,6 @@ export function useWorkflowSave({
         workflowId: workflow.id || workflowId,
         projectId,
         moduleId,
-        name: workflow.name,
         description: workflow.description,
         category: 'API',
         type: 'TEST_CASE', // E2E用例类型
@@ -210,6 +221,10 @@ export function useWorkflowSave({
           label: c.label,
           color: c.color,
         })),
+        caseId,
+        realizationType,
+        // 与后端 GLOBAL_VAR_CASE_REALIZATION 一致；否则 realization 接口不收录，详情 Tab / 工作台无 workflowDefinitionId
+        ...(caseId && realizationType ? { caseRealization: true as const } : {}),
       });
 
       // 处理返回值：可能是字符串（workflowId）或对象 { data: workflowId } 或 { workflowId: ... }
@@ -218,15 +233,29 @@ export function useWorkflowSave({
           ? response
           : response?.data || response?.workflowId || response;
 
-      // 如果保存成功且返回了新的ID，更新workflow的id
+      // 若父组件 / URL 尚未传入 workflowId，静默重载必须用本次接口返回的 ID，否则会走「无 ID」分支把画布清空
+      const reloadWorkflowId =
+        savedWorkflowId != null &&
+        (typeof savedWorkflowId === 'string' || typeof savedWorkflowId === 'number')
+          ? String(savedWorkflowId)
+          : undefined;
+
+      // 如果保存成功且返回了新的 ID，更新本地 workflow.id（与静默重载使用同一规范化结果）
       if (savedWorkflowId) {
         if (!workflow.id) {
-          setWorkflow((prev) => ({ ...prev, id: savedWorkflowId }));
+          const nextId =
+            reloadWorkflowId ||
+            (typeof savedWorkflowId === 'string' || typeof savedWorkflowId === 'number'
+              ? String(savedWorkflowId)
+              : undefined);
+          if (nextId) {
+            setWorkflow((prev) => ({ ...prev, id: nextId }));
+          }
         }
         // 保存成功后，静默重新加载工作流数据（以获取数据库中的真实节点ID step_id）
         // 使用 silent 避免先清空界面导致名称变「加载中」、节点被清空；失败时保留当前数据并提示再次保存
-        if (loadWorkflowData) {
-          await loadWorkflowData({ silent: true });
+        if (loadWorkflowData && reloadWorkflowId) {
+          await loadWorkflowData({ silent: true, workflowId: reloadWorkflowId });
         }
       }
 
@@ -260,6 +289,8 @@ export function useWorkflowSave({
     setWorkflow,
     loadWorkflowData,
     onSaveCallback,
+    caseId,
+    realizationType,
   ]);
 
   // 保存节点到公共节点（简化版本，不管理状态）

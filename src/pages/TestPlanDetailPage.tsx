@@ -1,483 +1,457 @@
-
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Edit, Copy, Trash2, Play, FileText, CheckCircle2, ChevronRight, Star, MoreHorizontal, ExternalLink, List, LayoutGrid, Loader2 } from 'lucide-react';
-import { testPlanManagementService, requirementQualityService } from '@/services';
-import { getFeishuStoryDetailUrlForPlan } from '@/services/bug-management/constants/feishu-defect-url';
+import { qualityWorkspaceService, type QualityWorkspaceStats, ANALYSIS_STATUS_LABEL, RELEASE_CONCLUSION_LABEL } from '@/services';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { CreateTestPlanSheet } from '@/components/features/test-plan/CreateTestPlanSheet';
-import { PlanDetailFeatureCase } from '@/components/features/test-plan/PlanDetailFeatureCase';
-import { PlanDetailApiCase } from '@/components/features/test-plan/PlanDetailApiCase';
-import { PlanDetailScenarioCase } from '@/components/features/test-plan/PlanDetailScenarioCase';
-import { PlanDetailDefect } from '@/components/features/test-plan/PlanDetailDefect';
-import { PlanDetailExecuteHistory } from '@/components/features/test-plan/PlanDetailExecuteHistory';
-import { PlanDetailMinder } from '@/components/features/test-plan/PlanDetailMinder';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, X } from 'lucide-react';
-import { StatusProgress, StatusProgressTooltipContent } from '@/components/features/test-plan/StatusProgress';
-import { TestPlanStatusTag } from '@/components/features/test-plan/TestPlanStatusTag';
-import { PassRateCountDetail } from '@/types/testPlan';
+import { QualityWorkspaceSheet } from '@/components/features/test-plan/QualityWorkspaceSheet';
+import { PlanDetailAnalysis } from '@/components/features/test-plan/PlanDetailAnalysis';
+import { WorkspaceLinkedDocumentsPanel } from '@/components/features/test-plan/WorkspaceLinkedDocumentsPanel';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+    buildWorkspaceDocumentMock,
+    resolveWorkspaceDocumentDemoEnabled,
+} from '@/components/features/test-plan/workspace-document-mock';
+import { WorkspaceTestCasesPanel } from '@/components/features/test-plan/WorkspaceTestCasesPanel';
+import { WorkspaceExecutionPanel } from '@/components/features/test-plan/WorkspaceExecutionPanel';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import {
+    Loader2, Layers3, Target, Activity, ShieldCheck, RefreshCw,
+    GitBranch, BookOpen, FlaskConical, PlayCircle, Sparkles, Settings2,
+} from 'lucide-react';
+import { cn } from '@/utils/cn';
 
-// Reusing interfaces from TestPlanPage or Service (should be shared)
-interface TestPlanDetail {
+/** 适配 QualityWorkspace 模型的详情定义 */
+interface QualityWorkspaceDetail {
     id: string;
-    num?: string;
+    num: string;
     name: string;
     status: string;
     projectId: string;
-    passRate: number;
+    goal?: string;
+    description?: string;
+    feishuStoryId?: string;
+    ownerId?: string;
+    createTime: number;
+    plannedStartTime?: number;
+    plannedEndTime?: number;
+    actualStartTime?: number;
+    actualEndTime?: number;
     functionalCaseCount: number;
     apiCaseCount: number;
     apiScenarioCount: number;
     bugCount: number;
-    description?: string;
-    feishuStoryId?: string;
-    // ... other fields
+    targetName?: string;
+    metadata?: Record<string, any>;
+    scopeDefinition?: Record<string, any>;
 }
 
-/** 从 pathname 稳健解析测试计划详情 ID（兼容尾部斜线、无 useParams 的布局） */
-function getPlanIdFromPathname(pathname: string): string {
+/** 统一统计接口返回模型适配 */
+const WORKSPACE_STATUS_META: Record<string, { label: string; className: string }> = {
+    DRAFT: { label: '草稿', className: 'bg-slate-100 text-slate-600' },
+    TODO: { label: '待开始', className: 'bg-slate-100 text-slate-600' },
+    IN_PROGRESS: { label: '进行中', className: 'bg-blue-50 text-blue-700' },
+    DONE: { label: '已完成', className: 'bg-emerald-50 text-emerald-700' },
+    ARCHIVED: { label: '已归档', className: 'bg-amber-50 text-amber-700' },
+};
+
+function normalizeStats(statsData: Record<string, any>): QualityWorkspaceStats {
+    return {
+        workspaceId: statsData.workspaceId,
+        total: statsData.total || statsData.checkItemTotal || 0,
+        todo: statsData.todo || 0,
+        inProgress: statsData.inProgress || 0,
+        passed: statsData.passed || 0,
+        failed: statsData.failed || 0,
+        blocked: statsData.blocked || 0,
+        skipped: statsData.skipped || 0,
+        passRate: (statsData.passRate || 0) * 100,
+        executionRate: (statsData.executionRate || 0) * 100,
+        actualStartTime: statsData.actualStartTime,
+        allDone: statsData.allDone,
+        analysisStatus: statsData.analysisStatus,
+        reviewStatus: statsData.reviewStatus,
+        checkItemTotal: statsData.checkItemTotal ?? statsData.total ?? 0,
+        riskCount: statsData.riskCount ?? 0,
+        blockedCount: statsData.blockedCount ?? statsData.blocked ?? 0,
+        releaseConclusion: statsData.releaseConclusion,
+    };
+}
+
+function getWorkspaceStatusMeta(status?: string) {
+    return WORKSPACE_STATUS_META[status || 'DRAFT'] || { label: status || '草稿', className: 'bg-slate-100 text-slate-600' };
+}
+
+function getReleaseConclusionMeta(conclusion?: string) {
+    const key = conclusion || 'NEED_ANALYSIS';
+    const label = RELEASE_CONCLUSION_LABEL[key] || key;
+    if (key === 'READY') return { label, className: 'text-emerald-600' };
+    if (key === 'BLOCKED' || key === 'NOT_RECOMMENDED') return { label, className: 'text-rose-600' };
+    if (key === 'CONDITIONAL') return { label, className: 'text-amber-600' };
+    return { label, className: 'text-slate-600' };
+}
+
+function getWorkspaceIdFromPathname(pathname: string): string {
     const segments = pathname.replace(/\/+$/, '').split('/').filter(Boolean);
-    if (segments[0] !== 'test-plan' || segments.length < 2) return '';
+    if (segments[0] !== 'quality-workspace' && segments[0] !== 'test-plan') return '';
     const last = segments[segments.length - 1];
     return last === 'config-report' ? '' : last;
 }
 
-export function TestPlanDetailPage() {
-    const { planId: paramPlanId } = useParams<{ planId: string }>();
+type WorkspaceStep = 'document' | 'cases' | 'execution' | 'release';
+
+const WORKSPACE_STEPS: Array<{ id: WorkspaceStep; label: string; hint: string; icon: typeof BookOpen }> = [
+    { id: 'document', label: '测试分析', hint: '测试内部完善', icon: BookOpen },
+    { id: 'cases', label: '测试用例', hint: '从分析生成用例', icon: FlaskConical },
+    { id: 'execution', label: '联合评审', hint: '需求+分析+用例', icon: PlayCircle },
+    { id: 'release', label: '上线准出', hint: '结论与放行', icon: GitBranch },
+];
+
+function normalizeWorkspaceStep(tab: string | null): WorkspaceStep {
+    if (tab === 'document' || tab === 'cases' || tab === 'execution' || tab === 'release') return tab;
+    if (tab === 'overview' || tab === 'analysis') return 'document';
+    if (tab === 'review' || tab === 'tasks' || tab === 'risk') return 'execution';
+    return 'document';
+}
+
+function getStepIndex(step: WorkspaceStep) {
+    return WORKSPACE_STEPS.findIndex((item) => item.id === step);
+}
+
+export function QualityWorkspaceDetailPage() {
+    const { planId: legacyPlanIdParam, workspaceId: workspaceIdParam } = useParams<{ planId?: string; workspaceId?: string }>();
     const location = useLocation();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const workspaceId = workspaceIdParam || legacyPlanIdParam || getWorkspaceIdFromPathname(location.pathname) || '';
+    const detailTab = searchParams.get('detailTab');
 
-    // 兼容多种路由方式获取 ID（path 可能带尾部斜线导致 split('/').pop() 为空）
-    const planId = paramPlanId || getPlanIdFromPathname(location.pathname) || '';
-
-    /** 从 URL 解析返回位置：用于从执行页返回时恢复「功能用例」下的测试点/模块 tab、选中项及列表筛选条件 */
-    const urlFeatureCasePosition = useMemo(() => {
-        const params = new URLSearchParams(location.search);
-        const tab = params.get('tab');
-        const treeTab = params.get('treeTab');
-        const collectionId = params.get('collectionId');
-        const moduleId = params.get('moduleId');
-        if (tab !== 'featureCase') return null;
-        const keyword = params.get('keyword') ?? undefined;
-        const lastExecResult = params.get('lastExecResult');
-        const lastExecResultFilter = lastExecResult ? lastExecResult.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
-        const caseLevel = params.get('caseLevel');
-        const caseLevelFilter = caseLevel ? caseLevel.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
-        const executeUser = params.get('executeUser');
-        const executeUserFilter = executeUser ? executeUser.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
-        const currentPage = params.get('currentPage');
-        const pageSize = params.get('pageSize');
-        const sortField = params.get('sortField');
-        const sortOrder = params.get('sortOrder');
-        return {
-            treeTab: treeTab === 'modules' ? 'modules' as const : 'points' as const,
-            collectionId: collectionId ?? undefined,
-            moduleId: moduleId ?? undefined,
-            keyword: keyword ?? undefined,
-            lastExecResultFilter: lastExecResultFilter?.length ? lastExecResultFilter : undefined,
-            caseLevelFilter: caseLevelFilter?.length ? caseLevelFilter : undefined,
-            executeUserFilter: executeUserFilter?.length ? executeUserFilter : undefined,
-            currentPage: currentPage != null && currentPage !== '' ? parseInt(currentPage, 10) : undefined,
-            pageSize: pageSize != null && pageSize !== '' ? parseInt(pageSize, 10) : undefined,
-            sortField: (sortField === 'num' || sortField === 'name' || sortField === 'createTime') ? sortField : undefined,
-            sortOrder: (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : undefined,
-        };
-    }, [location.search]);
-
-    const [detail, setDetail] = useState<TestPlanDetail | null>(null);
-    const [stats, setStats] = useState<PassRateCountDetail | null>(null);
+    const [detail, setDetail] = useState<QualityWorkspaceDetail | null>(null);
+    const [stats, setStats] = useState<QualityWorkspaceStats | null>(null);
     const [loading, setLoading] = useState(false);
     const [editSheetOpen, setEditSheetOpen] = useState(false);
-    const [defectListTotal, setDefectListTotal] = useState<number | null>(null);
-    const [copyLoading, setCopyLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'plan' | 'featureCase' | 'apiCase' | 'apiScenario' | 'defect' | 'history'>('plan');
-    const [openAssociateOnFeatureCase, setOpenAssociateOnFeatureCase] = useState(false);
-    const [defaultTabInitialized, setDefaultTabInitialized] = useState(false);
-    /** 关联飞书需求名称（由需求 ID 拉取，用于展示而非 ID） */
-    const [feishuStoryName, setFeishuStoryName] = useState<string>('');
+    const [activeStep, setActiveStep] = useState<WorkspaceStep>('document');
+    const [demoPreview, setDemoPreview] = useState(() => resolveWorkspaceDocumentDemoEnabled(window.location.search));
+    const demoInitRef = useRef(false);
 
     useEffect(() => {
-        if (planId && planId !== 'test-plan') {
-            fetchDetail(planId);
-            setDefectListTotal(null);
-        }
-    }, [planId]);
+        setActiveStep(normalizeWorkspaceStep(detailTab));
+    }, [detailTab]);
 
-    // 根据 URL 中的 tab 参数只在首次进入时设置默认 Tab
-    useEffect(() => {
-        if (defaultTabInitialized) return;
-        const params = new URLSearchParams(location.search);
-        const tab = params.get('tab');
-        if (tab === 'featureCase' || tab === 'apiCase' || tab === 'apiScenario' || tab === 'defect' || tab === 'history' || tab === 'plan') {
-            setActiveTab(tab as typeof activeTab);
-        }
-        setDefaultTabInitialized(true);
-    }, [location.search, defaultTabInitialized]);
+    const goToStep = (step: WorkspaceStep) => {
+        setActiveStep(step);
+        const params = new URLSearchParams(searchParams);
+        params.set('detailTab', step);
+        navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+    };
 
-    const fetchFeishuStoryName = useCallback(async (storyId: string) => {
-        if (!storyId?.trim()) {
-            setFeishuStoryName('');
-            return;
-        }
+    const fetchDetail = useCallback(async (id: string) => {
+        if (loading) return;
+        setLoading(true);
         try {
-            const nameMap = await requirementQualityService.getStoryNamesByIds([storyId]);
-            setFeishuStoryName(nameMap[storyId] ?? '');
-        } catch {
-            setFeishuStoryName('');
+            const [detailRes, statsRes] = await Promise.all([
+                qualityWorkspaceService.getWorkspaceDetail(id),
+                qualityWorkspaceService.getWorkspaceStats(id)
+            ]);
+            
+            const workspaceData = (detailRes as any)?.data || detailRes;
+            const statsData = (statsRes as any)?.data || statsRes;
+
+            setDetail({
+                ...workspaceData,
+                id: workspaceData.workspaceId,
+                num: workspaceData.workspaceId?.slice(0, 8) || 'N/A',
+                functionalCaseCount: workspaceData.workItems?.length || workspaceData.workItemCount || 0,
+            });
+            
+            setStats(normalizeStats(statsData));
+        } catch (error) {
+            console.error(error);
+            toast.error('获取质量工作台详情失败');
+        } finally {
+            setLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        if (detail?.feishuStoryId) {
-            fetchFeishuStoryName(detail.feishuStoryId);
-        } else {
-            setFeishuStoryName('');
+        if (workspaceId && workspaceId !== 'quality-workspace' && workspaceId !== 'test-plan') {
+            fetchDetail(workspaceId);
         }
-    }, [detail?.feishuStoryId, fetchFeishuStoryName]);
+    }, [workspaceId, fetchDetail]);
 
-    const fetchDetail = async (id: string) => {
-        setLoading(true);
-        try {
-            const [detailRes, statsRes] = await Promise.all([
-                testPlanManagementService.getTestPlanDetail(id),
-                testPlanManagementService.getPlanPassRate([id])
-            ]);
-            // 计划组无详情页，仅测试计划可进入详情
-            if ((detailRes as any)?.type === 'GROUP') {
-                toast.info('计划组无详情页，请展开后选择其下测试计划进入');
-                navigate('/test-plan');
-                return;
-            }
-            setDetail(detailRes as any);
-            if (Array.isArray(statsRes) && statsRes.length > 0) {
-                setStats(statsRes[0]);
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error('获取详情失败');
-        } finally {
-            setLoading(false);
-        }
+    const focusExecutionStep = () => {
+        if (!detail) return;
+        goToStep('execution');
     };
 
-    const handleExecute = async () => {
+    const handleArchive = async () => {
         if (!detail) return;
-        const toastId = toast.loading('正在异步触发分发执行...');
+        const toastId = toast.loading('正在归档质量工作台...');
         try {
-            await testPlanManagementService.executeSinglePlan({
-                executeId: detail.id,
-                projectId: detail.projectId,
-                runMode: 'SERIAL',
-                executionSource: 'MANUAL'
-            });
-            toast.success('执行指令已下发', { id: toastId });
-            // 刷新详情以更新状态
+            await qualityWorkspaceService.archiveWorkspace(detail.id);
+            toast.success('质量工作台已归档', { id: toastId });
             fetchDetail(detail.id);
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error('执行失败', { id: toastId });
+            toast.error(error?.message || '归档失败', { id: toastId });
         }
     };
 
-    const handleReport = async () => {
+    const handleDelete = async () => {
         if (!detail) return;
-        const projectId = (detail as any)?.projectId || localStorage.getItem('currentProjectId') || '';
-        if (!projectId) {
-            toast.error('缺少项目信息，无法生成报告');
-            return;
-        }
-        const toastId = toast.loading('正在生成报告...');
+        if (!window.confirm(`确定删除质量工作台「${detail.name}」吗？`)) return;
+        const toastId = toast.loading('正在删除质量工作台...');
         try {
-            const res: any = await testPlanManagementService.generateReport({
-                projectId,
-                testPlanId: detail.id,
-                triggerMode: 'MANUAL',
-            });
-            toast.success('报告生成成功', { id: toastId });
-            const reportId = res?.id ?? res?.data ?? res;
-            if (reportId && typeof reportId === 'string') {
-                navigate(`/test-plan?tab=test-report&reportId=${reportId}`);
-            }
-        } catch (error) {
+            await qualityWorkspaceService.deleteWorkspace(detail.id);
+            toast.success('质量工作台已删除', { id: toastId });
+            navigate('/quality-workspace?menu=quality-workspace&tab=workspace');
+        } catch (error: any) {
             console.error(error);
-            toast.error('生成报告失败', { id: toastId });
+            toast.error(error?.message || '删除失败', { id: toastId });
         }
     };
 
-    /** 复制测试计划（与列表页、spotter-metersphere 一致：优先 GET /test-plan/copy/{id}，失败时降级批量复制） */
-    const handleCopy = async () => {
-        if (!detail?.id) return;
-        const toastId = toast.loading('正在复制测试计划...');
-        setCopyLoading(true);
-        try {
-            try {
-                await testPlanManagementService.testPlanAndGroupCopy(detail.id);
-            } catch (getErr: unknown) {
-                const projectId = (detail as any)?.projectId || localStorage.getItem('currentProjectId') || '';
-                const moduleId = (detail as any)?.moduleId || 'root';
-                await testPlanManagementService.batchCopyPlan({
-                    selectIds: [detail.id],
-                    projectId: projectId || '',
-                    targetId: moduleId,
-                    moduleId,
-                    moduleIds: [moduleId],
-                    moveType: 'MODULE',
-                });
-            }
-            toast.success('复制成功', { id: toastId });
-        } catch (err: unknown) {
-            console.error('复制失败:', err);
-            toast.error((err as { message?: string })?.message || '复制失败，请确认后端环境', { id: toastId });
-        } finally {
-            setCopyLoading(false);
-        }
+    const workspaceStatusMeta = useMemo(() => getWorkspaceStatusMeta(detail?.status), [detail?.status]);
+    const releaseConclusionMeta = useMemo(() => getReleaseConclusionMeta(stats?.releaseConclusion), [stats?.releaseConclusion]);
+    const referenceBundle = useMemo(() => {
+        const scope = detail?.scopeDefinition || {};
+        const metadata = detail?.metadata || {};
+        return {
+            prdUrl: metadata.prdUrl || scope.prdUrl,
+            designUrl: metadata.designUrl || scope.designUrl,
+            apiDocUrl: metadata.apiDocUrl || scope.apiDocUrl,
+            targetName: detail?.targetName || scope.targetName,
+        };
+    }, [detail]);
+
+    useEffect(() => {
+        setDemoPreview(resolveWorkspaceDocumentDemoEnabled(location.search));
+    }, [location.search]);
+
+    useEffect(() => {
+        if (demoInitRef.current || !import.meta.env.DEV) return;
+        if (searchParams.get('demo') === '0') return;
+        if (searchParams.get('demo') === '1' || searchParams.get('mock') === '1') return;
+        demoInitRef.current = true;
+        setDemoPreview(true);
+        const params = new URLSearchParams(searchParams);
+        params.set('demo', '1');
+        if (!params.get('detailTab')) params.set('detailTab', 'document');
+        navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+    }, [location.pathname, navigate, searchParams]);
+
+    const demoReferenceBundle = useMemo(() => {
+        if (!demoPreview || !detail?.id) return referenceBundle;
+        return buildWorkspaceDocumentMock(detail.id, detail.projectId).referenceBundle;
+    }, [demoPreview, detail?.id, detail?.projectId, referenceBundle]);
+
+    const toggleDemoMode = () => {
+        const next = !demoPreview;
+        setDemoPreview(next);
+        const params = new URLSearchParams(searchParams);
+        params.set('demo', next ? '1' : '0');
+        params.delete('mock');
+        params.set('detailTab', activeStep);
+        navigate(`${location.pathname}?${params.toString()}`, { replace: true });
     };
 
-    if (loading) return <div className="p-8">Loading...</div>;
-    if (!detail) return <div className="p-8">Not Found</div>;
+    if (loading && !detail) return (
+        <div className="flex h-full w-full items-center justify-center bg-white/60 backdrop-blur-sm z-50">
+            <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                    <Loader2 className="h-12 w-12 animate-spin text-blue-600 opacity-20" />
+                    <Activity className="h-6 w-6 text-blue-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                </div>
+                <span className="text-sm font-semibold text-slate-500 tracking-wider uppercase">Loading Workspace...</span>
+            </div>
+        </div>
+    );
+
+    if (!detail) return (
+        <div className="flex h-full w-full flex-col items-center justify-center bg-[#F8FAFC]">
+             <div className="rounded-3xl bg-white shadow-xl shadow-slate-200/50 p-10 flex flex-col items-center max-w-sm text-center">
+                <div className="w-20 h-20 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 ring-1 ring-slate-100">
+                    <Target className="h-10 w-10 text-slate-300" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900">质量工作台不存在</h3>
+                <p className="mt-3 text-sm text-slate-500 leading-relaxed">
+                    该质量工作台可能已被归档或删除，请返回列表重新选择。
+                </p>
+                <Button variant="default" className="mt-8 w-full h-11 bg-slate-900 rounded-xl" onClick={() => navigate('/quality-workspace')}>
+                    返回质量工作台
+                </Button>
+             </div>
+        </div>
+    );
 
     return (
         <TooltipProvider>
-            <div className="flex-1 flex flex-col h-full bg-gray-50 w-full">
-                {/* Breadcrumb */}
-                <div className="bg-white px-6 pt-4 pb-2 flex items-center gap-2 text-xs text-gray-400">
-                    <span className="hover:text-blue-600 transition-colors cursor-pointer" onClick={() => navigate('/test-plan')}>测试计划</span>
-                    <ChevronRight className="w-3 h-3 opacity-50" />
-                    <span className="text-gray-600">测试计划详情</span>
+            <div className="flex-1 flex flex-col h-full bg-[#F8FAFC] w-full overflow-hidden">
+                <div className="bg-white px-8 py-2 flex items-center justify-end gap-2 border-b border-slate-100 shrink-0">
+                    <Button
+                        variant={demoPreview ? 'default' : 'outline'}
+                        size="sm"
+                        className={cn('h-7 text-xs rounded-lg', demoPreview ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'text-slate-500')}
+                        onClick={toggleDemoMode}
+                    >
+                        {demoPreview ? '退出演示（看真实数据）' : '加载演示数据'}
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs text-slate-500 hover:text-blue-600" onClick={() => fetchDetail(workspaceId)}>
+                        <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+                        刷新
+                    </Button>
                 </div>
 
-                {/* Header */}
-                <div className="bg-white border-b border-gray-100 px-6 pb-6">
-                    <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-4">
-                                <TestPlanStatusTag status={detail.status} className="rounded-md px-2 py-0.5 text-xs font-medium" />
-                                <h1 className="text-lg font-semibold text-gray-900 tracking-tight flex items-center gap-2">
-                                    <span className="bg-gray-100 text-gray-500 font-mono px-1.5 py-0.5 rounded text-xs font-normal">#{detail.num}</span>
-                                    {detail.name}
-                                </h1>
+                <div className="relative bg-white shrink-0 px-8 py-4 border-b border-slate-100">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-100 shrink-0">
+                                <Layers3 className="w-5 h-5" />
                             </div>
-
-                            <div className="flex items-center gap-x-8 gap-y-4 text-sm text-gray-500 mb-5 flex-wrap">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-gray-400">已执行</span>
-                                    <span className="font-medium text-gray-800">
-                                        {(stats?.successCount || 0) + (stats?.errorCount || 0) + (stats?.blockCount || 0) + (stats?.fakeErrorCount || 0)} <span className="text-gray-300 mx-1">/</span> {stats?.caseTotal || 0}
-                                    </span>
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                    <h1 className="text-lg font-black text-slate-900 tracking-tight truncate leading-none">{detail.name}</h1>
+                                    <Badge className={cn('border-0 px-1.5 py-0 rounded-md font-black text-[8px] tracking-widest uppercase', workspaceStatusMeta.className)}>
+                                        {workspaceStatusMeta.label}
+                                    </Badge>
                                 </div>
-                                <TooltipProvider>
-                                    <Tooltip delayDuration={300}>
-                                        <TooltipTrigger asChild>
-                                            <div className="flex flex-col gap-1 cursor-pointer">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-gray-400">通过率</span>
-                                                    <span className="font-semibold text-green-600 tabular-nums">{stats?.passRate || 0}%</span>
-                                                </div>
-                                                {stats && (
-                                                    <div className="flex-1 max-w-[520px] min-w-[200px]">
-                                                        <StatusProgress statusDetail={stats} height="8px" className="rounded-full overflow-hidden" showTooltip={false} />
-                                                    </div>
-                                                )}
+                                <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-slate-400">
+                                    <div className="flex items-center gap-1"><Activity className="w-3 h-3" /> {stats?.passed || 0}/{stats?.checkItemTotal || stats?.total || 0} 用例已执行</div>
+                                    <div className="w-px h-2 bg-slate-200" />
+                                    <div className="flex items-center gap-1 text-emerald-600"><ShieldCheck className="w-3 h-3" /> {(stats?.passRate || 0).toFixed(1)}% 通过率</div>
+                                    {stats?.analysisStatus && (
+                                        <>
+                                            <div className="w-px h-2 bg-slate-200" />
+                                            <div className="flex items-center gap-1 text-blue-600">
+                                                <Sparkles className="w-3 h-3" />
+                                                {ANALYSIS_STATUS_LABEL[stats.analysisStatus] || stats.analysisStatus}
                                             </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent className="p-3 shadow-xl border border-gray-200 bg-white text-gray-900 min-w-[160px]" side="bottom" hideArrow>
-                                            <StatusProgressTooltipContent statusDetail={stats} />
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                                {detail.feishuStoryId && (
-                                    <div className="flex items-center gap-2 pl-6 border-l border-gray-100">
-                                        <span className="text-gray-400">关联飞书需求</span>
-                                        <a href={getFeishuStoryDetailUrlForPlan(detail.feishuStoryId)} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-1 font-medium">
-                                            {feishuStoryName || detail.feishuStoryId}
-                                            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                                        </a>
-                                    </div>
-                                )}
+                                        </>
+                                    )}
+                                    {stats?.releaseConclusion && (
+                                        <>
+                                            <div className="w-px h-2 bg-slate-200" />
+                                            <div className={cn('flex items-center gap-1', releaseConclusionMeta.className)}>
+                                                <GitBranch className="w-3 h-3" />
+                                                {releaseConclusionMeta.label}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
-
                         </div>
-
+                        
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="h-9 text-gray-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all gap-2" onClick={() => setEditSheetOpen(true)}>
-                                <Edit className="w-4 h-4" /> 属性
+                            <Button size="sm" className="h-8 rounded-xl bg-slate-900 text-white font-black text-[11px] px-4 shadow-lg shadow-slate-900/10" onClick={focusExecutionStep}>
+                                <ShieldCheck className="w-3.5 h-3.5 mr-2" /> 联合评审
                             </Button>
-                            <Button variant="outline" size="sm" className="h-9 text-gray-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all gap-2" onClick={handleReport}>
-                                <FileText className="w-4 h-4" /> 报告
+                            <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl border-slate-200" onClick={() => setEditSheetOpen(true)}>
+                                <Settings2 className="w-3.5 h-3.5 text-slate-400" />
                             </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 text-gray-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all gap-2"
-                                onClick={handleCopy}
-                                disabled={copyLoading}
-                            >
-                                {copyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />}
-                                复制
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-9 text-gray-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all gap-2">
-                                <Star className="w-4 h-4" /> 关注
-                            </Button>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="h-9 w-9 p-0 hover:bg-gray-100 border-gray-200">
-                                        <MoreHorizontal className="w-4 h-4 text-gray-500" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="text-[11px] min-w-[120px]">
-                                    <DropdownMenuItem className="text-red-500 focus:text-red-600 focus:bg-red-50">
-                                        <Trash2 className="w-3.5 h-3.5 mr-2" /> 删除计划
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
                         </div>
                     </div>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-auto p-6 w-full animate-in fade-in duration-300">
-                    <Tabs
-                        value={activeTab}
-                        onValueChange={(value) =>
-                            setActiveTab(value as 'plan' | 'featureCase' | 'apiCase' | 'apiScenario' | 'defect' | 'history')
-                        }
-                        className="w-full h-full flex flex-col"
-                    >
-                        <div className="border-b border-gray-200 mb-4">
-                            <TabsList className="bg-transparent border-0 h-auto p-0 flex gap-6 justify-start rounded-none">
-                                {[
-                                    { id: 'plan', label: '测试规划' },
-                                    { id: 'featureCase', label: '功能用例', count: detail.functionalCaseCount },
-                                    { id: 'apiCase', label: '接口用例', count: detail.apiCaseCount || 0 },
-                                    { id: 'apiScenario', label: '自动化用例', count: detail.apiScenarioCount || 0 },
-                                    { id: 'defect', label: '缺陷列表', count: defectListTotal ?? detail.bugCount ?? 0 },
-                                    { id: 'history', label: '执行历史' },
-                                ].map((tab) => (
-                                    <TabsTrigger
-                                        key={tab.id}
-                                        value={tab.id}
-                                        className="rounded-none border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:!bg-transparent pb-3 px-0 text-sm font-medium text-gray-600 hover:text-gray-900 data-[state=active]:text-primary transition-colors shadow-none data-[state=active]:shadow-none -mb-px outline-none focus-visible:ring-0 gap-2 group"
-                                    >
-                                        {tab.label}
-                                        {tab.count !== undefined && (
-                                            <Badge className="bg-gray-100 text-gray-500 group-data-[state=active]:bg-blue-600 group-data-[state=active]:text-white group-hover:bg-gray-200 transition-colors border-0 rounded-full h-5 min-w-[24px] px-1.5 text-xs flex items-center justify-center font-normal">
-                                                {tab.count}
-                                            </Badge>
+                    <div className="px-8 mt-1 shrink-0 border-b border-slate-100 bg-white">
+                        <div className="flex flex-wrap items-center gap-2 py-3">
+                            {WORKSPACE_STEPS.map((step, index) => {
+                                const StepIcon = step.icon;
+                                const active = activeStep === step.id;
+                                const done = getStepIndex(activeStep) > index;
+                                return (
+                                    <button
+                                        key={step.id}
+                                        type="button"
+                                        onClick={() => goToStep(step.id)}
+                                        className={cn(
+                                            'flex min-w-[140px] flex-1 items-center gap-3 rounded-2xl border px-4 py-3 text-left transition max-w-[220px]',
+                                            active ? 'border-blue-200 bg-blue-50 shadow-sm' : done ? 'border-emerald-100 bg-emerald-50/50' : 'border-slate-100 bg-slate-50/50 hover:bg-white'
                                         )}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </div>
-
-                        <Card className="flex-1 border-none shadow-[0_30px_60px_rgba(0,0,0,0.04)] rounded-[1.5rem] bg-white ring-1 ring-gray-100 overflow-hidden flex flex-col min-h-0">
-                            <div className="flex-1 min-h-0 flex flex-col">
-                                <TabsContent value="plan" className="m-0 h-full flex flex-col">
-                                    {detail && (detail.functionalCaseCount ?? 0) === 0 && (
-                                        <div className="p-4 shrink-0 border-b border-gray-100">
-                                            <Alert className="border-amber-200 bg-amber-50/60 m-0">
-                                                <Info className="h-4 w-4 text-amber-600" />
-                                                <AlertDescription className="flex items-center justify-between gap-4">
-                                                    <span>本计划暂无关联用例，请先在「功能用例」中关联用例后再进行测试规划。</span>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="shrink-0"
-                                                        onClick={() => {
-                                                            setActiveTab('featureCase');
-                                                            setOpenAssociateOnFeatureCase(true);
-                                                        }}
-                                                    >
-                                                        去关联用例
-                                                    </Button>
-                                                </AlertDescription>
-                                            </Alert>
+                                    >
+                                        <div className={cn(
+                                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-black',
+                                            active ? 'bg-blue-600 text-white' : done ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 ring-1 ring-slate-200'
+                                        )}>
+                                            {index + 1}
                                         </div>
-                                    )}
-                                    <PlanDetailMinder
-                                        planId={detail.id}
-                                        projectId={(detail as any)?.projectId || localStorage.getItem('currentProjectId') || ''}
-                                        status={detail.status}
-                                        canEdit={detail.status !== 'ARCHIVED'}
-                                        onRefresh={() => fetchDetail(detail.id)}
-                                        totalCaseCount={(detail.functionalCaseCount ?? 0) + (detail.apiCaseCount ?? 0) + (detail.apiScenarioCount ?? 0)}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="featureCase" className="m-0 h-full flex flex-col">
-                                    <PlanDetailFeatureCase
-                                        planId={detail.id}
-                                        projectId={(detail as any)?.projectId || localStorage.getItem('currentProjectId') || ''}
-                                        canEdit={detail.status !== 'ARCHIVED'}
-                                        onRefresh={() => fetchDetail(detail.id)}
-                                        openAssociateOnce={openAssociateOnFeatureCase}
-                                        onOpenAssociateConsumed={() => setOpenAssociateOnFeatureCase(false)}
-                                        initialTreeTab={urlFeatureCasePosition?.treeTab}
-                                        initialCollectionId={urlFeatureCasePosition?.collectionId}
-                                        initialModuleId={urlFeatureCasePosition?.moduleId}
-                                        initialKeyword={urlFeatureCasePosition?.keyword}
-                                        initialLastExecResultFilter={urlFeatureCasePosition?.lastExecResultFilter}
-                                        initialCaseLevelFilter={urlFeatureCasePosition?.caseLevelFilter}
-                                        initialExecuteUserFilter={urlFeatureCasePosition?.executeUserFilter}
-                                        initialCurrentPage={urlFeatureCasePosition?.currentPage}
-                                        initialPageSize={urlFeatureCasePosition?.pageSize}
-                                        initialSortField={urlFeatureCasePosition?.sortField as 'num' | 'name' | 'createTime' | undefined}
-                                        initialSortOrder={urlFeatureCasePosition?.sortOrder as 'asc' | 'desc' | undefined}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="apiCase" className="m-0 h-full flex flex-col">
-                                    <PlanDetailApiCase
-                                        planId={detail.id}
-                                        projectId={(detail as any)?.projectId || localStorage.getItem('currentProjectId') || ''}
-                                        canEdit={detail.status !== 'ARCHIVED'}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="apiScenario" className="m-0 h-full flex flex-col">
-                                    <PlanDetailScenarioCase
-                                        planId={detail.id}
-                                        projectId={(detail as any)?.projectId || localStorage.getItem('currentProjectId') || ''}
-                                        canEdit={detail.status !== 'ARCHIVED'}
-                                        onRefresh={() => fetchDetail(detail.id)}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="defect" className="m-0 h-full flex flex-col">
-                                    <PlanDetailDefect
-                                        planId={detail.id}
-                                        projectId={(detail as any)?.projectId || localStorage.getItem('currentProjectId') || ''}
-                                        canEdit={detail.status !== 'ARCHIVED'}
-                                        onRefresh={() => fetchDetail(detail.id)}
-                                        onDefectCountChange={setDefectListTotal}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="history" className="m-0 h-full flex flex-col">
-                                    <PlanDetailExecuteHistory
-                                        planId={detail.id}
-                                        projectId={(detail as any)?.projectId || localStorage.getItem('currentProjectId') || ''}
-                                    />
-                                </TabsContent>
-                            </div>
-                        </Card>
-                    </Tabs>
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                                <StepIcon className={cn('h-3.5 w-3.5', active ? 'text-blue-600' : 'text-slate-400')} />
+                                                <span className={cn('text-xs font-black', active ? 'text-blue-700' : 'text-slate-700')}>{step.label}</span>
+                                            </div>
+                                            <p className="mt-0.5 truncate text-[10px] text-slate-400">{step.hint}</p>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                
+                {/* Main Content Area */}
+                <div className="flex-1 overflow-hidden p-6 w-full flex flex-col">
+                    <div className="flex-1 bg-white rounded-[32px] border border-slate-200/60 shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden flex flex-col relative">
+                        <div className="flex-1 min-h-0 relative">
+                            {activeStep === 'document' && (
+                                <WorkspaceLinkedDocumentsPanel
+                                    workspaceId={detail.id}
+                                    projectId={detail.projectId}
+                                    canEdit={detail.status !== 'ARCHIVED'}
+                                    mode="edit"
+                                    demoMode={demoPreview}
+                                    referenceBundle={demoReferenceBundle}
+                                    onToggleDemo={toggleDemoMode}
+                                    onChanged={() => fetchDetail(detail.id)}
+                                    onNavigateCases={() => goToStep('cases')}
+                                />
+                            )}
+                            {activeStep === 'cases' && (
+                                <WorkspaceTestCasesPanel
+                                    workspaceId={detail.id}
+                                    projectId={detail.projectId}
+                                    canEdit={detail.status !== 'ARCHIVED'}
+                                    onGenerated={() => fetchDetail(detail.id)}
+                                    onGoDocument={() => goToStep('document')}
+                                    onGoExecution={() => goToStep('execution')}
+                                />
+                            )}
+                            {activeStep === 'execution' && (
+                                <WorkspaceExecutionPanel
+                                    workspaceId={detail.id}
+                                    projectId={detail.projectId}
+                                    spaceId={detail.scopeDefinition?.spaceId}
+                                    canEdit={detail.status !== 'ARCHIVED'}
+                                    reviewStatus={stats?.reviewStatus}
+                                    demoMode={demoPreview}
+                                    referenceBundle={demoReferenceBundle}
+                                    onChanged={() => fetchDetail(detail.id)}
+                                />
+                            )}
+                            {activeStep === 'release' && (
+                                <PlanDetailAnalysis
+                                    workspaceId={detail.id}
+                                    projectId={detail.projectId}
+                                    spaceId={detail.scopeDefinition?.spaceId}
+                                    canEdit={detail.status !== 'ARCHIVED'}
+                                    mode="release"
+                                    releaseConclusion={stats?.releaseConclusion}
+                                    onNavigateCases={() => goToStep('cases')}
+                                    onNavigateExecution={() => goToStep('execution')}
+                                />
+                            )}
+                        </div>
+                    </div>
                 </div>
 
-                <CreateTestPlanSheet
+                <QualityWorkspaceSheet
                     open={editSheetOpen}
                     onOpenChange={setEditSheetOpen}
-                    planId={detail.id}
-                    projectId={'default-project'} // should come from context
+                    workspaceId={detail.id}
+                    projectId={detail.projectId}
+                    initialValues={detail}
                     onSuccess={() => fetchDetail(detail.id)}
                 />
             </div>
         </TooltipProvider>
     );
 }
+
+export const TestPlanDetailPage = QualityWorkspaceDetailPage;

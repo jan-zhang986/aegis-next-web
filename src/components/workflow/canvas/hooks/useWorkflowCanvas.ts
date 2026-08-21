@@ -81,20 +81,23 @@ export function useWorkflowCanvas({
     [zoom, setZoom]
   );
 
+  type FullscreenCapableElement = HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void>; mozRequestFullScreen?: () => Promise<void>; msRequestFullscreen?: () => Promise<void>; };
+  type FullscreenCapableDocument = Document & { webkitExitFullscreen?: () => Promise<void>; mozCancelFullScreen?: () => Promise<void>; msExitFullscreen?: () => Promise<void>; };
+
   const internalHandleToggleFullscreen = useCallback(async () => {
     const container = internalFullscreenContainerRef.current;
     if (!container) return;
     try {
       if (!internalFullscreen) {
         if (container.requestFullscreen) await container.requestFullscreen();
-        else if ((container as { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) await (container as { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen();
-        else if ((container as { mozRequestFullScreen?: () => Promise<void> }).mozRequestFullScreen) await (container as { mozRequestFullScreen: () => Promise<void> }).mozRequestFullScreen();
-        else if ((container as { msRequestFullscreen?: () => Promise<void> }).msRequestFullscreen) await (container as { msRequestFullscreen: () => Promise<void> }).msRequestFullscreen();
+        else if ((container as unknown as FullscreenCapableElement).webkitRequestFullscreen) await (container as unknown as FullscreenCapableElement).webkitRequestFullscreen!();
+        else if ((container as unknown as FullscreenCapableElement).mozRequestFullScreen) await (container as unknown as FullscreenCapableElement).mozRequestFullScreen!();
+        else if ((container as unknown as FullscreenCapableElement).msRequestFullscreen) await (container as unknown as FullscreenCapableElement).msRequestFullscreen!();
       } else {
         if (document.exitFullscreen) await document.exitFullscreen();
-        else if ((document as { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) await (document as { webkitExitFullscreen: () => Promise<void> }).webkitExitFullscreen();
-        else if ((document as { mozCancelFullScreen?: () => Promise<void> }).mozCancelFullScreen) await (document as { mozCancelFullScreen: () => Promise<void> }).mozCancelFullScreen();
-        else if ((document as { msExitFullscreen?: () => Promise<void> }).msExitFullscreen) await (document as { msExitFullscreen: () => Promise<void> }).msExitFullscreen();
+        else if ((document as unknown as FullscreenCapableDocument).webkitExitFullscreen) await (document as unknown as FullscreenCapableDocument).webkitExitFullscreen!();
+        else if ((document as unknown as FullscreenCapableDocument).mozCancelFullScreen) await (document as unknown as FullscreenCapableDocument).mozCancelFullScreen!();
+        else if ((document as unknown as FullscreenCapableDocument).msExitFullscreen) await (document as unknown as FullscreenCapableDocument).msExitFullscreen!();
       }
     } catch (error) {
       console.error('全屏操作失败:', error);

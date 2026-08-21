@@ -1,5 +1,5 @@
 /**
- * 引用子节点表单：选择当前项目下的工作流（支持模糊搜索），展示选中工作流详情
+ * 引用子节点表单：选择当前项目下的实现流程（支持模糊搜索），展示选中流程详情
  * 优化：列表仅在下拉打开时懒加载；详情直接用列表数据，不再请求详情接口
  */
 import React, { useState, useEffect, useMemo } from 'react';
@@ -20,20 +20,19 @@ import {
 import { Section } from '../shared/Section';
 import { FormLabel } from '../shared/FormLabel';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { TruncateWithTooltip } from '@/components/ui/truncate-with-tooltip';
 import { workflowService } from '@/services/workflow';
 import type { SubWorkflowConfig } from '../../types';
 import { GitBranch, ChevronsUpDown, Check, ExternalLink } from 'lucide-react';
 import { formatTimestampBeijing } from '@/utils/date';
 import { cn } from '@/utils/cn';
 
-/** 生成在新 tab 打开工作流画布详情的 URL（测试用例 → 自动化用例，按 id + projectId 直接进入画布） */
+/** 生成在新 tab 打开实现流程画布详情的 URL（从 Case 实现入口进入） */
 function buildWorkflowCanvasUrl(workflowId: string, projectId?: string): string {
   const base =
     typeof window !== 'undefined' ? `${window.location.origin}/case-management` : '';
   const params = new URLSearchParams();
   params.set('menu', 'test-case');
-  params.set('tab', 'e2e-auto');
+  params.set('tab', 'realization');
   params.set('id', workflowId);
   if (projectId) params.set('projectId', projectId);
   return `${base}?${params.toString()}`;
@@ -123,21 +122,18 @@ export const SubWorkflowNodeForm: React.FC<SubWorkflowNodeFormProps> = ({
   }, [workflowList, searchKeyword]);
 
   const selectedWorkflow = workflowList.find((w) => w.id === selectedId);
+  /** 仅以 workflow_id 为准；名称从列表解析，避免在 config 里重复存一份 */
   const displayName = selectedWorkflow?.name ?? config.workflow_name ?? selectedId;
 
-  const updateConfig = (updates: Partial<SubWorkflowConfig>) => {
-    onChange({ ...config, ...updates });
-  };
-
-  const handleSelect = (id: string, item?: WorkflowOption) => {
+  const handleSelect = (id: string) => {
+    const next: SubWorkflowConfig = { ...config };
+    delete next.workflow_name;
     if (id === '__none__') {
-      updateConfig({ workflow_id: undefined, workflow_name: undefined });
+      next.workflow_id = undefined;
     } else {
-      updateConfig({
-        workflow_id: id,
-        workflow_name: item?.name,
-      });
+      next.workflow_id = id;
     }
+    onChange(next);
     setOpen(false);
     setSearchKeyword('');
   };
@@ -146,7 +142,7 @@ export const SubWorkflowNodeForm: React.FC<SubWorkflowNodeFormProps> = ({
     <div className="space-y-4">
       <Section title="引用子工作流">
         <div className="space-y-3">
-          <FormLabel>选择工作流（当前项目）</FormLabel>
+          <FormLabel>选择实现流程（当前项目）</FormLabel>
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -162,20 +158,20 @@ export const SubWorkflowNodeForm: React.FC<SubWorkflowNodeFormProps> = ({
                     ? '加载中...'
                     : selectedId
                       ? displayName
-                      : '请选择要引用的工作流'}
+                      : '请选择要引用的实现流程'}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
               <Command shouldFilter={false}>
                 <CommandInput
-                  placeholder="搜索工作流名称或描述..."
+                  placeholder="搜索实现流程名称或描述..."
                   value={searchKeyword}
                   onValueChange={setSearchKeyword}
                   className="h-9"
                 />
                 <CommandList className="max-h-[260px]">
-                  <CommandEmpty>未找到匹配的工作流</CommandEmpty>
+                  <CommandEmpty>未找到匹配的实现流程</CommandEmpty>
                   <CommandGroup>
                     <CommandItem
                       value="__none__"
@@ -189,7 +185,7 @@ export const SubWorkflowNodeForm: React.FC<SubWorkflowNodeFormProps> = ({
                       <CommandItem
                         key={w.id}
                         value={w.id}
-                        onSelect={() => handleSelect(w.id, w)}
+                        onSelect={() => handleSelect(w.id)}
                         className="cursor-pointer"
                       >
                         <Check className={cn('mr-2 h-4 w-4', selectedId === w.id ? 'opacity-100' : 'opacity-0')} />
@@ -214,20 +210,14 @@ export const SubWorkflowNodeForm: React.FC<SubWorkflowNodeFormProps> = ({
               onClick={() => window.open(buildWorkflowCanvasUrl(selectedId, projectId), '_blank')}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.open(buildWorkflowCanvasUrl(selectedId, projectId), '_blank'); } }}
               className="rounded-lg border border-gray-200 bg-gray-50/80 p-3 space-y-2 cursor-pointer hover:bg-gray-100/80 hover:border-gray-300 transition-colors group"
-              title="在新标签页中打开画布详情"
+              title="在新标签页中打开实现流程画布"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-gray-600">已选工作流详情</span>
+                <span className="text-xs font-medium text-gray-600">已选实现流程详情</span>
                 <ExternalLink className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600 shrink-0" aria-hidden />
               </div>
               {selectedWorkflow ? (
                 <dl className="grid grid-cols-1 gap-1.5 text-xs">
-                  <div>
-                    <dt className="text-gray-500">名称</dt>
-                    <TruncateWithTooltip className="font-medium text-gray-900 group-hover:text-blue-600" content={selectedWorkflow.name}>
-                      {selectedWorkflow.name}
-                    </TruncateWithTooltip>
-                  </div>
                   {selectedWorkflow.description != null && selectedWorkflow.description !== '' && (
                     <div>
                       <dt className="text-gray-500">描述</dt>

@@ -417,7 +417,7 @@ export function ModuleTreePanel({
             <div className="w-4 shrink-0" />
           )}
           {isHighlightModule && <span className="shrink-0" aria-hidden>🔥</span>}
-          <span className="flex-1 truncate">{highlightName(node.name)}</span>
+          <span className="min-w-0 flex-1 truncate">{highlightName(node.name)}</span>
           <span className={`text-xs shrink-0 ml-1 ${isUnderHighlight ? 'text-red-500' : isSelected || isDropInto ? 'text-blue-600' : 'text-gray-400'}`}>({modulesCount[node.id] ?? node.count ?? 0})</span>
           {isDropInto && (
             <span className="shrink-0 ml-1.5 px-1.5 py-0.5 rounded text-[11px] font-medium bg-blue-500 text-white" aria-hidden>
@@ -545,7 +545,7 @@ export function ModuleTreePanel({
             <div className="w-4 shrink-0" />
           )}
           {isHighlightModule && <span className="shrink-0" aria-hidden>🔥</span>}
-          <span className="flex-1 truncate">{highlightName(node.name)}</span>
+          <span className="min-w-0 flex-1 truncate">{highlightName(node.name)}</span>
           <span className={`text-xs shrink-0 ml-1 ${isUnderHighlight ? 'text-red-500' : isSelected ? 'text-blue-600' : 'text-gray-400'}`}>({modulesCount[node.id] ?? node.count ?? 0})</span>
           {hasModuleActions && (
             <DropdownMenu>
@@ -806,7 +806,7 @@ export function ModuleTreePanel({
           onClick={() => onModuleSelect('all')}
         >
           <Folder className={`w-4 h-4 shrink-0 mr-1.5 ${selectedModuleId === 'all' ? 'text-blue-600' : 'text-gray-400'}`} />
-          <span className="flex-1 truncate text-[13px]">{allLabel}</span>
+          <span className="min-w-0 flex-1 truncate text-[13px]">{allLabel}</span>
           <span className={`text-xs shrink-0 mr-1 ${selectedModuleId === 'all' ? 'text-blue-600' : 'text-gray-400'}`}>({allModuleCount})</span>
           {(onExpandAll || onCollapseAll) && (
             <button

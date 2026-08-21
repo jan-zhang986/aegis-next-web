@@ -40,17 +40,17 @@ export const LogManagementRoute = lazyLoad(() =>
   }))
 );
 
-// 测试计划路由
-export const TestPlanRoute = lazyLoad(() => 
-  import('@/components/features/test-plan/PlanDetailApiCase').then(module => ({
-    default: module.PlanDetailApiCase
+// 需求质量路由。旧测试计划入口已下线，历史组件只保留在 legacy 文件中。
+export const RequirementQualityRoute = lazyLoad(() =>
+  import('@/pages/RequirementQualityPage').then(module => ({
+    default: module.RequirementQualityPage
   }))
 );
 
 // 用例管理路由
 export const CaseManagementRoute = lazyLoad(() => 
-  import('@/components/features/case-management/CaseList').then(module => ({
-    default: module.CaseList
+  import('@/components/features/case-management/FeatureCaseList').then(module => ({
+    default: module.FeatureCaseList
   }))
 );
 
@@ -66,15 +66,15 @@ export const lazyRoutes = {
     component: LogManagementRoute,
     preload: () => import('@/components/features/log-management/LogManagementPage'),
   },
-  testPlan: {
-    path: '/project/:projectId/test-plan',
-    component: TestPlanRoute,
-    preload: () => import('@/components/features/test-plan/PlanDetailApiCase'),
+  requirementQuality: {
+    path: '/project/:projectId/quality-workspace',
+    component: RequirementQualityRoute,
+    preload: () => import('@/pages/RequirementQualityPage'),
   },
   caseManagement: {
     path: '/project/:projectId/cases',
     component: CaseManagementRoute,
-    preload: () => import('@/components/features/case-management/CaseList'),
+    preload: () => import('@/components/features/case-management/FeatureCaseList'),
   },
 };
 

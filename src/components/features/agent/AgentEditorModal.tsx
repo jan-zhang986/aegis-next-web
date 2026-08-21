@@ -257,8 +257,13 @@ export function AgentEditorModal({
     }
     setSubmitting(true);
     try {
+      const resolvedName = name.trim() || agent?.name || '';
+      if (!resolvedName) {
+        toast.error('请输入智能体名称');
+        return;
+      }
       const payload = {
-        name: name.trim() || agent?.name,
+        name: resolvedName,
         description: description.trim(),
         config: { ...config },
       };

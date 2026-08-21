@@ -1,8 +1,9 @@
 /**
- * 自动化用例空间详情页面
- * 左侧模块树，右侧测试用例列表，支持联动
+ * 用例实现空间详情页面
+ * 左侧模块树，右侧 Case 实现列表与画布，支持联动
  */
 
+/** @deprecated compatibility shell file name; prefer CaseRealizationSpaceDetailPage symbol and case-realization entry flow */
 import React, { useEffect } from 'react';
 import { ArrowLeft, Plus, Star, Grid, Play, Copy, Trash2, Move } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,16 +15,16 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import type { E2ESpace } from '@/services/e2e-space';
+import type { CaseRealizationSpace } from '@/services/e2e-space';
 import { useE2ESpaceDetailPage } from '@/components/features/e2e-space/hooks';
 import { WorkflowDesignerEmbed, ModuleTreePanel, TestCaseTable, E2ESpaceDialogs } from '@/components/features/e2e-space/components';
 
-interface E2ESpaceDetailPageProps {
-  space: E2ESpace;
+interface CaseRealizationSpaceDetailPageProps {
+  space: CaseRealizationSpace;
   onBack: () => void;
 }
 
-export function E2ESpaceDetailPage({ space, onBack }: E2ESpaceDetailPageProps) {
+export function CaseRealizationSpaceDetailPage({ space, onBack }: CaseRealizationSpaceDetailPageProps) {
   // 使用整合的 hook 管理所有状态和逻辑
   const {
     // 工作流集成
@@ -221,7 +222,7 @@ export function E2ESpaceDetailPage({ space, onBack }: E2ESpaceDetailPageProps) {
                     }}
                     className="cursor-pointer hover:text-gray-900"
                   >
-                    自动化用例
+                    用例实现
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -285,7 +286,7 @@ export function E2ESpaceDetailPage({ space, onBack }: E2ESpaceDetailPageProps) {
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
-                {getSelectedModuleName() || '自动化用例'}
+                {getSelectedModuleName() || '用例实现'}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
                 共 {filteredTestCases.length} 个测试用例

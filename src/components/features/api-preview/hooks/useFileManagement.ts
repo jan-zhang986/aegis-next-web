@@ -104,7 +104,7 @@ export function useFileManagement(definition: MetadataDefinition, onBack?: () =>
     }
     try {
       setIsUploading(true);
-      const res = await metadataService.uploadFile(selectedFile, definition.moduleId);
+      const res = await metadataService.uploadFile(selectedFile, definition.projectId, definition.spaceId);
       await handleUpdateFileId(res.fileId);
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -116,7 +116,7 @@ export function useFileManagement(definition: MetadataDefinition, onBack?: () =>
       setIsUpdating(false);
       setIsUploading(false);
     }
-  }, [selectedFile, definition.moduleId, handleUpdateFileId]);
+  }, [selectedFile, definition.projectId, definition.spaceId, definition.moduleId, handleUpdateFileId]);
 
   return {
     isEditFileIdDialogOpen,

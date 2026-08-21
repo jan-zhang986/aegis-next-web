@@ -29,6 +29,8 @@ export interface CaseItem {
   deleteUserName?: string;
   /** 是否 AI 创建（用例生成保存的用例） */
   aiCreate?: boolean;
+  realizations?: CaseRealization[];
+  realizationSummary?: CaseRealizationSummary;
   [key: string]: any;
 }
 
@@ -68,16 +70,54 @@ export interface CreateOrUpdateCaseRequest {
   moduleId: string;
   versionId?: string;
   tags?: string[];
+  workflowId?: string;
   customFields?: { fieldId: string; value: string }[];
+  uploadFileIds?: string[];
   relateFileMetaIds?: string[];
   deleteFileMetaIds?: string[];
   unLinkFilesIds?: string[];
   [key: string]: any;
 }
 
+export type CaseRealizationType = 'MANUAL' | 'API' | 'UI_AUTOMATION' | 'FLOW' | 'PERF';
+
+export interface CaseRealizationSummary {
+  caseId: string;
+  totalSlots?: number;
+  realizedCount?: number;
+  manualCount?: number;
+  apiCount?: number;
+  uiAutomationCount?: number;
+  perfCount?: number;
+  flowCount?: number;
+  automationCount?: number;
+  enabledCount?: number;
+  readyCount?: number;
+  hasAutomationRealization?: boolean;
+  automationCoverageStatus?: 'NONE' | 'PARTIAL' | 'AUTOMATED_ONLY' | string;
+  coveredTypes?: CaseRealizationType[] | string[];
+}
+
+export interface CaseRealization {
+  caseId: string;
+  realizationType: CaseRealizationType | string;
+  realized?: boolean;
+  enabled?: boolean;
+  status?: string;
+  workflowDefinitionId?: string;
+  workflowName?: string;
+  workflowCategory?: string;
+  workflowStatus?: string;
+  lastRunStatus?: string;
+  lastRunTime?: number | string;
+  lastDurationMs?: number;
+  workflowDefinition?: Record<string, any> | null;
+}
+
 /** 用例详情（API 返回） */
 export interface CaseDetail {
   id: string;
+  caseId?: string;
   num?: number;
   moduleId: string;
   moduleName?: string;
@@ -96,9 +136,12 @@ export interface CaseDetail {
   expectedResult?: string;
   prerequisite?: string;
   description?: string;
+  workflowId?: string;
   customFields?: { fieldId: string; value: string }[];
-  attachments?: { id: string; fileName: string; local?: boolean }[];
+  attachments?: { id?: string; attachmentId?: string; fileId?: string; fileName?: string; local?: boolean }[];
   functionalPriority?: string;
+  realizations?: CaseRealization[];
+  realizationSummary?: CaseRealizationSummary;
   [key: string]: any;
 }
 

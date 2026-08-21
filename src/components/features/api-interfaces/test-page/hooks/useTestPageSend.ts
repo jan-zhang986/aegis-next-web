@@ -300,10 +300,15 @@ export function useTestPageSend({ formRef, editor, projectId, definitionId }: Us
     }
   };
 
-  const handleSend = () => {
+  const handleSend = async (): Promise<void> => {
     if (isSending) return;
     if (sendDebounceTimerRef.current) clearTimeout(sendDebounceTimerRef.current);
-    sendDebounceTimerRef.current = setTimeout(executeSend, DEBOUNCE_DELAY);
+    await new Promise<void>((resolve) => {
+      sendDebounceTimerRef.current = setTimeout(async () => {
+        await executeSend();
+        resolve();
+      }, DEBOUNCE_DELAY);
+    });
   };
 
   useEffect(() => {

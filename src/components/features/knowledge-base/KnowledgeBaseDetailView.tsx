@@ -427,7 +427,7 @@ export function KnowledgeBaseDetailView({
     if (!window.confirm(`确定要删除标签「${tag.name}」吗？`)) return;
     try {
       const tagIdForDelete = tag.seq_id ?? Number(tag.id);
-      await knowledgeTagService.deleteKnowledgeBaseTag(kbId, tagIdForDelete, { force: true });
+      await knowledgeTagService.deleteKnowledgeBaseTag(kbId, tagIdForDelete, true);
       toast.success('删除成功');
       if (selectedTagId === tag.id) {
         setSelectedTagId('');

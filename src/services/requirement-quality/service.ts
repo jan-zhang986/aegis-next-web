@@ -69,8 +69,10 @@ export const requirementQualityService = {
   getStoryNamesByIds: async (storyIds: string[]): Promise<Record<string, string>> => {
     if (!storyIds?.length) return {};
     const ids = [...new Set(storyIds.filter(Boolean))];
-    const res = await http.post<{ id: string; name: string }[]>(REQUIREMENT_QUALITY_URLS.STORY_NAMES, ids);
-    const list = Array.isArray(res) ? res : (res as any)?.data ?? [];
+    const res = await http.post(REQUIREMENT_QUALITY_URLS.STORY_NAMES, ids);
+    const list: Array<{ id: string; name: string }> = Array.isArray(res)
+      ? (res as Array<{ id: string; name: string }>)
+      : (((res as { data?: Array<{ id: string; name: string }> })?.data) ?? []);
     return list.reduce<Record<string, string>>((acc, o) => {
       if (o?.id != null) acc[o.id] = o.name ?? o.id;
       return acc;
@@ -80,7 +82,8 @@ export const requirementQualityService = {
   /** 默认需求列表：不输入时展示（取需求质量列表第一页，供关联需求下拉默认选项） */
   getDefaultStoryOptions: async (): Promise<{ id: string; name: string; creator?: string }[]> => {
     try {
-      const res = await http.post<Pager<RequirementQualityListItemDTO[]>>(
+      const post = http.post as <T>(url: string, data?: unknown) => Promise<T>;
+      const res = await post<Pager<RequirementQualityListItemDTO[]>>(
         REQUIREMENT_QUALITY_URLS.LIST,
         { current: 1, pageSize: 30 }
       );

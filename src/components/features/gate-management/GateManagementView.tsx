@@ -132,7 +132,7 @@ export function GateManagementView({ selectedTopMenu }: GateManagementViewProps)
               <div className="space-y-1.5">
                 <CardTitle className="text-lg font-black text-gray-900 tracking-tight">流水线配置</CardTitle>
                 <CardDescription className="text-xs font-medium text-gray-400">
-                  流水线基础信息、通知人、自动化用例等配置统一在此管理。
+                  流水线基础信息、通知人、用例实现等配置统一在此管理。
                 </CardDescription>
               </div>
               <Button

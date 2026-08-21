@@ -67,7 +67,7 @@ export function EditFileIdDialog({
               className="relative border-2 border-dashed border-slate-300 rounded-lg p-8 text-center cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/30 transition-colors"
             >
               <input
-                ref={fileInputRef}
+                ref={fileInputRef as React.RefObject<HTMLInputElement>}
                 type="file"
                 accept="*/*"
                 onChange={onFileSelect}

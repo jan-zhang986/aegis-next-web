@@ -1,0 +1,1 @@
+export { QualityWorkspaceDetailPage } from './TestPlanDetailPage';

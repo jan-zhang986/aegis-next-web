@@ -8,6 +8,7 @@ export interface ExecutionLog {
   name: string;
   status: 'pending' | 'running' | 'success' | 'failed' | 'skipped';
   timestamp: string;
+  startTime?: string | number;
   description: string;
   duration?: number;
   runId?: string; // 运行ID，用于获取详情

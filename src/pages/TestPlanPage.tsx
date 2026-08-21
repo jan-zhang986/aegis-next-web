@@ -1,6 +1,6 @@
 /**
- * 测试计划页面
- * 基于 MeterSphere 设计，提供完整的测试计划管理功能
+ * 质量工作台页面
+ * 主路径用于组织需求/版本/发布批次下的质量任务。
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -11,7 +11,7 @@ import {
   MoreHorizontal, Filter, Settings, HelpCircle, FolderPlus, Pencil,
   Boxes, ArrowUpDown, Share2, Inbox, Move, ChevronsDown, ChevronsUp
 } from 'lucide-react';
-import { testPlanManagementService } from '@/services';
+import { testPlanManagementService, qualityWorkspaceService } from '@/services';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -132,7 +132,7 @@ function getViewLabel(id: ViewId, viewList: ViewList | null): string {
 /** 表头列配置（与老前端表格设置一致：前两项不可排序，其余可配置） */
 const TABLE_COLUMNS_CONFIG: { key: string; label: string; sortable: boolean }[] = [
   { key: 'id', label: 'ID', sortable: false },
-  { key: 'name', label: '测试计划名称', sortable: false },
+  { key: 'name', label: '质量工作台名称', sortable: false },
   { key: 'status', label: '状态', sortable: true },
   { key: 'createUser', label: '创建人', sortable: true },
   { key: 'passRate', label: '通过率', sortable: true },
@@ -231,7 +231,7 @@ function SortablePlanRow({
             <button
               type="button"
               className="text-sm font-normal text-[#165DFF] font-mono tracking-tight ml-1 hover:underline text-left"
-              onClick={() => navigate(`/test-plan/${plan.id}`)}
+              onClick={() => navigate(`/quality-workspace/${plan.id}`)}
             >
               {plan.num || plan.id.slice(0, 6)}
             </button>
@@ -242,7 +242,7 @@ function SortablePlanRow({
         {plan.type === testPlanTypeEnum.GROUP ? (
           <TruncateWithTooltip className="text-sm font-normal text-gray-700 block cursor-default">{plan.name || '-'}</TruncateWithTooltip>
         ) : (
-          <button type="button" className="w-full text-left" onClick={() => navigate(`/test-plan/${plan.id}`)}>
+          <button type="button" className="w-full text-left" onClick={() => navigate(`/quality-workspace/${plan.id}`)}>
             <TruncateWithTooltip className="text-sm font-normal text-[#165DFF] hover:underline block">{plan.name || '-'}</TruncateWithTooltip>
           </button>
         )}
@@ -320,7 +320,7 @@ function SortablePlanRow({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-32 shadow-xl border-gray-100">
               {plan.type !== testPlanTypeEnum.GROUP && (
-                <DropdownMenuItem onClick={() => navigate(`/test-plan/${plan.id}`)} className="text-sm">
+                <DropdownMenuItem onClick={() => navigate(`/quality-workspace/${plan.id}`)} className="text-sm">
                   <ClipboardList className="w-3.5 h-3.5 mr-2 text-gray-400" />详情
                 </DropdownMenuItem>
               )}
@@ -389,14 +389,14 @@ function SortableSubPlanRow({
           <button
             type="button"
             className="text-sm font-normal text-[#165DFF] font-mono tracking-tight hover:underline text-left ml-1"
-            onClick={() => navigate(`/test-plan/${child.id}`)}
+            onClick={() => navigate(`/quality-workspace/${child.id}`)}
           >
             {child.num || child.id.slice(0, 6)}
           </button>
         </div>
       </TableCell>
       <TableCell className="w-[220px] max-w-[220px] px-4">
-        <button type="button" className="w-full text-left" onClick={() => navigate(`/test-plan/${child.id}`)}>
+        <button type="button" className="w-full text-left" onClick={() => navigate(`/quality-workspace/${child.id}`)}>
           <TruncateWithTooltip className="text-sm font-normal text-[#165DFF] hover:underline block">{child.name || '-'}</TruncateWithTooltip>
         </button>
       </TableCell>
@@ -834,7 +834,7 @@ export function TestPlanPage() {
     return result;
   }, []);
 
-  // 获取测试计划列表
+  // 获取质量工作台列表
   const fetchPlanList = async () => {
     setLoading(true);
     try {
@@ -856,15 +856,26 @@ export function TestPlanPage() {
         params.viewId = viewId;
       }
 
-      console.log('请求测试计划列表参数:', params);
-      const result = await testPlanManagementService.getTestPlanList(params);
+      console.log('请求质量工作台列表参数:', params);
+      const result = await qualityWorkspaceService.getWorkspaceList({
+        projectId,
+        current: currentPage,
+        pageSize,
+        keyword: searchKeyword || undefined,
+        archived: viewId === 'archived',
+      });
 
-      // 适配不同的返回格式，确保 list 始终为数组（接口异常时防白屏）
-      const raw = result?.list ?? result?.data;
-      const rawList = Array.isArray(raw) ? raw : [];
-      const totalCount = result?.total ?? (rawList.length > 0 ? rawList.length : 0);
-      // 展平：老前端表格是「每条一行」且对每条 id 请求通过率，此处展平后每条都有 id，便于为父+子都拉取统计
-      const list = flattenPlanList(rawList);
+      // 适配新的返回格式
+      const rawList = result?.list || result?.data || [];
+      const totalCount = result?.total || (Array.isArray(rawList) ? rawList.length : 0);
+      
+      // 映射新字段到旧组件期望的字段名（如 workspaceId -> id）
+      const list = rawList.map((item: any) => ({
+        ...item,
+        id: item.workspaceId,
+        num: item.workspaceId?.slice(0, 8), // 临时用 ID 截断作为编号
+        type: 'TEST_PLAN', // 统一为计划类型，暂时隐藏计划组概念
+      }));
 
       setPlanList(list);
       setTotal(totalCount);
@@ -897,6 +908,8 @@ export function TestPlanPage() {
       }
 
       // 获取统计信息（通过率、执行结果等）：必须传「当前页所有计划 id」（含子计划），与老前端 getStatistics(selectedPlanIds) 一致
+      // 暂时禁用旧的统计信息获取，后续会通过 qualityWorkspaceService.getWorkspaceStats 或直接在列表返回中包含统计数据
+      /*
       if (list.length > 0) {
         try {
           const planIds = list.map((p: any) => p.id).filter(Boolean);
@@ -915,8 +928,9 @@ export function TestPlanPage() {
           console.error('获取统计信息失败:', statsErr);
         }
       }
+      */
     } catch (err: any) {
-      console.error('获取测试计划列表失败:', err);
+      console.error('获取质量工作台列表失败:', err);
       setPlanList([]);
       setTotal(0);
     } finally {
@@ -1130,7 +1144,7 @@ export function TestPlanPage() {
   const handleCopy = async (plan: TestPlanItem) => {
     const toastId = toast.loading('正在复制测试计划...');
     try {
-      // 与 spotter-metersphere 一致：优先使用 GET /test-plan/copy/{id}
+      // 与 spotter-metersphere 一致：优先使用 GET /quality-workspace/copy/{id}
       try {
         await testPlanManagementService.testPlanAndGroupCopy(plan.id);
       } catch (getErr: any) {
@@ -1225,7 +1239,7 @@ export function TestPlanPage() {
       const apiCaseCount = (plan as any).apiCaseCount;
       const onlyFeatureCase = apiScenarioCount === 0 && apiCaseCount === 0;
       if (onlyFeatureCase) {
-        navigate(`/test-plan/${plan.id}?type=featureCase`);
+        navigate(`/quality-workspace/${plan.id}?type=featureCase`);
         return;
       }
       const toastId = toast.loading(`正在下发执行任务: ${plan.name}...`);
@@ -2061,7 +2075,7 @@ export function TestPlanPage() {
         onSuccess={fetchPlanList}
         moduleTree={moduleTree}
         initialModuleId={!editingPlanId && selectedModuleId && selectedModuleId !== "all" && selectedModuleId !== "unplanned" ? selectedModuleId : undefined}
-        onCreatedPlanId={(id) => navigate(`/test-plan/${id}`)}
+        onCreatedPlanId={(id) => navigate(`/quality-workspace/${id}`)}
       />
 
       <CreatePlanGroupDialog

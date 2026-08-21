@@ -16,9 +16,17 @@ export { testCaseService } from './test-case';
 export { projectManagementService } from './project-management';
 export { bugManagementService } from './bug-management';
 export { testPlanManagementService } from './test-plan';
+export { requirementService } from './requirement';
 export { caseManagementService } from './case-management';
 export { requirementQualityService } from './requirement-quality';
 export { gateManagementService } from './gate-management';
 export { metadataService } from './metadata';
 export { environmentService } from './environment';
-
+export {
+  qualityWorkspaceService,
+  ANALYSIS_STATUS_LABEL,
+  REVIEW_STATUS_LABEL,
+  RELEASE_CONCLUSION_LABEL,
+} from './quality-workspace';
+export type { QualityWorkspaceStats } from './quality-workspace';
+export { testAssetService } from './test-asset';

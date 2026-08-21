@@ -86,6 +86,7 @@ export interface CaseManagementMetrics {
 
     // ========== 额外统计数据 ==========
     totalCaseCount?: number;           // 总用例数
+    effectiveCaseCount?: number;       // 有效用例数
     reusedCaseCount?: number;          // 复用用例数（总数）
     directReuseCount?: number;         // 直接复用数（仅改标题）
     adaptReuseCount?: number;          // 适配复用数（改了其它）

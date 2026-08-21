@@ -103,7 +103,7 @@ export function SnapTestModule({ timeRange: initialTimeRange = 'week', customDat
         <div className="text-center text-gray-400 py-4">加载 数据监控大盘 数据中...</div>
       )}
       
-      {/* 第一行：测试计划总数 / AI用例数 / 自动化Case数 / MQ测试数据总数 / MOCK总数 / 造数工厂总数 */}
+      {/* 第一行：测试计划总数 / AI用例数 / 用例实现数 / MQ测试数据总数 / MOCK总数 / 造数工厂总数 */}
       <div className="grid grid-cols-6 gap-4">
         {/* 测试计划总数 */}
         <UITooltip>
@@ -250,7 +250,7 @@ export function SnapTestModule({ timeRange: initialTimeRange = 'week', customDat
           </TooltipContent>
         </UITooltip>
 
-        {/* 自动化Case数 */}
+        {/* 用例实现数 */}
         <UITooltip>
           <TooltipTrigger asChild>
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-6 hover:bg-gray-800/70 transition-all cursor-help">
@@ -258,7 +258,7 @@ export function SnapTestModule({ timeRange: initialTimeRange = 'week', customDat
                 <div className="p-2 rounded-lg bg-gray-700/50 flex-shrink-0 text-purple-400">
                   <ListChecks className="w-5 h-5" />
                 </div>
-                <span className="text-sm text-gray-400 truncate">自动化Case数</span>
+                <span className="text-sm text-gray-400 truncate">用例实现数</span>
               </div>
               <div className="mb-2">
                 <div className="flex items-baseline gap-2 mb-1">
@@ -280,14 +280,14 @@ export function SnapTestModule({ timeRange: initialTimeRange = 'week', customDat
                   )}
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500">自动化用例</span>
+                  <span className="text-gray-500">用例实现</span>
                 </div>
               </div>
             </div>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-sm bg-gray-800 border-gray-700 p-4 shadow-xl">
             <div className="space-y-3">
-              <h4 className="text-purple-400 text-base font-semibold">自动化Case数 · 升降率说明</h4>
+              <h4 className="text-purple-400 text-base font-semibold">用例实现数 · 升降率说明</h4>
               <div className="text-gray-400 text-sm space-y-3">
                 {data.automationStats?.comparison?.total ? (
                   <div>
@@ -1031,7 +1031,7 @@ export function SnapTestModule({ timeRange: initialTimeRange = 'week', customDat
           )}
           {data.metrics.automationCaseWritingDuration !== null && data.metrics.automationCaseWritingDuration !== undefined && (
             <MetricCard
-              title="自动化用例编写时长"
+              title="用例实现编写时长"
               value={data.metrics.automationCaseWritingDuration}
               unit="h"
               icon={Clock}

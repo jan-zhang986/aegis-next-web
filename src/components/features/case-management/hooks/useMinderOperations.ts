@@ -269,7 +269,7 @@ export function useMinderOperations(options: UseMinderOperationsOptions = {}) {
     const id = generateId();
     const isModule = tag === MINDER_TAGS.module;
     const isCase = tag === MINDER_TAGS.case;
-    const isContent = CASE_OFFSPRING_TAGS.includes(tag);
+    const isContent = CASE_OFFSPRING_TAGS.includes(tag as (typeof CASE_OFFSPRING_TAGS)[number]);
     
     // 用例节点显示名称：默认 "新建用例"；模块节点默认 "新建模块"；其他为 tag
     const displayName = isCase 

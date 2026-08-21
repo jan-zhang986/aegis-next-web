@@ -138,15 +138,9 @@ const Calendar = ({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...p }) => (
-          <ChevronLeft className={cn("size-4", className)} {...p} />
-        ),
-        IconRight: ({ className, ...p }) => (
-          <ChevronRight className={cn("size-4", className)} {...p} />
-        ),
         ...(showYearNav ? { MonthCaption: MonthCaptionWithYearNav } : {}),
         ...(propsComponents ?? {}),
-      }}
+      } as any}
       {...(restProps as DayPickerProps)}
     />
   );

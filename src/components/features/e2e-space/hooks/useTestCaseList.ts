@@ -7,7 +7,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { workflowService } from '@/services/workflow';
-import type { E2ESpace } from '@/services/e2e-space';
+import type { CaseRealizationSpace } from '@/services/e2e-space';
 
 interface TestCase {
   id: string;
@@ -38,7 +38,7 @@ interface TestModule {
 }
 
 interface UseTestCaseListParams {
-  space: E2ESpace;
+  space: CaseRealizationSpace;
   selectedModule: string | null;
   modules: TestModule[];
   userMap: Map<string, UserInfo>;

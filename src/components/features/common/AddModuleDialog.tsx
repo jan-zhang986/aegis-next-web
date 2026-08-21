@@ -22,6 +22,7 @@ import { metadataService } from '@/services/metadata';
 
 // 类型配置（与 MainContent.tsx 保持一致）
 const TYPE_CONFIG: Record<string, { name: string; icon: string; id: string; category: string }> = {
+  'WORKFLOW': { name: '用例资产', icon: '🧩', id: 'metadata-workflow', category: 'workflow' },
   'API': { name: 'HTTP接口', icon: '🔌', id: 'metadata-http', category: 'http' },
   'SQL': { name: 'SQL操作', icon: '📊', id: 'metadata-sql', category: 'sql' },
   'DUBBO': { name: 'DUBBO服务', icon: '🔄', id: 'metadata-dubbo', category: 'dubbo' },
@@ -36,7 +37,9 @@ interface AddModuleDialogProps {
   moduleTree: MetadataModuleNode[];
   projectId: string;
   // 模块类型，如果指定则自动设置，否则允许用户选择
-  moduleType?: 'API' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'FILE' | 'SCRIPT';
+  moduleType?: 'WORKFLOW' | 'API' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'FILE' | 'SCRIPT';
+  // Space 详情内创建模块时写入当前 spaceId
+  typeId?: string;
   // 创建成功后的回调
   onSuccess?: () => void | Promise<void>;
   // 标题，默认为"添加模块"
@@ -51,6 +54,7 @@ export function AddModuleDialog({
   moduleTree,
   projectId,
   moduleType,
+  typeId,
   onSuccess,
   title = '添加模块',
   description = '选择父模块，在任意节点下添加子模块',
@@ -58,7 +62,7 @@ export function AddModuleDialog({
   const [newModuleName, setNewModuleName] = useState('');
   const [selectedParentId, setSelectedParentId] = useState<string>('');
   const [selectedParentPath, setSelectedParentPath] = useState<string>('');
-  const [selectedModuleType, setSelectedModuleType] = useState<'API' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'FILE' | 'SCRIPT'>(moduleType || 'API');
+  const [selectedModuleType, setSelectedModuleType] = useState<'WORKFLOW' | 'API' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'FILE' | 'SCRIPT'>(moduleType || 'API');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isParentSelectOpen, setIsParentSelectOpen] = useState(false);
   const [expandedParentNodes, setExpandedParentNodes] = useState<Set<string>>(new Set());
@@ -151,6 +155,7 @@ export function AddModuleDialog({
         name: newModuleName.trim(),
         parentId: selectedParentId,
         moduleType: selectedModuleType,
+        ...(typeId ? { typeId } : {}),
       });
       
       toast.success('模块添加成功！');
@@ -237,25 +242,18 @@ export function AddModuleDialog({
                       setSelectedParentId(node.id);
                       setSelectedParentPath(getNodePath(node));
                       // 根据父节点类型自动设置 moduleType（覆盖传入的 moduleType）
-                      if (node.type === 'API' || node.type === 'SQL' || node.type === 'DUBBO' || node.type === 'ROCKETMQ' || node.type === 'FILE' || node.type === 'SCRIPT') {
+                      if (node.type === 'WORKFLOW' || node.type === 'API' || node.type === 'SQL' || node.type === 'DUBBO' || node.type === 'ROCKETMQ' || node.type === 'FILE' || node.type === 'SCRIPT') {
                         setSelectedModuleType(node.type);
                       }
                       setIsParentSelectOpen(false);
                     };
                     
-                    // 递归渲染树形节点（只过滤掉 WORKFLOW 类型，允许 SCRIPT 类型）
+                    // 递归渲染树形节点；指定 moduleType 时只允许同类型父节点
                     const renderTreeNode = (node: MetadataModuleNode, level: number = 0): JSX.Element | null => {
-                      // 只过滤掉 WORKFLOW 类型的节点，允许 SCRIPT 类型
-                      if ((node.type as string) === 'WORKFLOW') {
-                        return null;
-                      }
-                      
                       const config = TYPE_CONFIG[node.type] || TYPE_CONFIG['API'];
                       const indent = level * 16;
-                      // 过滤子节点，只排除 WORKFLOW 类型，允许 SCRIPT 类型
                       const validChildren = node.children?.filter(child => {
-                        const childType = child.type as string;
-                        return childType !== 'WORKFLOW';
+                        return !moduleType || child.type === moduleType;
                       }) || [];
                       const hasChildren = validChildren.length > 0;
                       const isExpanded = expandedParentNodes.has(node.id);
@@ -296,7 +294,7 @@ export function AddModuleDialog({
                               ({config?.name || node.type})
                             </span>
                           </div>
-                          {/* 递归渲染子节点（只渲染非 WORKFLOW 类型的子节点） */}
+                          {/* 递归渲染子节点 */}
                           {hasChildren && isExpanded && (
                             <>
                               {validChildren.map(child => renderTreeNode(child, level + 1)).filter(Boolean)}
@@ -306,9 +304,9 @@ export function AddModuleDialog({
                       );
                     };
                     
-                    // 只渲染顶级节点（parentId 为 NONE 的节点），排除 WORKFLOW 类型
+                    // 只渲染顶级节点（parentId 为 NONE 的节点）
                     const topLevelNodes = moduleTree
-                      .filter(node => node.parentId === 'NONE' && (node.type as string) !== 'WORKFLOW')
+                      .filter(node => node.parentId === 'NONE' && (!moduleType || node.type === moduleType))
                       // 排序：SCRIPT 类型放在后面，其他类型保持原顺序
                       .sort((a, b) => {
                         const aIsScript = (a.type as string) === 'SCRIPT';
@@ -354,4 +352,3 @@ export function AddModuleDialog({
     </Dialog>
   );
 }
-

@@ -21,7 +21,7 @@ import { cn } from '@/utils/cn';
 import WorkflowDesignPageV2, { WorkflowDesignPageV2Ref } from '@/components/features/WorkflowDesignPageV2';
 import { RequestHeadersPopover } from '@/components/features/workflow-designer/components';
 import { useEngineProfiles } from '@/components/features/workflow-designer/hooks';
-import type { E2ESpace } from '@/services/e2e-space';
+import type { CaseRealizationSpace } from '@/services/e2e-space';
 
 interface TestCase {
   id: string;
@@ -36,7 +36,7 @@ interface TestCase {
 }
 
 interface WorkflowDesignerEmbedProps {
-  space: E2ESpace;
+  space: CaseRealizationSpace;
   selectedTestCase: TestCase;
   selectedModule: string | null;
   viewMode: 'canvas' | 'steps';
@@ -191,7 +191,7 @@ export const WorkflowDesignerEmbed: React.FC<WorkflowDesignerEmbedProps> = ({
                       }}
                       className="cursor-pointer hover:text-gray-900"
                     >
-                      自动化用例
+                      用例实现
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator />

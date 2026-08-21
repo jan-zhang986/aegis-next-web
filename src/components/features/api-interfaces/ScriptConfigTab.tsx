@@ -478,9 +478,10 @@ export function ScriptConfigTab({
                           <Select
                             value={(() => {
                               const v = param.defaultValue;
-                              if (v === true || v === 'true' || v === 'True') return 'True';
-                              if (v === false || v === 'false' || v === 'False') return 'False';
-                              return v && String(v).trim() ? (String(v).toLowerCase() === 'true' ? 'True' : 'False') : 'False';
+                              const normalized = String(v ?? '').trim().toLowerCase();
+                              if (normalized === 'true') return 'True';
+                              if (normalized === 'false') return 'False';
+                              return normalized ? 'False' : 'False';
                             })()}
                             onValueChange={(value) =>
                               onUpdateUserParam(index, 'defaultValue', value)

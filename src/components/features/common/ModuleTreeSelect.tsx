@@ -27,6 +27,8 @@ interface ModuleTreeSelectProps {
   moduleType?: 'API' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'FILE' | 'SCRIPT';
   /** 项目ID（用于快速创建模块） */
   projectId?: string;
+  /** Space 详情内快速创建模块时写入当前 spaceId */
+  typeId?: string;
   /** 模块树刷新回调（用于快速创建模块后刷新） */
   onModuleTreeRefresh?: () => Promise<void>;
   /** 标签文本 */
@@ -53,6 +55,7 @@ export function ModuleTreeSelect({
   onModuleIdChange,
   moduleType,
   projectId,
+  typeId,
   onModuleTreeRefresh,
   label = '所属模块',
   required = false,
@@ -358,6 +361,7 @@ export function ModuleTreeSelect({
           onOpenChange={setIsCreateModuleDialogOpen}
           moduleTree={moduleTree}
           projectId={projectId}
+          typeId={typeId}
           moduleType={moduleType}
           title="快速创建模块"
           description="选择父模块，创建新的子模块"
@@ -372,4 +376,3 @@ export function ModuleTreeSelect({
     </>
   );
 }
-

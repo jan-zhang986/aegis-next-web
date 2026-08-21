@@ -68,6 +68,7 @@ export function useEfficiencyMetrics({
   // 全局指标状态（不受需求筛选影响）
   const [globalMetrics, setGlobalMetrics] = useState<GlobalMetrics>({
     totalCaseCount: 0,
+    effectiveCaseCount: 0,
     avgUQS: 0,
     absoluteTimeSavings: 0,
     caseChangeHeat: 0,

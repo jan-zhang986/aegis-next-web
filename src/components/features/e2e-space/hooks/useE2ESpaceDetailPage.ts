@@ -8,7 +8,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { http } from '@/utils/request';
 import { toast } from 'sonner';
 import { workflowService } from '@/services/workflow';
-import type { E2ESpace } from '@/services/e2e-space';
+import type { CaseRealizationSpace } from '@/services/e2e-space';
 import type { WorkflowDesignPageV2Ref } from '@/components/features/WorkflowDesignPageV2';
 import {
   useE2EModuleTree,
@@ -25,7 +25,7 @@ interface UserInfo {
 }
 
 interface UseE2ESpaceDetailPageParams {
-  space: E2ESpace;
+  space: CaseRealizationSpace;
 }
 
 export function useE2ESpaceDetailPage({ space }: UseE2ESpaceDetailPageParams) {

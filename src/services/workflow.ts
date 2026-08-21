@@ -1,13 +1,15 @@
 /**
  * 工作流服务
- * 提供工作流的CRUD和执行功能
+ * 主要服务于 realization 背后的实现定义、运行时和后台/兼容入口。
+ * 普通用户主路径应优先从 Case / realization 进入，而不是把 workflow 当独立测试资产。
  */
 
 import { http } from '@/utils/request';
 
 export const workflowService = {
   /**
-   * 获取工作流列表
+   * 获取工作流列表（后台/兼容）
+   * @deprecated 普通用户主路径请优先走 Case / realization 视图。
    */
   getWorkflowList: async (params?: { 
     projectId: string;
@@ -22,20 +24,21 @@ export const workflowService = {
   },
 
   /**
-   * 获取工作流详情
+   * 获取工作流详情（后台/兼容）
+   * @deprecated 普通用户主路径请优先走 Case / realization 视图。
    */
   getWorkflowDetail: async (id: string) => {
     return http.get(`/workflow/definition/get/${id}`);
   },
 
   /**
-   * 创建或更新工作流
+   * 创建或更新工作流（后台/兼容）
+   * @deprecated 面向普通产品流的创建/维护应从 realization 入口发起。
    */
   saveWorkflow: async (data: {
     workflowId?: string;
     projectId: string;
     moduleId: string;
-    name: string;
     description?: string;
     category?: string;
     type?: string;
@@ -59,6 +62,10 @@ export const workflowService = {
       label?: string;
       color?: string;
     }>;
+    caseId?: string;
+    realizationType?: string;
+    /** 为 true 时写入 global_vars._caseRealization，Case 实现列表与工作台才能关联 */
+    caseRealization?: boolean;
   }) => {
     return http.post('/workflow/definition/save', data);
   },
@@ -71,14 +78,14 @@ export const workflowService = {
   },
 
   /**
-   * 删除工作流
+   * 删除工作流（后台/兼容）
    */
   deleteWorkflow: async (id: string) => {
     return http.get(`/workflow/definition/delete/${id}`);
   },
 
   /**
-   * 复制工作流
+   * 复制工作流（后台/兼容）
    * @returns 新工作流的ID
    */
   copyWorkflow: async (id: string): Promise<string> => {

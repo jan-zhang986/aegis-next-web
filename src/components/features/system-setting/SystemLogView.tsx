@@ -80,8 +80,9 @@ function getTypeLabel(value: string): string {
 }
 
 /** 从行数据中解析操作结果（兼容 status/result/operationStatus/state、大小写、数字等），展示完整 */
-function getOperationResultLabel(row: LogItem & Record<string, unknown>): string {
-  const raw = row.status ?? row.result ?? row.operationStatus ?? row.state;
+function getOperationResultLabel(row: LogItem): string {
+  const rawRow = row as LogItem & Record<string, unknown>;
+  const raw = rawRow.status ?? rawRow.result ?? rawRow.operationStatus ?? rawRow.state;
   if (raw === undefined || raw === null) return '无';
   const str = String(raw).trim();
   if (str === '') return '无';

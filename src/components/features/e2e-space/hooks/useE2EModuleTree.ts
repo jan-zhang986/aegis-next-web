@@ -7,7 +7,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { metadataModuleService, MetadataModuleTreeNode } from '@/services/metadata-module';
-import type { E2ESpace } from '@/services/e2e-space';
+import type { CaseRealizationSpace } from '@/services/e2e-space';
 
 interface TestModule {
   id: string;
@@ -18,7 +18,7 @@ interface TestModule {
 }
 
 interface UseE2EModuleTreeParams {
-  space: E2ESpace;
+  space: CaseRealizationSpace;
 }
 
 interface UseE2EModuleTreeReturn {

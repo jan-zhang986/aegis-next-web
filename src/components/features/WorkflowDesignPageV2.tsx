@@ -15,6 +15,10 @@ interface WorkflowDesignPageV2Props {
   /** 受控模式：由父组件传入执行环境 ID 和 setter（用于嵌入页如 E2E 空间） */
   executionEnvironmentId?: string;
   setExecutionEnvironmentId?: (id: string) => void;
+  caseId?: string;
+  realizationType?: string;
+  /** 为 false 时隐藏左侧节点/元数据/历史等面板（用于用例详情内嵌只读预览；全屏编辑应传 true 或不传） */
+  showNodePalette?: boolean;
 }
 
 export interface WorkflowDesignPageV2Ref {
@@ -50,6 +54,9 @@ const WorkflowDesignPageV2 = forwardRef<WorkflowDesignPageV2Ref, WorkflowDesignP
   onSave: onSaveCallback,
   executionEnvironmentId: controlledExecutionEnvironmentId,
   setExecutionEnvironmentId: setControlledExecutionEnvironmentId,
+  caseId,
+  realizationType,
+  showNodePalette = true,
 }, ref) {
   const {
     viewMode,
@@ -171,6 +178,8 @@ const WorkflowDesignPageV2 = forwardRef<WorkflowDesignPageV2Ref, WorkflowDesignP
     onSaveCallback,
     controlledExecutionEnvironmentId,
     setControlledExecutionEnvironmentId,
+    caseId,
+    realizationType,
   });
 
   useImperativeHandle(ref, () => ({
@@ -231,48 +240,50 @@ const WorkflowDesignPageV2 = forwardRef<WorkflowDesignPageV2Ref, WorkflowDesignP
 
         {/* 主内容区（步骤模式下详情抽屉为浮层，需 relative 定位） */}
         <div className="flex-1 flex overflow-hidden relative">
-        {/* 左侧节点面板 */}
-        <LeftPanel
-          leftPanelTab={leftPanelTab}
-          setLeftPanelTab={setLeftPanelTab}
-          searchKeyword={searchKeyword}
-          setSearchKeyword={setSearchKeyword}
-          expandedCategories={expandedCategories}
-          toggleCategory={toggleCategory}
-          filteredCategories={filteredCategories}
-          loadingPublicNodes={loadingPublicNodes}
-          publicNodes={publicNodes}
-          workflow={workflow}
-          setWorkflow={setWorkflow}
-          onDeletePublicNode={(nodeId) => {
-            setDeletePublicNodeId(nodeId);
-                                          setIsDeletePublicNodeDialogOpen(true);
-                                        }}
-          handleAddNode={handleAddNode}
-          metadataSearchKeyword={metadataSearchKeyword}
-          setMetadataSearchKeyword={setMetadataSearchKeyword}
-          loadingMetadata={loadingMetadata}
-          loadingPluginSyncNodes={loadingPluginSyncNodes}
-          expandedMetadataFolders={expandedMetadataFolders}
-          toggleMetadataFolder={toggleMetadataFolder}
-          metadataTypes={metadataTypes}
-          metadataCategories={metadataCategories}
-          metadataItems={metadataItems}
-          moduleTree={moduleTree}
-          definitions={definitions}
-          pluginSyncNodes={pluginSyncNodes}
-          convertDefinitionToNode={convertDefinitionToNode}
-          historySearchKeyword={historySearchKeyword}
-          setHistorySearchKeyword={setHistorySearchKeyword}
-          loadingHistory={loadingHistory}
-          setLoadingHistory={setLoadingHistory}
-          workflowHistory={workflowHistory}
-          setExecutionLogs={setExecutionLogs}
-          setDebugMode={setDebugMode}
-          setDebugNodeId={setDebugNodeId}
-          setIsExecuting={setIsExecuting}
-          setIsExecutionDrawerOpen={setIsExecutionDrawerOpen}
-        />
+        {/* 左侧节点面板：详情内嵌预览可关闭，仅全屏编辑时展示 */}
+        {showNodePalette ? (
+          <LeftPanel
+            leftPanelTab={leftPanelTab}
+            setLeftPanelTab={setLeftPanelTab}
+            searchKeyword={searchKeyword}
+            setSearchKeyword={setSearchKeyword}
+            expandedCategories={expandedCategories}
+            toggleCategory={toggleCategory}
+            filteredCategories={filteredCategories}
+            loadingPublicNodes={loadingPublicNodes}
+            publicNodes={publicNodes}
+            workflow={workflow}
+            setWorkflow={setWorkflow}
+            onDeletePublicNode={(nodeId) => {
+              setDeletePublicNodeId(nodeId);
+              setIsDeletePublicNodeDialogOpen(true);
+            }}
+            handleAddNode={handleAddNode}
+            metadataSearchKeyword={metadataSearchKeyword}
+            setMetadataSearchKeyword={setMetadataSearchKeyword}
+            loadingMetadata={loadingMetadata}
+            loadingPluginSyncNodes={loadingPluginSyncNodes}
+            expandedMetadataFolders={expandedMetadataFolders}
+            toggleMetadataFolder={toggleMetadataFolder}
+            metadataTypes={metadataTypes}
+            metadataCategories={metadataCategories}
+            metadataItems={metadataItems}
+            moduleTree={moduleTree}
+            definitions={definitions}
+            pluginSyncNodes={pluginSyncNodes}
+            convertDefinitionToNode={convertDefinitionToNode}
+            historySearchKeyword={historySearchKeyword}
+            setHistorySearchKeyword={setHistorySearchKeyword}
+            loadingHistory={loadingHistory}
+            setLoadingHistory={setLoadingHistory}
+            workflowHistory={workflowHistory}
+            setExecutionLogs={setExecutionLogs}
+            setDebugMode={setDebugMode}
+            setDebugNodeId={setDebugNodeId}
+            setIsExecuting={setIsExecuting}
+            setIsExecutionDrawerOpen={setIsExecutionDrawerOpen}
+          />
+        ) : null}
 
         {/* 画布区域或步骤列表 */}
         <MainContent

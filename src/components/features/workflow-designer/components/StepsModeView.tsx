@@ -6,11 +6,7 @@
 
 import React from 'react';
 import { List, Circle, Play, Square, Globe, Database, Zap, Wifi, GitBranch, Repeat, Code, Variable, MessageSquare } from 'lucide-react';
-import {
-  DndContext,
-  DragOverlay,
-  closestCenter,
-} from '@dnd-kit/core';
+import { DragOverlay } from '@dnd-kit/core';
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -30,9 +26,10 @@ interface StepsModeViewProps {
   getSortedNodes: () => WorkflowNodeData[];
   selectedNodeId: string | null;
   activeDragId: string | null;
-  sensors: any;
-  onDragStart: (event: any) => void;
-  onDragEnd: (event: any) => void;
+  /** 由外层 WorkflowDesignPageV2 的 DndContext 承接，此处不再单独包 DndContext */
+  sensors?: unknown;
+  onDragStart?: (event: unknown) => void;
+  onDragEnd?: (event: unknown) => void;
   onSelectNode: (nodeId: string) => void;
   onCopyNode: (nodeId: string) => void;
   onDeleteNode: (nodeId: string) => void;
@@ -43,9 +40,6 @@ export const StepsModeView: React.FC<StepsModeViewProps> = ({
   getSortedNodes,
   selectedNodeId,
   activeDragId,
-  sensors,
-  onDragStart,
-  onDragEnd,
   onSelectNode,
   onCopyNode,
   onDeleteNode,
@@ -76,14 +70,13 @@ export const StepsModeView: React.FC<StepsModeViewProps> = ({
             <p className="text-xs mt-1 text-gray-400">可从左侧拖拽节点到画布添加，或点击左侧节点类型在画布中心添加</p>
           </div>
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={onDragStart}
-            onDragEnd={onDragEnd}
-          >
+          <>
+            {/*
+              与 WorkflowDesignPageV2 外层 DndContext 共用一套 sensors / onDragStart / onDragEnd，
+              此处禁止再包一层 DndContext，否则步骤拖拽与排序会失效。
+            */}
             <SortableContext
-              items={getSortedNodes().map(node => node.id)}
+              items={getSortedNodes().map((node) => node.id)}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-3">
@@ -103,20 +96,20 @@ export const StepsModeView: React.FC<StepsModeViewProps> = ({
             <DragOverlay>
               {activeDragId ? (
                 (() => {
-                  const draggingNode = getSortedNodes().find(n => n.id === activeDragId);
+                  const draggingNode = getSortedNodes().find((n) => n.id === activeDragId);
                   if (!draggingNode) return null;
                   const meta = NODE_META_REGISTRY[draggingNode.type];
-                  const index = getSortedNodes().findIndex(n => n.id === activeDragId);
+                  const index = getSortedNodes().findIndex((n) => n.id === activeDragId);
                   return (
                     <div className="bg-white rounded-lg border-2 border-blue-500 p-4 shadow-2xl opacity-95 w-full min-w-0">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div 
+                        <div
                           className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm"
                           style={{ backgroundColor: meta?.color || '#9CA3AF' }}
                         >
                           {meta?.icon && ICON_MAP[meta.icon] ? (
-                            React.createElement(ICON_MAP[meta.icon], { 
-                              className: "w-5 h-5 text-white" 
+                            React.createElement(ICON_MAP[meta.icon], {
+                              className: 'w-5 h-5 text-white',
                             })
                           ) : (
                             <span className="text-white text-lg">📦</span>
@@ -137,7 +130,7 @@ export const StepsModeView: React.FC<StepsModeViewProps> = ({
                 })()
               ) : null}
             </DragOverlay>
-          </DndContext>
+          </>
         )}
       </div>
     </div>

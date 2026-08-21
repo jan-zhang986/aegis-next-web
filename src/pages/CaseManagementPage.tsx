@@ -1,6 +1,6 @@
 /**
  * 用例管理页面
- * 从 spotter-metersphere 迁移，整合功能用例和用例评审
+ * 从 spotter-metersphere 迁移，整合用例、用例评审与生成流程
  */
 
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
@@ -17,6 +17,10 @@ import {
   CaseGenerationLayout,
 } from '@/components/features/case-management';
 import type { CaseItem } from '@/components/features/case-management';
+import { TestSuiteManager, GateBindingManager } from '@/components/features/test-asset';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Layers3 } from 'lucide-react';
 
 interface CaseManagementPageProps {
   selectedTopMenu?: string;
@@ -51,6 +55,7 @@ export function CaseManagementPage({
   const firstQuery = params.firstQuery ?? null;
   const firstMentioned = params.firstMentioned ?? null;
   const firstModelId = params.firstModelId ?? null;
+  const spaceId = params.spaceId ?? null;
 
   const updateParams = (updates: Record<string, string | null>) => {
     const next = new URLSearchParams(urlSearchParams);
@@ -113,7 +118,34 @@ export function CaseManagementPage({
 
   const projectId = localStorage.getItem('currentProjectId') || 'default-project';
 
-  // 功能用例
+  const renderSpaceRequired = (title: string) => (
+    <div className="flex h-full w-full items-center justify-center bg-slate-50">
+      <Card className="max-w-md rounded-3xl border-dashed border-slate-200 p-10 text-center shadow-sm">
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50">
+          <Layers3 className="h-8 w-8 text-blue-500" />
+        </div>
+        <h3 className="text-xl font-black text-slate-900">{title}</h3>
+        <p className="mt-3 text-sm leading-6 text-slate-500">
+          测试套件和门禁绑定属于 Space 下的长期测试资产。请先进入某个 Space，再维护这些资产。
+        </p>
+        <Button className="mt-6 rounded-2xl bg-slate-900 text-white hover:bg-slate-800" onClick={() => onNavigate?.(currentMenu, 'space')}>
+          返回空间
+        </Button>
+      </Card>
+    </div>
+  );
+
+  if (tab === 'test-suite') {
+    if (!spaceId) return renderSpaceRequired('请先进入 Space');
+    return <TestSuiteManager projectId={projectId} spaceId={spaceId} />;
+  }
+
+  if (tab === 'gate-binding') {
+    if (!spaceId) return renderSpaceRequired('请先进入 Space');
+    return <GateBindingManager projectId={projectId} spaceId={spaceId} />;
+  }
+
+  // 用例
   if (tab === 'feature-case') {
     if (recycle) {
       return (
@@ -147,6 +179,7 @@ export function CaseManagementPage({
           mode={mode as 'add' | 'edit' | 'copy'}
           caseId={mode !== 'add' ? caseId ?? undefined : undefined}
           projectId={projectId}
+          spaceId={spaceId ?? undefined}
           initialModuleId={mode === 'add' ? (params.moduleId ?? undefined) : undefined}
           onBack={backFromEdit}
           onSuccess={(id, name) => {
@@ -168,6 +201,7 @@ export function CaseManagementPage({
     return (
       <FeatureCaseList
         projectId={params.pId ? String(params.pId) : projectId}
+        spaceId={spaceId ?? undefined}
         initialCaseId={caseId}
         initialSelectedModuleId={params.moduleId ?? undefined}
         onViewCase={(item: CaseItem, selectedModuleId?: string) => {
@@ -206,6 +240,7 @@ export function CaseManagementPage({
       <div className="flex-1 flex flex-col min-h-0 bg-gray-50">
         <CaseGenerationLayout
           projectId={projectId}
+          spaceId={spaceId ?? undefined}
           chatId={chatId}
           firstQuery={firstQuery}
           firstMentionedItems={
@@ -296,10 +331,11 @@ export function CaseManagementPage({
     );
   }
 
-  // 默认显示功能用例
+  // 默认显示用例
   return (
     <FeatureCaseList
       projectId={projectId}
+      spaceId={spaceId ?? undefined}
       initialSelectedModuleId={params.moduleId ?? undefined}
       onViewCase={(item, selectedModuleId) => {
         const updates: Record<string, string | null> = { caseId: item.id, mode: null, success: null, recycle: null };

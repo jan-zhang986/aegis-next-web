@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import {
   FolderKanban,
   ClipboardList,
-  FileText,
+  Layers,
   Globe,
   Bug,
   Key,
@@ -26,8 +26,8 @@ interface LeftSidebarProps {
 const ALL_MENU_ITEMS = [
     { id: 'workspace', label: '工作台', icon: Globe, color: 'text-gray-600' },
     { id: 'project-management', label: '项目管理', icon: FolderKanban, color: 'text-gray-600' },
-    { id: 'test-plan', label: '测试计划', icon: ClipboardList, color: 'text-gray-600' },
-    { id: 'test-case', label: '测试用例', icon: FileText, color: 'text-gray-600' },
+    { id: 'quality-workspace', label: '需求质量', icon: ClipboardList, color: 'text-gray-600' },
+    { id: 'test-case', label: '测试资产', icon: Layers, color: 'text-gray-600' },
     {
       id: 'test-factory',
       label: '测试工厂',

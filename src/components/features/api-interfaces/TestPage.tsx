@@ -34,9 +34,10 @@ interface TestPageProps {
   definitionId?: string;
   definitions?: MetadataDefinition[];
   onRefresh?: () => void;
+  spaceId?: string;
 }
 
-export function TestPage({ apiType, apiName, onClose, definitionId, definitions = [], onRefresh }: TestPageProps) {
+export function TestPage({ apiType, apiName, onClose, definitionId, definitions = [], onRefresh, spaceId }: TestPageProps) {
   const [searchParams] = useSearchParams();
   const projectId = useMemo(() => {
     const fromUrl = searchParams.get('projectId');
@@ -49,7 +50,7 @@ export function TestPage({ apiType, apiName, onClose, definitionId, definitions 
     return id || '';
   }, [searchParams]);
 
-  const editor = useApiEditor({ protocol: 'HTTP', projectId, onRefresh });
+  const editor = useApiEditor({ protocol: 'HTTP', projectId, spaceId, onRefresh });
 
   const currentDefinition = useMemo(() => (definitionId && definitions.length ? definitions.find((d) => d.id === definitionId) ?? null : null), [definitionId, definitions]);
   const isCase = currentDefinition?.isCase ?? false;
@@ -83,6 +84,7 @@ export function TestPage({ apiType, apiName, onClose, definitionId, definitions 
     url: form.url,
     editor,
     projectId,
+    spaceId,
     onRefresh,
     isSyncData,
     isCase,
@@ -95,7 +97,7 @@ export function TestPage({ apiType, apiName, onClose, definitionId, definitions 
 
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!form.url) {
       toast.error('请输入接口地址');
       return;
@@ -104,7 +106,7 @@ export function TestPage({ apiType, apiName, onClose, definitionId, definitions 
       toast.error('请先选择环境');
       return;
     }
-    send.handleSend();
+    await send.handleSend();
   };
 
   const handleImport = (data: ImportData) => {
@@ -238,7 +240,8 @@ export function TestPage({ apiType, apiName, onClose, definitionId, definitions 
         onModuleChange={editor.setConfirmModuleId}
         moduleType="API"
         projectId={projectId}
-        onModuleTreeRefresh={() => onRefresh?.()}
+        typeId={spaceId}
+        onModuleTreeRefresh={async () => { await Promise.resolve(onRefresh?.()); }}
         onConfirm={() => {
           if (!editor.confirmModuleId) { toast.error('请选择所属模块'); return; }
           editor.setSelectedModuleId(editor.confirmModuleId);
@@ -260,6 +263,7 @@ export function TestPage({ apiType, apiName, onClose, definitionId, definitions 
         onModuleIdChange={(id) => { editor.setConfirmModuleId(id); editor.setSelectedModuleId(id); }}
         moduleType={apiType === 'http' ? 'API' : (apiType.toUpperCase() as 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'FILE')}
         projectId={projectId}
+        typeId={spaceId}
         onModuleTreeRefresh={() => editor.refreshModuleTree()}
         onConfirm={save.handleSaveDialogConfirm}
         saving={editor.state.saving}

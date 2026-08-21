@@ -54,7 +54,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   FUNCTIONAL_CASE: '功能用例',
   API_CASE: '接口用例',
   API: '接口用例',
-  SCENARIO_CASE: '自动化用例',
+  SCENARIO_CASE: '用例实现',
   SCENARIO: '自动化',
 };
 
@@ -177,12 +177,12 @@ function isApiCaseCategory(n: PlanMinderTreeNode): boolean {
   return name === '接口用例';
 }
 
-/** 判断 level1 节点是否为「自动化用例」分类 */
+/** 判断 level1 节点是否为「用例实现」分类 */
 function isScenarioCaseCategory(n: PlanMinderTreeNode): boolean {
   if (n.level !== 1) return false;
   if (n.type === 'SCENARIO_CASE' || n.type === 'SCENARIO') return true;
   const name = (n.name || '').trim();
-  return name === '场景用例' || name === '自动化用例';
+  return name === '场景用例' || name === '自动化用例' || name === '用例实现';
 }
 
 function collectBranchIds(nodes: PlanMinderTreeNode[], isCategory: (n: PlanMinderTreeNode) => boolean): Set<string> {
@@ -209,11 +209,11 @@ function collectBranchIds(nodes: PlanMinderTreeNode[], isCategory: (n: PlanMinde
 
 // ============ 新增测试点弹窗 ============
 
-/** 当前选中的分类对应的中文名（功能用例 / 接口用例 / 自动化用例） */
+/** 当前选中的分类对应的中文名（功能用例 / 接口用例 / 用例实现） */
 const CATEGORY_DISPLAY_NAMES: Record<'FUNCTIONAL' | 'API' | 'SCENARIO', string> = {
   FUNCTIONAL: '功能用例',
   API: '接口用例',
-  SCENARIO: '自动化用例',
+  SCENARIO: '用例实现',
 };
 
 interface AddTestPointDialogProps {
@@ -489,7 +489,7 @@ export function PlanDetailPlanTree({ planId, projectId, status, canEdit, onRefre
     const isCategory = node.level === 1;
     const isRoot = node.level === 0;
     let displayName = isCategory ? (CATEGORY_LABEL[node.type ?? ''] ?? node.name) : node.name;
-    if (displayName === '场景用例') displayName = '自动化用例';
+    if (displayName === '场景用例' || displayName === '自动化用例') displayName = '用例实现';
     else if (displayName === '场景') displayName = '自动化';
     const count = node.caseCount != null ? node.caseCount : (node.num != null ? node.num : (hasChildren ? children.length : undefined));
     const isSelected = selectedId === rawId || (rawId === '' && selectedId === nodeId);
@@ -640,7 +640,7 @@ export function PlanDetailPlanTree({ planId, projectId, status, canEdit, onRefre
               </div>
             )}
           </div>
-          {/* 右侧：按选中的分支显示对应列表（功能用例 / 接口用例 / 自动化用例） */}
+          {/* 右侧：按选中的分支显示对应列表（功能用例 / 接口用例 / 用例实现） */}
           <div className="flex-1 min-w-0 flex flex-col overflow-hidden bg-white">
             {showRightContent ? (
               isApiCaseBranch ? (
@@ -713,7 +713,7 @@ export function PlanDetailPlanTree({ planId, projectId, status, canEdit, onRefre
                                     : '-';
                             const execLabel = row.priority === 3 ? '并行' : row.priority === 2 ? '串行' : '-';
                             let name = row.level === 1 ? (CATEGORY_LABEL[row.type ?? ''] ?? row.name) : row.name;
-                            if (name === '场景用例') name = '自动化用例';
+                            if (name === '场景用例' || name === '自动化用例') name = '用例实现';
                             else if (name === '场景') name = '自动化';
                             const rowKey = (row.id != null && String(row.id).trim()) ? row.id : `plan-row-${rowIndex}`;
                             return (
@@ -735,7 +735,7 @@ export function PlanDetailPlanTree({ planId, projectId, status, canEdit, onRefre
                     </Table>
                   ) : (
                     <div className="flex items-center justify-center h-full text-gray-400 text-base">
-                      在功能用例、接口用例、自动化用例等 tab 中关联用例后将生成规划结构
+                      在功能用例、接口用例、用例实现等 tab 中关联用例后将生成规划结构
                     </div>
                   )}
                 </div>

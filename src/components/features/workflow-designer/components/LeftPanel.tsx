@@ -42,11 +42,11 @@ interface LeftPanelProps {
   loadingHistory: boolean;
   setLoadingHistory: (loading: boolean) => void;
   workflowHistory: any[];
-  setExecutionLogs: React.Dispatch<React.SetStateAction<any[]>>;
-  setDebugMode: (mode: any) => void;
-  setDebugNodeId: (nodeId: string | null) => void;
-  setIsExecuting: (executing: boolean) => void;
-  setIsExecutionDrawerOpen: (open: boolean) => void;
+  setExecutionLogs: React.Dispatch<React.SetStateAction<import('../../workflow/types').ExecutionLog[]>>;
+  setDebugMode: React.Dispatch<React.SetStateAction<import('../../workflow/types').DebugMode>>;
+  setDebugNodeId: React.Dispatch<React.SetStateAction<string | null>>;
+  setIsExecuting: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsExecutionDrawerOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const LeftPanel: React.FC<LeftPanelProps> = ({

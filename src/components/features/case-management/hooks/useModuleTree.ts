@@ -4,14 +4,40 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { caseManagementService } from '@/services';
+import { metadataModuleService, type MetadataModuleTreeNode } from '@/services/metadata-module';
 import type { ModuleTreeNode } from '../types';
 
 interface UseModuleTreeOptions {
   projectId: string;
+  spaceId?: string;
   searchKeyword?: string;
 }
 
-export function useModuleTree({ projectId, searchKeyword }: UseModuleTreeOptions) {
+function toModuleTreeNode(node: MetadataModuleTreeNode): ModuleTreeNode {
+  return {
+    id: node.id,
+    name: node.name,
+    parentId: node.parentId || 'NONE',
+    children: node.children?.map(toModuleTreeNode),
+  };
+}
+
+function extractList(result: any): any[] {
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result?.list)) return result.list;
+  if (Array.isArray(result?.data)) return result.data;
+  if (Array.isArray(result?.records)) return result.records;
+  return [];
+}
+
+function addModuleAndChildrenCount(node: ModuleTreeNode, directCount: Map<string, number>, output: Record<string, number>): number {
+  const childTotal = (node.children || []).reduce((sum, child) => sum + addModuleAndChildrenCount(child, directCount, output), 0);
+  const total = (directCount.get(node.id) || 0) + childTotal;
+  output[node.id] = total;
+  return total;
+}
+
+export function useModuleTree({ projectId, spaceId, searchKeyword }: UseModuleTreeOptions) {
   const [moduleTree, setModuleTree] = useState<ModuleTreeNode[]>([]);
   const [modulesCount, setModulesCount] = useState<Record<string, number>>({});
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
@@ -19,8 +45,13 @@ export function useModuleTree({ projectId, searchKeyword }: UseModuleTreeOptions
 
   const fetchModuleTree = useCallback(async () => {
     try {
-      const result = await caseManagementService.getCaseModuleTree({ projectId });
-      setModuleTree(Array.isArray(result) ? result : []);
+      if (spaceId) {
+        const result = await metadataModuleService.getModuleTree(projectId, spaceId, 'WORKFLOW');
+        setModuleTree((result || []).map(toModuleTreeNode));
+      } else {
+        const result = await caseManagementService.getCaseModuleTree({ projectId });
+        setModuleTree(Array.isArray(result) ? result : []);
+      }
       // 不重置 expandedNodes，避免移动/删除/复制模块后整棵树被收起
     } catch (err) {
       console.error('获取模块树失败:', err);
@@ -28,10 +59,34 @@ export function useModuleTree({ projectId, searchKeyword }: UseModuleTreeOptions
     } finally {
       setTreeLoaded(true);
     }
-  }, [projectId]);
+  }, [projectId, spaceId]);
 
   const fetchModulesCount = useCallback(async () => {
     try {
+      if (spaceId) {
+        const result = await caseManagementService.getUnifiedCaseList({
+          projectId,
+          spaceId,
+          current: 1,
+          // 后端 BasePageRequest 限制 pageSize <= 500，超出会导致数量请求失败。
+          pageSize: 500,
+          ...(searchKeyword?.trim() ? { keyword: searchKeyword.trim() } : {}),
+        });
+        const list = extractList(result);
+        const directCount = new Map<string, number>();
+        list.forEach((item) => {
+          const moduleId = item?.moduleId;
+          if (moduleId) {
+            directCount.set(moduleId, (directCount.get(moduleId) || 0) + 1);
+          }
+        });
+        const nextCount: Record<string, number> = {
+          all: typeof result?.total === 'number' ? result.total : list.length,
+        };
+        moduleTree.forEach((node) => addModuleAndChildrenCount(node, directCount, nextCount));
+        setModulesCount(nextCount);
+        return;
+      }
       const params: Record<string, unknown> = {
         projectId,
         moduleIds: [],
@@ -49,12 +104,15 @@ export function useModuleTree({ projectId, searchKeyword }: UseModuleTreeOptions
       console.error('获取模块数量失败:', err);
       setModulesCount({});
     }
-  }, [projectId, searchKeyword]);
+  }, [projectId, spaceId, searchKeyword, moduleTree]);
 
   useEffect(() => {
     fetchModuleTree();
+  }, [fetchModuleTree]);
+
+  useEffect(() => {
     fetchModulesCount();
-  }, [fetchModuleTree, fetchModulesCount]);
+  }, [fetchModulesCount]);
 
   const toggleNodeExpand = useCallback((nodeId: string) => {
     setExpandedNodes((prev) => {

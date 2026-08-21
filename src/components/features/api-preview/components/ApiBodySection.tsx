@@ -180,7 +180,7 @@ export function ApiBodySection({
                     <span className="text-xs text-gray-600 w-20">应用名称：</span>
                     <code className="text-xs text-gray-900 font-mono">{String(requestConfig.applicationName || '-')}</code>
                   </div>
-                  {requestConfig.siteTenant && (
+                  {Boolean(requestConfig.siteTenant) && (
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-600 w-20">站点租户：</span>
                       <code className="text-xs text-gray-900 font-mono">{String(requestConfig.siteTenant)}</code>
@@ -238,13 +238,13 @@ export function ApiBodySection({
                   <span className="text-xs text-gray-600 w-20">Topic：</span>
                   <code className="text-xs text-gray-900 font-mono">{String(requestConfig.topic || '-')}</code>
                 </div>
-                {requestConfig.tag && (
+                {Boolean(requestConfig.tag) && (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-600 w-20">Tag：</span>
                     <code className="text-xs text-gray-900 font-mono">{String(requestConfig.tag)}</code>
                   </div>
                 )}
-                {requestConfig.group && (
+                {Boolean(requestConfig.group) && (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-600 w-20">Group：</span>
                     <code className="text-xs text-gray-900 font-mono">{String(requestConfig.group)}</code>

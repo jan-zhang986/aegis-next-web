@@ -1,124 +1,100 @@
 /**
- * 测试用例管理服务（基于 MeterSphere）
- * 提供测试用例的完整管理功能
+ * 统一 Case 服务
+ * 用户视角只有一个 Case，API/UI/Flow/自动化 都通过 realization 挂在 Case 下。
  */
 
 import { http } from '@/utils/request';
 
+export interface TestCasePageParams {
+  current?: number;
+  pageSize?: number;
+  projectId?: string;
+  spaceId?: string;
+  moduleIds?: string[];
+  keyword?: string;
+  realizationTypes?: string[];
+  lifecycleStatuses?: string[];
+  ownerId?: string;
+  tags?: string[];
+  [key: string]: any;
+}
+
+export interface TestCaseRealizationSavePayload {
+  realizationType: string;
+  workflowDefinitionId?: string;
+  workflowName?: string;
+  description?: string;
+  category?: string;
+  environmentId?: string;
+  enabled?: boolean;
+  workflowStatus?: string;
+  globalVars?: Record<string, any>;
+  nodes?: any[];
+  connections?: any[];
+}
+
 export const testCaseService = {
-  /**
-   * 获取测试用例列表
-   */
-  getTestCaseList: async (params: {
-    page?: number;
-    pageSize?: number;
-    projectId?: string;
-    moduleId?: string;
-    keyword?: string;
-    [key: string]: any;
-  }) => {
-    return http.post('/api/functional/case/list', params);
+  getTestCaseList: async (params: TestCasePageParams) => {
+    return http.post('/api/testcase/page', params);
   },
 
-  /**
-   * 获取测试用例详情
-   */
   getTestCaseDetail: async (id: string) => {
-    return http.get(`/api/functional/case/get/${id}`);
+    return http.get(`/api/testcase/${id}`);
   },
 
-  /**
-   * 创建测试用例
-   */
-  createTestCase: async (data: any) => {
-    return http.post('/api/functional/case/add', data);
+  saveTestCase: async (data: any) => {
+    return http.post('/api/testcase/save', data);
   },
 
-  /**
-   * 更新测试用例
-   */
-  updateTestCase: async (data: any) => {
-    return http.post('/api/functional/case/update', data);
+  getTestCaseWorkflow: async (id: string) => {
+    return http.get(`/api/testcase/${id}/workflow`);
   },
 
-  /**
-   * 删除测试用例
-   */
-  deleteTestCase: async (data: { ids: string[]; projectId?: string }) => {
-    return http.post('/api/functional/case/delete', data);
+  transitionTestCase: async (id: string, data: { targetStatus: string; reason?: string }) => {
+    return http.post(`/api/testcase/${id}/transition`, data);
   },
 
-  /**
-   * 批量编辑测试用例
-   */
-  batchEditTestCase: async (data: any) => {
-    return http.post('/api/functional/case/batch/edit', data);
+  getCaseRealizationList: async (caseId: string) => {
+    return http.get(`/api/testcase/${caseId}/realization/list`);
   },
 
-  /**
-   * 批量移动测试用例
-   */
-  batchMoveTestCase: async (data: any) => {
-    return http.post('/api/functional/case/batch/move', data);
+  getCaseRealizationDetail: async (caseId: string, realizationType: string) => {
+    return http.get(`/api/testcase/${caseId}/realization/${realizationType}`);
   },
 
-  /**
-   * 批量复制测试用例
-   */
-  batchCopyTestCase: async (data: any) => {
-    return http.post('/api/functional/case/batch/copy', data);
+  getCaseRealizationSummary: async (caseId: string) => {
+    return http.get(`/api/testcase/${caseId}/realization/summary`);
   },
 
-  /**
-   * 导出测试用例（Excel）
-   */
-  exportTestCase: async (params: any) => {
-    return http.post('/api/functional/case/export', params);
+  saveCaseRealization: async (caseId: string, data: TestCaseRealizationSavePayload) => {
+    return http.post(`/api/testcase/${caseId}/realization/save`, data);
   },
 
-  /**
-   * 导入测试用例（Excel）
-   */
-  importTestCase: async (data: FormData) => {
-    return http.post('/api/functional/case/import', data, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+  publishCaseRealization: async (caseId: string, realizationType: string) => {
+    return http.post(`/api/testcase/${caseId}/realization/${realizationType}/publish`);
   },
 
-  /**
-   * 关注/取消关注测试用例
-   */
-  followTestCase: async (data: { userId: string; functionalCaseId: string }) => {
-    return http.post('/api/functional/case/follow', data);
+  enableCaseRealization: async (caseId: string, realizationType: string) => {
+    return http.post(`/api/testcase/${caseId}/realization/${realizationType}/enable`);
   },
 
-  /**
-   * 获取模块树
-   */
-  getModuleTree: async (projectId: string) => {
-    return http.get(`/api/functional/case/module/tree/${projectId}`);
+  disableCaseRealization: async (caseId: string, realizationType: string) => {
+    return http.post(`/api/testcase/${caseId}/realization/${realizationType}/disable`);
   },
 
-  /**
-   * 创建模块
-   */
-  createModule: async (data: { projectId: string; name: string; parentId: string }) => {
-    return http.post('/api/functional/case/module/add', data);
+  deleteCaseRealization: async (caseId: string, realizationType: string) => {
+    return http.post(`/api/testcase/${caseId}/realization/${realizationType}/delete`);
   },
 
-  /**
-   * 更新模块
-   */
-  updateModule: async (data: { id: string; name: string }) => {
-    return http.post('/api/functional/case/module/update', data);
+  getCaseProposalList: async (id: string) => {
+    return http.get(`/api/testcase/${id}/proposal/list`);
   },
 
-  /**
-   * 删除模块
-   */
-  deleteModule: async (id: string) => {
-    return http.get(`/api/functional/case/module/delete/${id}`);
+  getCaseChangeLogList: async (id: string) => {
+    return http.get(`/api/testcase/${id}/change-log/list`);
+  },
+
+  getCaseUsageList: async (id: string) => {
+    return http.get(`/api/testcase/${id}/usage/list`);
   },
 };

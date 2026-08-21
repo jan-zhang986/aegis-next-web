@@ -88,10 +88,9 @@ interface MCPTool {
   status?: 'connected' | 'disconnected' | 'error';
 }
 
-type Context = 'test-factory' | 'e2e-automation' | 'data-dashboard' | 'test-report' | 'metadata' | 'general';
-
+type AIAssistantContext = 'test-factory' | 'realization' | 'data-dashboard' | 'test-report' | 'metadata' | 'general';
 interface AIAssistantPageProps {
-  currentContext?: 'metadata' | 'test-factory' | 'test-report' | 'e2e-automation' | 'data-dashboard' | 'general';
+  currentContext?: AIAssistantContext;
 }
 
 export function AIAssistantPage({ currentContext: propCurrentContext = 'general' }: AIAssistantPageProps = {}) {
@@ -107,7 +106,8 @@ export function AIAssistantPage({ currentContext: propCurrentContext = 'general'
 
   const [searchParams] = useSearchParams();
   // 优先使用路由参数，如果不存在则使用 props（向后兼容）
-  const currentContext = (searchParams.get('context') as any) || propCurrentContext;
+  const routeContext = searchParams.get('context') as AIAssistantContext | null;
+  const currentContext: AIAssistantContext = routeContext || propCurrentContext;
   
   const [isTyping, setIsTyping] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -525,7 +525,7 @@ export function AIAssistantPage({ currentContext: propCurrentContext = 'general'
             <Sparkles className="w-3 h-3" />
             <span className="text-xs">
               {currentContext === 'test-factory' && '测试工厂'}
-              {currentContext === 'e2e-automation' && '自动化用例'}
+              {currentContext === 'realization' && '用例实现'}
               {currentContext === 'data-dashboard' && '数据大屏'}
               {currentContext === 'test-report' && '测试报告'}
               {currentContext === 'metadata' && '元数据管理'}

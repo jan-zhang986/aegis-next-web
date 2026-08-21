@@ -63,7 +63,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   FUNCTIONAL_CASE: '功能用例',
   API_CASE: '接口用例',
   API: '接口用例',
-  SCENARIO_CASE: '自动化用例',
+  SCENARIO_CASE: '用例实现',
   SCENARIO: '自动化',
 };
 

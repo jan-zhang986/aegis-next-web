@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { UnifiedPagination } from '@/components/ui/unified-pagination';
-import type { Environment } from '@/services/environment';
+import type { Environment, EnvCode } from '@/services/environment';
 
 export interface EnvironmentTableSectionProps {
   environments: Environment[];
@@ -16,7 +16,7 @@ export interface EnvironmentTableSectionProps {
   onEdit: (env: Environment) => void;
   onDelete: (id: string) => void;
   onDetail: (env: Environment) => void;
-  getEnvCodeColor: (code: string) => string;
+  getEnvCodeColor: (code: EnvCode) => string;
 }
 
 const COL_COUNT = 10;

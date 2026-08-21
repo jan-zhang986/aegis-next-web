@@ -108,6 +108,7 @@ interface SaveCaseToPlatformDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
+  spaceId?: string;
   /** AI 生成的用例内容 */
   content: string;
   /** 保存成功后回调 */
@@ -118,6 +119,7 @@ export function SaveCaseToPlatformDrawer({
   open,
   onOpenChange,
   projectId,
+  spaceId,
   content,
   onSuccess,
 }: SaveCaseToPlatformDrawerProps) {
@@ -201,11 +203,43 @@ export function SaveCaseToPlatformDrawer({
         aiCreate: true, // AI 生成用例保存到平台，与 metersphere-frontend 一致
       };
 
-      const res: any = await caseManagementService.createCaseRequest({
-        request,
-        fileList: [],
-      });
-      const caseId = res?.id ?? res?.data?.id ?? '';
+      const caseId = await (spaceId
+        ? caseManagementService.saveUnifiedCase({
+          projectId,
+          spaceId,
+          moduleId,
+          title: request.name,
+          precondition: request.prerequisite,
+          expectedResult: request.expectedResult,
+          description: request.description,
+          priority: 1,
+          sourceType: 'AI',
+          tags: request.tags,
+          metadata: {
+            templateId,
+            caseEditType: request.caseEditType,
+            aiCreate: true,
+            functionalPriority: 'P0',
+          },
+          realizations: [
+            {
+              realizationType: 'MANUAL',
+              name: `${request.name} [MANUAL]`,
+              workflowDefinition: {
+                caseEditType: request.caseEditType,
+                steps: request.steps,
+                textDescription: request.textDescription,
+                expectedResult: request.expectedResult,
+              },
+              status: 'ACTIVE',
+              enabled: true,
+            },
+          ],
+        })
+        : caseManagementService.createCaseRequest({
+          request,
+          fileList: [],
+        }).then((res: any) => res?.id ?? res?.data?.id ?? ''));
       if (caseId) {
         toast.success('用例已保存到平台');
         onSuccess?.(caseId, trimmedName);

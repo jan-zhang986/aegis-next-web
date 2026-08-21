@@ -45,3 +45,11 @@ export const changeReasonCodeMap: Record<string, string> = Object.fromEntries(
 export const blockedReasonCodeMap: Record<string, string> = Object.fromEntries(
   Object.entries(blockedReasonNameMap).map(([code, name]) => [name, code])
 );
+
+export const CHANGE_REASON_NAME_MAP = changeReasonNameMap;
+export const BLOCKED_REASON_NAME_MAP = blockedReasonNameMap;
+export const CHANGE_REASON_CODE_MAP = changeReasonCodeMap;
+export const BLOCKED_REASON_CODE_MAP = blockedReasonCodeMap;
+export const CHART_COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4'];
+
+export type { TimeRangeType, DimensionType, WebTestTimeRangeType } from '@/types/efficiency';

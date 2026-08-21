@@ -24,6 +24,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import type { DateRange } from 'react-day-picker';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { caseManagementService } from '@/services';
@@ -69,7 +70,7 @@ export function CreateReview({
   const [reviewPassRule, setReviewPassRule] = useState<'SINGLE' | 'MULTIPLE'>('SINGLE');
   const [reviewerIds, setReviewerIds] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
-  const [cycle, setCycle] = useState<{ from?: Date; to?: Date } | undefined>();
+  const [cycle, setCycle] = useState<DateRange | undefined>();
 
   const [moduleTree, setModuleTree] = useState<ModuleTreeNode[]>([]);
   const [moduleLoading, setModuleLoading] = useState(false);

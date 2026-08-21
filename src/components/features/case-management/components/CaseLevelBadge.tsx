@@ -11,6 +11,8 @@ interface CaseLevelBadgeProps {
   item?: CaseItem | null;
   /** 直接传入等级字符串（如 P0、P1），优先于 item */
   level?: string;
+  /** 兼容部分调用方传入尺寸，当前仅作透传兼容 */
+  size?: 'sm' | 'md' | 'lg';
 }
 
 function LevelIcon({ level }: { level: string }) {

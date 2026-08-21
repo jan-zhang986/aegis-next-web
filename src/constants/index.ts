@@ -2,8 +2,8 @@
 export const MENU_ITEMS = [
   { id: 'workspace', label: '工作台' },
   { id: 'project-management', label: '项目管理' },
-  { id: 'test-plan', label: '测试计划' },
-  { id: 'test-case', label: '测试用例' },
+  { id: 'quality-workspace', label: '质量工作台' },
+  { id: 'test-case', label: '测试资产' },
   { id: 'api-test', label: '接口测试' },
   { id: 'bug-management', label: '缺陷管理' },
 ] as const;
@@ -40,4 +40,3 @@ export const TEST_REPORT_TAGS = [
 // 从统一配置导入（已废弃，请使用 @/config/routes 中的配置）
 // 保留此导出以保持向后兼容
 export { SNAPTEST_API_BASE_URL } from '@/config/routes';
-

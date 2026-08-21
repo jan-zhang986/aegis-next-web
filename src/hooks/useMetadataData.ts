@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { metadataService, type MetadataDefinition, type MetadataModuleNode, pluginSyncNodeService, type PluginSyncNode } from '@/services/metadata';
 import { projectManagementService } from '@/services/project-management';
 
+export interface UseMetadataDataOptions {
+  spaceId?: string;
+  moduleType?: 'API' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'FILE' | 'SCRIPT' | 'WORKFLOW';
+}
+
 export interface UseMetadataDataResult {
   moduleTree: MetadataModuleNode[];
   definitions: MetadataDefinition[];
@@ -17,7 +22,8 @@ export interface UseMetadataDataResult {
   refresh: () => Promise<void>;
 }
 
-export function useMetadataData(projectId: string) {
+export function useMetadataData(projectId: string, options: UseMetadataDataOptions = {}) {
+  const { spaceId, moduleType } = options;
   const [moduleTree, setModuleTree] = useState<MetadataModuleNode[]>([]);
   const [definitions, setDefinitions] = useState<MetadataDefinition[]>([]);
   const [filteredDefinitions, setFilteredDefinitions] = useState<MetadataDefinition[]>([]);
@@ -34,7 +40,10 @@ export function useMetadataData(projectId: string) {
     }
     try {
       setLoading(true);
-      const data = await metadataService.getModuleTree(projectId);
+      const data = await metadataService.getModuleTree(projectId, {
+        ...(spaceId ? { typeId: spaceId } : {}),
+        ...(moduleType ? { moduleType } : {}),
+      });
       setModuleTree(data || []);
     } catch (error) {
       console.error('加载模块树失败:', error);
@@ -42,7 +51,7 @@ export function useMetadataData(projectId: string) {
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, spaceId, moduleType]);
 
   const loadDefinitions = useCallback(async (
     keyword?: string,
@@ -77,6 +86,9 @@ export function useMetadataData(projectId: string) {
         current: 1,
         pageSize: 99999,
       };
+      if (spaceId) {
+        params.spaceId = spaceId;
+      }
       
       if (keyword && keyword.trim()) {
         params.keyword = keyword.trim();
@@ -122,7 +134,7 @@ export function useMetadataData(projectId: string) {
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, spaceId]);
 
   const loadPluginSyncNodes = useCallback(async () => {
     try {
@@ -154,7 +166,7 @@ export function useMetadataData(projectId: string) {
       loadDefinitions();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, loadModuleTree]);
+  }, [projectId, spaceId, moduleType, loadModuleTree]);
 
   useEffect(() => {
     loadPluginSyncNodes();
@@ -175,4 +187,3 @@ export function useMetadataData(projectId: string) {
     refresh,
   };
 }
-

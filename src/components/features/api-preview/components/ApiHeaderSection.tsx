@@ -83,7 +83,7 @@ export function ApiHeaderSection({
               <Button
                 className="bg-blue-600 hover:bg-blue-700 text-white h-8"
                 size="sm"
-                onClick={() => toast.info('暂不支持，如需执行SQL请移步到自动化用例')}
+                onClick={() => toast.info('暂不支持，如需执行 SQL 请移步到用例实现')}
               >
                 <Play className="w-4 h-4 mr-1" />
                 发起调试

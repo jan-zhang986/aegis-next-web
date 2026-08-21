@@ -32,6 +32,7 @@ type CommentTab = 'all' | 'caseComment' | 'reviewComment' | 'executiveComment';
 interface TabCommentsProps {
   caseId: string | null;
   projectId?: string;
+  unifiedCase?: boolean;
   refreshKey?: number;
   onNavigateToReview?: (reviewId: string, caseId: string) => void;
   onNavigateToPlan?: (planId: string) => void;
@@ -180,7 +181,7 @@ function CaseCommentItem({ item }: { item: any }) {
   );
 }
 
-export function TabComments({ caseId, projectId, refreshKey, onNavigateToReview, onNavigateToPlan }: TabCommentsProps) {
+export function TabComments({ caseId, projectId, unifiedCase = false, refreshKey, onNavigateToReview, onNavigateToPlan }: TabCommentsProps) {
   const [activeTab, setActiveTab] = useState<CommentTab>('all');
   const [loading, setLoading] = useState(false);
   const [caseList, setCaseList] = useState<any[]>([]);
@@ -191,8 +192,11 @@ export function TabComments({ caseId, projectId, refreshKey, onNavigateToReview,
   useEffect(() => {
     if (!caseId) return;
     setLoading(true);
+    const caseCommentRequest = unifiedCase
+      ? caseManagementService.getCollabComments(projectId || '', 'CASE', caseId)
+      : caseManagementService.getCommentList(caseId);
     Promise.all([
-      caseManagementService.getCommentList(caseId),
+      caseCommentRequest,
       caseManagementService.getReviewCommentList(caseId),
       caseManagementService.getTestPlanExecuteCommentList(caseId),
     ])

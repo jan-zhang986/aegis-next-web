@@ -70,7 +70,7 @@ export function useDubboForm({ editor, definitionId, definitions, loadedDefiniti
   const updateParameter = (index: number, field: 'name' | 'type' | 'value' | 'schema' | 'enabled', value: string | boolean) => {
     setParameters((prev) => {
       const u = [...prev];
-      if (index >= 0 && index < u.length) (u[index] as Record<string, unknown>)[field] = value;
+      if (index >= 0 && index < u.length) (u[index] as unknown as Record<string, unknown>)[field] = value;
       return u;
     });
   };

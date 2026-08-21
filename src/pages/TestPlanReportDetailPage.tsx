@@ -120,14 +120,14 @@ export function TestPlanReportDetailPage({ reportId, shareId, onBack }: TestPlan
             { id: ReportCardTypeEnum.BUG_DETAIL, value: ReportCardTypeEnum.BUG_DETAIL, label: '缺陷明细', type: 'SYSTEM' },
             { id: ReportCardTypeEnum.FUNCTIONAL_DETAIL, value: ReportCardTypeEnum.FUNCTIONAL_DETAIL, label: '功能用例明细', type: 'SYSTEM' },
             { id: ReportCardTypeEnum.API_CASE_DETAIL, value: ReportCardTypeEnum.API_CASE_DETAIL, label: '接口用例明细', type: 'SYSTEM' },
-            { id: ReportCardTypeEnum.SCENARIO_CASE_DETAIL, value: ReportCardTypeEnum.SCENARIO_CASE_DETAIL, label: '自动化用例明细', type: 'SYSTEM' },
+            { id: ReportCardTypeEnum.SCENARIO_CASE_DETAIL, value: ReportCardTypeEnum.SCENARIO_CASE_DETAIL, label: '用例实现明细', type: 'SYSTEM' },
           ]
           : [
             { id: ReportCardTypeEnum.SUMMARY, value: ReportCardTypeEnum.SUMMARY, label: '报告总结', type: 'SYSTEM' },
             { id: ReportCardTypeEnum.BUG_DETAIL, value: ReportCardTypeEnum.BUG_DETAIL, label: '缺陷明细', type: 'SYSTEM' },
             { id: ReportCardTypeEnum.FUNCTIONAL_DETAIL, value: ReportCardTypeEnum.FUNCTIONAL_DETAIL, label: '功能用例明细', type: 'SYSTEM' },
             { id: ReportCardTypeEnum.API_CASE_DETAIL, value: ReportCardTypeEnum.API_CASE_DETAIL, label: '接口用例明细', type: 'SYSTEM' },
-            { id: ReportCardTypeEnum.SCENARIO_CASE_DETAIL, value: ReportCardTypeEnum.SCENARIO_CASE_DETAIL, label: '自动化用例明细', type: 'SYSTEM' },
+            { id: ReportCardTypeEnum.SCENARIO_CASE_DETAIL, value: ReportCardTypeEnum.SCENARIO_CASE_DETAIL, label: '用例实现明细', type: 'SYSTEM' },
           ]
       );
       return;
@@ -228,7 +228,7 @@ export function TestPlanReportDetailPage({ reportId, shareId, onBack }: TestPlan
       (funcCount.success || 0) + (apiCount.success || 0) + (scenarioCount.success || 0);
     const rate = total > 0 ? ((success / total) * 100).toFixed(2) : '0';
     const name = detail.name || detail.testPlanName || '测试计划';
-    const html = `<p><strong>${name}</strong> 包含功能用例、接口用例、自动化用例，共 ${total} 条用例，已执行 ${executed} 条，通过 ${success} 条，通过率 ${rate}%；共关联缺陷 ${detail.bugCount ?? 0} 个。</p>`;
+    const html = `<p><strong>${name}</strong> 包含功能用例、接口用例、用例实现，共 ${total} 条用例，已执行 ${executed} 条，通过 ${success} 条，通过率 ${rate}%；共关联缺陷 ${detail.bugCount ?? 0} 个。</p>`;
     setSummaryEditContent(html);
     toast.success('已一键填写报告总结');
   }, [detail]);
@@ -575,7 +575,7 @@ export function TestPlanReportDetailPage({ reportId, shareId, onBack }: TestPlan
                     )}
                     {scenarioCaseTotal > 0 && (
                       <div className="flex justify-between">
-                        <span>自动化用例</span>
+                        <span>用例实现</span>
                         <span className="font-medium text-gray-700">{getSummaryFromCount(detail.apiScenarioCount).successRate} · 共 {scenarioCaseTotal} 个</span>
                       </div>
                     )}
@@ -585,7 +585,7 @@ export function TestPlanReportDetailPage({ reportId, shareId, onBack }: TestPlan
             )}
           </div>
 
-          {/* 卡片区：子计划明细、报告总结、缺陷明细、功能/接口/自动化用例明细、自定义卡片 */}
+          {/* 卡片区：子计划明细、报告总结、缺陷明细、功能/接口/用例实现明细、自定义卡片 */}
           <div className="space-y-6">
             {cardList.map((card) => {
               const showCard =
@@ -1106,7 +1106,7 @@ function ReportApiCaseTable({ reportId, shareId, label }: { reportId: string; sh
   );
 }
 
-// ---------- 自动化用例明细表格 ----------
+// ---------- 用例实现明细表格 ----------
 function ReportScenarioCaseTable({ reportId, shareId, label }: { reportId: string; shareId?: string; label: string }) {
   const [list, setList] = useState<ReportCaseItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -1136,7 +1136,7 @@ function ReportScenarioCaseTable({ reportId, shareId, label }: { reportId: strin
       {loading ? (
         <div className="text-sm text-gray-400 py-4">加载中...</div>
       ) : list.length === 0 ? (
-        <div className="text-sm text-gray-400 py-4">暂无自动化用例</div>
+        <div className="text-sm text-gray-400 py-4">暂无用例实现</div>
       ) : (
         <>
           <div className="overflow-x-auto -mx-1">

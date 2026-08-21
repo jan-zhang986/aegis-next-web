@@ -1,7 +1,7 @@
 /**
- * E2ESpace Hooks 统一导出
+ * 用例实现空间 Hooks 统一导出
+ * @deprecated 保留 E2E hooks 目录名作为兼容壳；后续迁移到 CaseRealization 命名
  */
-
 export * from './useE2EModuleTree';
 export * from './useTestCaseList';
 export * from './useTestCaseOperations';

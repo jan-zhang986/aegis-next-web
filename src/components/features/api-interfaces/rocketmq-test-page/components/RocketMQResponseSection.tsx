@@ -94,7 +94,7 @@ export function RocketMQResponseSection({
                     <span className="text-sm text-red-600">{sendResult.error}</span>
                   </div>
                 )}
-                {sendResult.data && (
+                {Boolean(sendResult.data) && (
                   <div className="mt-3">
                     <span className="text-sm text-gray-600 block mb-1">响应数据:</span>
                     <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">

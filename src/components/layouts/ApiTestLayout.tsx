@@ -13,16 +13,14 @@ import { TestReportListPage } from '@/pages/TestReportListPage';
 import { ProjectManagementPage } from '@/pages/ProjectManagementPage';
 import { BugManagementPage } from '@/pages/BugManagementPage';
 import { GateManagementPage } from '@/pages/GateManagementPage';
-import { TestPlanPage } from '@/pages/TestPlanPage';
-import { TestPlanDetailPage } from '@/pages/TestPlanDetailPage';
-import { TestPlanCaseDetailPage } from '@/pages/TestPlanCaseDetailPage';
-import { TestPlanReportListPage } from '@/pages/TestPlanReportListPage';
-import { TestPlanReportDetailPage } from '@/pages/TestPlanReportDetailPage';
+import { RequirementQualityPage } from '@/pages/RequirementQualityPage';
+import { QualityWorkspacePage } from '@/pages/QualityWorkspacePage';
+import { QualityWorkspaceDetailPage } from '@/pages/QualityWorkspaceDetailPage';
+import { QualityWorkspaceReportPage, QualityWorkspaceReportDetailPage } from '@/pages/QualityWorkspaceReportPage';
 import { CaseManagementPage } from '@/pages/CaseManagementPage';
 import { PrecisionTestPage } from '@/pages/PrecisionTestPage';
-import { E2EAutomationPage } from '@/pages/E2EAutomationPage';
+import { CaseRealizationPage } from '@/pages/E2EAutomationPage';
 import { SystemSettingPage } from '@/pages/SystemSettingPage';
-import { AIAssistant } from '@/components/features/AIAssistant';
 import { AIAssistantPage } from '@/pages/AIAssistantPage';
 import { KnowledgeBasePage } from '@/pages/KnowledgeBasePage';
 import { AgentSettingsPage } from '@/pages/AgentSettingsPage';
@@ -37,7 +35,8 @@ const MENU_CANONICAL_PATH: Record<string, string> = {
   'welcome': '/',
   'workspace': '/workspace',
   'project-management': '/project-management',
-  'test-plan': '/test-plan',
+  'quality-workspace': '/quality-workspace',
+  'test-plan': '/quality-workspace',
   'test-case': '/case-management',
   'case-management': '/case-management',
   'test-factory': '/',
@@ -69,11 +68,9 @@ export function ApiTestLayout() {
     user?.email === 'admin' ||
     user?.email === 'jan.zhang@spotterio.com';
 
-  // 测试计划详情：/test-plan/:planId（允许尾部斜线）
-  const isTestPlanDetailPath = useMemo(() => /^\/test-plan\/[^/]+\/?$/.test(pathname), [pathname]);
-  const isTestPlanCaseDetailPath = useMemo(() => /^\/test-plan\/[^/]+\/feature-case\/[^/]+$/.test(pathname), [pathname]);
-  // path 为 /test-plan（无子路径）时也视为测试计划，避免 /test-plan?tab=test-report 无 menu 时错成测试工厂
-  const isTestPlanBasePath = pathname === '/test-plan';
+  // 质量工作台详情：/quality-workspace/:workspaceId。旧 /test-plan 入口会统一重定向到需求质量主路径。
+  const isQualityWorkspaceDetailPath = useMemo(() => /^\/quality-workspace\/[^/]+\/?$/.test(pathname), [pathname]);
+  const isQualityWorkspaceBasePath = pathname === '/quality-workspace';
   // 测试工厂报告 path：/test-factory/test-report 或 /test-factory/test-report/:reportId，用于直接访问/书签
   const testFactoryReportPathMatch = useMemo(() => pathname.match(/^\/test-factory\/test-report(?:\/([^/]+))?$/), [pathname]);
 
@@ -97,8 +94,8 @@ export function ApiTestLayout() {
     : isRootPath && aegisAgentTabs.includes(rawTab)
       ? 'aegis-agent'
       : null;
-  const selectedMenuItem = isTestPlanDetailPath || isTestPlanCaseDetailPath || isTestPlanBasePath
-    ? 'test-plan'
+  const selectedMenuItem = isQualityWorkspaceDetailPath || isQualityWorkspaceBasePath || pathname.startsWith('/test-plan')
+    ? 'quality-workspace'
     : testFactoryReportPathMatch
       ? 'test-factory'
       : pathname === '/welcome'
@@ -120,7 +117,12 @@ export function ApiTestLayout() {
                       : isBugOrOtherPath
                         ? (pathname.slice(1).split('/')[0] as string) || 'workspace'
                         : menuFromRootTab ?? rawMenu;
+  const SPACE_TAB = 'space' as const;
+  const REALIZATION_TAB = 'realization' as const;
+  const CASE_MANAGEMENT_TABS = ['space', 'feature-case', 'test-suite', 'gate-binding', 'case-review', 'case-generation', 'realization'] as const;
+
   const rawTopMenu = testFactoryReportPathMatch ? 'test-report' : (searchParams.get('tab') || 'api');
+  const normalizedTopMenu = rawTopMenu;
   const selectedReportIdFromPath = testFactoryReportPathMatch?.[1] ?? null;
   const selectedReportId = selectedReportIdFromPath || searchParams.get('reportId') || null;
   const validAegisAgentTabs = ['agents', 'knowledge-base', 'agent-settings'];
@@ -128,23 +130,21 @@ export function ApiTestLayout() {
   const validTaskManagementTabs = ['tasks', 'case-task', 'case-task-detail', 'schedule'];
   const validWorkspaceTabs = ['requirement-quality', 'test-factory'];
 
-  const CASE_MANAGEMENT_TABS = ['feature-case', 'e2e-auto', 'case-review', 'case-generation'] as const;
-
   // 测试用例/测试计划/AegisAgent/拨测管理：仅允许其对应 tab 有效
   const selectedTopMenu =
     (selectedMenuItem === 'workspace' && !validWorkspaceTabs.includes(rawTopMenu))
       ? 'requirement-quality'
-      : (selectedMenuItem === 'test-case' && !CASE_MANAGEMENT_TABS.includes(rawTopMenu as (typeof CASE_MANAGEMENT_TABS)[number]))
-      ? 'feature-case'
-      : (selectedMenuItem === 'test-plan' && rawTopMenu !== 'plan' && rawTopMenu !== 'test-report')
-        ? 'plan'
+      : (selectedMenuItem === 'test-case' && !CASE_MANAGEMENT_TABS.includes(normalizedTopMenu as (typeof CASE_MANAGEMENT_TABS)[number]))
+      ? SPACE_TAB
+    : (selectedMenuItem === 'quality-workspace' && !['requirements', 'workspace', 'test-report'].includes(rawTopMenu))
+        ? 'requirements'
         : (selectedMenuItem === 'aegis-agent' && !validAegisAgentTabs.includes(rawTopMenu))
           ? 'agents'
           : (selectedMenuItem === 'dial-management' && !validDialManagementTabs.includes(rawTopMenu))
             ? 'account'
             : (selectedMenuItem === 'task-management' && !validTaskManagementTabs.includes(rawTopMenu))
               ? 'tasks'
-              : rawTopMenu;
+              : normalizedTopMenu;
 
   // 非系统管理员访问工作台/系统设置时重定向到欢迎页
   useEffect(() => {
@@ -152,6 +152,16 @@ export function ApiTestLayout() {
       navigate('/welcome', { replace: true });
     }
   }, [isSystemAdmin, selectedMenuItem, navigate]);
+
+  // 旧测试计划入口下线：/test-plan 不再渲染旧页面，只作为旧链接识别后跳到需求质量主路径。
+  useEffect(() => {
+    if (!pathname.startsWith('/test-plan')) return;
+    const params = new URLSearchParams(searchParams);
+    params.set('menu', 'quality-workspace');
+    params.set('tab', 'requirements');
+    params.delete('reportId');
+    navigate(`/quality-workspace?${params.toString()}`, { replace: true });
+  }, [pathname, searchParams, navigate]);
 
   // 更新URL参数（在现有 searchParams 上合并），并始终跳转到该菜单的规范路径，避免路径被拼接
   const updateUrl = (menu: string, tab?: string, reportId?: string | null) => {
@@ -175,8 +185,10 @@ export function ApiTestLayout() {
     params.set('menu', item);
     params.delete('kbId');
 
-    if (item === 'test-plan') {
-      params.set('tab', 'plan');
+    if (item === 'quality-workspace') {
+      params.set('tab', 'requirements');
+    } else if (item === 'test-plan') {
+      params.set('tab', 'requirements');
     } else if (item === 'test-factory') {
       params.set('tab', 'api');
     } else if (item === 'project-management') {
@@ -184,7 +196,7 @@ export function ApiTestLayout() {
     } else if (item === 'workspace') {
       params.set('tab', 'requirement-quality');
     } else if (item === 'test-case') {
-      params.set('tab', 'feature-case');
+      params.set('tab', SPACE_TAB);
     } else if (item === 'gate-management') {
       params.set('tab', 'deploy');
     } else if (item === 'setting') {
@@ -235,12 +247,12 @@ export function ApiTestLayout() {
   // 初始化：URL 无 menu 时根据 pathname 推断菜单并跳转到规范路径，避免 path 与内容不一致
   useEffect(() => {
     if (searchParams.get('menu')) return;
-    if (pathname.startsWith('/test-plan')) return;
+    if (pathname.startsWith('/quality-workspace') || pathname.startsWith('/test-plan')) return;
     const params = new URLSearchParams(location.search);
     let menu = '';
     if (pathname === '/case-management' || pathname.startsWith('/case-management/')) {
       menu = 'test-case';
-      if (!params.has('tab')) params.set('tab', 'feature-case');
+      if (!params.has('tab')) params.set('tab', SPACE_TAB);
     } else if (pathname === '/workspace') {
       menu = 'workspace';
       if (!params.has('tab')) params.set('tab', 'requirement-quality');
@@ -272,8 +284,8 @@ export function ApiTestLayout() {
   // 根路径 / 下以 URL 的 menu 为准，不强制为 welcome，否则测试工厂/系统设置/Aegis Agent 等会被覆盖成欢迎页
   useEffect(() => {
     let expectedMenu = '';
-    if (pathname.startsWith('/test-plan')) {
-      expectedMenu = 'test-plan';
+    if (pathname.startsWith('/quality-workspace') || pathname.startsWith('/test-plan')) {
+      expectedMenu = 'quality-workspace';
     } else if (isProjectManagementPath) {
       expectedMenu = 'project-management';
     } else if (pathname === '/welcome') {
@@ -298,7 +310,11 @@ export function ApiTestLayout() {
     if (currentMenu === expectedMenu) return;
     const params = new URLSearchParams(searchParams);
     params.set('menu', expectedMenu);
-    const targetPath = pathname.startsWith('/test-plan') ? pathname : pathname || '/';
+    const targetPath = pathname.startsWith('/quality-workspace')
+      ? pathname
+      : pathname.startsWith('/test-plan')
+        ? '/quality-workspace'
+        : pathname || '/';
     navigate(targetPath ? `${targetPath}?${params.toString()}` : `/?${params.toString()}`, { replace: true });
   }, [pathname, isProjectManagementPath, isWorkspacePath, isCaseManagementPath, isTaskManagementPath, isDialManagementPath, isBugOrOtherPath, isRootPath, rawTab, searchParams]);
 
@@ -312,16 +328,6 @@ export function ApiTestLayout() {
     if (reportIdFromPath) params.set('reportId', reportIdFromPath);
     navigate(`/?${params.toString()}`, { replace: true });
   }, [pathname]);
-
-  // 兼容旧链接：测试工厂 → 自动化用例 已迁至「测试用例」二级菜单
-  useEffect(() => {
-    if (searchParams.get('menu') !== 'test-factory') return;
-    if (searchParams.get('tab') !== 'e2e-auto') return;
-    const params = new URLSearchParams(searchParams);
-    params.set('menu', 'test-case');
-    params.set('tab', 'e2e-auto');
-    navigate(`${getCanonicalPathForMenu('test-case')}?${params.toString()}`, { replace: true });
-  }, [searchParams, navigate]);
 
   // 兼容旧 URL：menu=knowledge-base 重定向为 menu=aegis-agent&tab=knowledge-base
   useEffect(() => {
@@ -351,26 +357,26 @@ export function ApiTestLayout() {
     navigate(`${getCanonicalPathForMenu('aegis-agent')}?${params.toString()}`, { replace: true });
   }, [selectedMenuItem, searchParams.get('tab'), isAgentSettingsAllowed]);
 
-  // 测试用例下：tab 仅支持 feature-case / case-review / case-generation / e2e-auto，无效时修正为 feature-case
+  // 测试用例下：tab 仅支持 feature-case / case-review / case-generation，无效时修正为 feature-case
   useEffect(() => {
     if (selectedMenuItem !== 'test-case') return;
     const tab = searchParams.get('tab');
     if (tab && CASE_MANAGEMENT_TABS.includes(tab as (typeof CASE_MANAGEMENT_TABS)[number])) return;
     const params = new URLSearchParams(searchParams);
-    params.set('tab', 'feature-case');
+    params.set('tab', SPACE_TAB);
     navigate(`${getCanonicalPathForMenu('test-case')}?${params.toString()}`, { replace: true });
   }, [selectedMenuItem, searchParams.get('tab')]);
 
-  // 测试计划下：tab 仅支持 plan / test-report，无效时修正为 plan（详情页 /test-plan/:id 不重定向，保留 pathname）
+  // 质量工作台下：tab 仅支持 requirements / workspace / test-report，无效时修正为 requirements（详情页不重定向，保留 pathname）
   useEffect(() => {
-    if (selectedMenuItem !== 'test-plan') return;
-    if (isTestPlanDetailPath || isTestPlanCaseDetailPath) return; // 详情页不强制改 tab，避免覆盖为列表页
+    if (selectedMenuItem !== 'quality-workspace') return;
+    if (isQualityWorkspaceDetailPath) return; // 详情页不强制改 tab，避免覆盖为列表页
     const tab = searchParams.get('tab');
-    if (tab === 'plan' || tab === 'test-report') return;
+    if (tab === 'requirements' || tab === 'workspace' || tab === 'test-report') return;
     const params = new URLSearchParams(searchParams);
-    params.set('tab', 'plan');
-    navigate(`${getCanonicalPathForMenu('test-plan')}?${params.toString()}`, { replace: true });
-  }, [selectedMenuItem, searchParams.get('tab'), isTestPlanDetailPath, isTestPlanCaseDetailPath]);
+    params.set('tab', 'requirements');
+    navigate(`${getCanonicalPathForMenu('quality-workspace')}?${params.toString()}`, { replace: true });
+  }, [selectedMenuItem, searchParams.get('tab'), isQualityWorkspaceDetailPath]);
 
   // 系统设置下：tab 仅支持 system / organization，无效时修正为 system
   useEffect(() => {
@@ -391,7 +397,7 @@ export function ApiTestLayout() {
     selectedMenuItem === 'project-management' ||
     selectedMenuItem === 'workspace' ||
     selectedMenuItem === 'test-case' ||
-    selectedMenuItem === 'test-plan' ||
+    selectedMenuItem === 'quality-workspace' ||
     selectedMenuItem === 'setting' ||
     selectedMenuItem === 'aegis-agent' ||
     selectedMenuItem === 'dial-management' ||
@@ -403,7 +409,7 @@ export function ApiTestLayout() {
     selectedMenuItem === 'project-management' ? 'project-management' :
       selectedMenuItem === 'workspace' ? 'workspace' :
         selectedMenuItem === 'test-case' ? 'case-management' :
-          selectedMenuItem === 'test-plan' ? 'test-plan' :
+          selectedMenuItem === 'quality-workspace' ? 'quality-workspace' :
             selectedMenuItem === 'setting' ? 'system-setting' :
               selectedMenuItem === 'aegis-agent' ? 'aegis-agent' :
                 selectedMenuItem === 'dial-management' ? 'dial-management' :
@@ -412,10 +418,10 @@ export function ApiTestLayout() {
                       'test-factory';
 
   // 获取当前上下文，传递给AI助手
-  const getCurrentContext = (): 'test-factory' | 'e2e-automation' | 'data-dashboard' | 'test-report' | 'metadata' => {
+  const getCurrentContext = (): 'test-factory' | 'realization' | 'data-dashboard' | 'test-report' | 'metadata' => {
     if (selectedMenuItem === 'workspace') return 'data-dashboard';
     if (selectedTopMenu === 'test-report') return 'test-report';
-    if (selectedMenuItem === 'test-case' && selectedTopMenu === 'e2e-auto') return 'e2e-automation';
+    if (selectedMenuItem === 'test-case' && (selectedTopMenu === SPACE_TAB || selectedTopMenu === REALIZATION_TAB)) return 'realization';
     if (selectedMenuItem === 'test-factory') return 'test-factory';
     return 'metadata';
   };
@@ -457,27 +463,27 @@ export function ApiTestLayout() {
           <div className="flex-1 w-full h-full relative overflow-hidden">
             <TaskManagementPage selectedTopMenu={selectedTopMenu} />
           </div>
-        ) : selectedMenuItem === 'test-plan' ? (
+        ) : selectedMenuItem === 'quality-workspace' ? (
           <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
             {selectedTopMenu === 'test-report' ? (
               selectedReportId ? (
-                <TestPlanReportDetailPage reportId={selectedReportId} onBack={handleBackToList} />
+                <QualityWorkspaceReportDetailPage workspaceId={selectedReportId} onBack={handleBackToList} />
               ) : (
-                <TestPlanReportListPage onViewReport={handleViewReport} />
+                <QualityWorkspaceReportPage onViewReport={handleViewReport} />
               )
-            ) : isTestPlanCaseDetailPath ? (
-              <TestPlanCaseDetailPage />
-            ) : isTestPlanDetailPath ? (
-              <TestPlanDetailPage />
+            ) : isQualityWorkspaceDetailPath ? (
+              <QualityWorkspaceDetailPage />
+            ) : selectedTopMenu === 'workspace' ? (
+              <QualityWorkspacePage />
             ) : (
-              <TestPlanPage />
+              <RequirementQualityPage />
             )}
           </div>
         ) : selectedMenuItem === 'test-case' || selectedMenuItem === 'case-management' ? (
           <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
-            {selectedTopMenu === 'e2e-auto' ? (
+            {selectedTopMenu === SPACE_TAB || selectedTopMenu === REALIZATION_TAB ? (
               <div className="flex-1 w-full h-full relative overflow-hidden">
-                <E2EAutomationPage />
+                <CaseRealizationPage />
               </div>
             ) : (
               <CaseManagementPage

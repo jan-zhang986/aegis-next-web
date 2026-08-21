@@ -837,7 +837,7 @@ export function PerformanceConfigView() {
                     value={form.accountId}
                     onValueChange={(v) => {
                       const acc = addAccountOptions.find((a) => String(a.id) === v) as Record<string, unknown> | undefined;
-                      setForm((f) => ({ ...f, accountId: v, account_features: acc?.accountFeatures ?? acc ?? null }));
+                      setForm((f) => ({ ...f, accountId: v, account_features: (acc?.accountFeatures ?? acc ?? null) as Record<string, unknown> | null }));
                     }}
                   >
                     <SelectTrigger>

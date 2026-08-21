@@ -22,6 +22,8 @@ export interface UseApiEditorOptions {
   protocol: ApiProtocol;
   /** 项目标识 */
   projectId: string;
+  /** 当前 Space，存在时模块树和保存都限定在该 Space */
+  spaceId?: string;
   /** 初始定义（用于详情回显，可选） */
   initialDefinition?: MetadataDefinition | null;
   /** 保存成功后的回调，一般用于刷新列表 */
@@ -78,7 +80,7 @@ const PROTOCOL_TO_MODULE_TYPE: Record<ApiProtocol, MetadataModuleNode['type'] | 
 };
 
 export function useApiEditor(options: UseApiEditorOptions): UseApiEditorResult {
-  const { protocol, projectId, initialDefinition, onRefresh } = options;
+  const { protocol, projectId, spaceId, initialDefinition, onRefresh } = options;
 
   const [state, setState] = useState<ApiEditorState>(() => ({
     definitionId: initialDefinition?.id,
@@ -133,7 +135,9 @@ export function useApiEditor(options: UseApiEditorOptions): UseApiEditorResult {
   const loadModules = useCallback(async () => {
     try {
       setState((prev) => ({ ...prev, loading: true }));
-      const data = await metadataService.getModuleTree(projectId);
+      const data = await metadataService.getModuleTree(projectId, {
+        ...(spaceId && currentModuleType ? { typeId: spaceId, moduleType: currentModuleType } : {}),
+      });
       setModuleTree(data || []);
 
       // 如果还未选择模块，且存在当前协议对应的模块，则默认选中第一个（用于确认对话框）
@@ -166,7 +170,7 @@ export function useApiEditor(options: UseApiEditorOptions): UseApiEditorResult {
     } finally {
       setState((prev) => ({ ...prev, loading: false }));
     }
-  }, [projectId, currentModuleType, confirmModuleId]);
+  }, [projectId, spaceId, currentModuleType, confirmModuleId]);
 
   // 刷新模块树的方法（供外部调用）
   const refreshModuleTree = useCallback(async () => {
@@ -257,6 +261,7 @@ export function useApiEditor(options: UseApiEditorOptions): UseApiEditorResult {
           }
           const params: UpdateMetadataDefinitionParams = {
             id: state.definitionId,
+            ...(spaceId ? { spaceId } : {}),
             ...common,
           };
 
@@ -276,6 +281,7 @@ export function useApiEditor(options: UseApiEditorOptions): UseApiEditorResult {
             ...common,
             protocol,
             projectId,
+            ...(spaceId ? { spaceId } : {}),
           } as AddMetadataDefinitionParams;
 
           if (protocol === 'HTTP' || protocol === 'DUBBO' || protocol === 'TCP' || protocol === 'WEBSOCKET' || protocol === 'ROCKETMQ') {
@@ -340,7 +346,7 @@ export function useApiEditor(options: UseApiEditorOptions): UseApiEditorResult {
         setState((prev) => ({ ...prev, saving: false }));
       }
     },
-    [state, confirmModuleId, projectId, protocol, onRefresh],
+    [state, confirmModuleId, projectId, spaceId, protocol, onRefresh],
   );
 
   return {
@@ -362,5 +368,4 @@ export function useApiEditor(options: UseApiEditorOptions): UseApiEditorResult {
     save,
   };
 }
-
 

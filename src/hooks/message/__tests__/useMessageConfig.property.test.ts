@@ -233,7 +233,6 @@ describe('useMessageConfig - Property Tests', () => {
       expect(filtered).toEqual(mockMessageList);
     });
   });
-});
 
   // Feature: project-message-log-migration, Property 4: 配置状态切换往返
   /**

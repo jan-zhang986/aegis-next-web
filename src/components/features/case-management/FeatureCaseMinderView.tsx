@@ -98,6 +98,7 @@ export interface MinderTreeNode {
 
 interface FeatureCaseMinderViewProps {
   projectId: string;
+  spaceId?: string;
   moduleId?: string;
   modulesCount: Record<string, number>;
   onViewCase?: (caseId: string) => void;
@@ -105,7 +106,7 @@ interface FeatureCaseMinderViewProps {
 }
 
 // 节点数据
-interface MindMapNodeData extends Record<string, unknown> {
+export interface MindMapNodeData extends Record<string, unknown> {
   label: string;
   count?: number;
   isModule: boolean;
@@ -385,6 +386,7 @@ function collectAllIdsInTree(nodes: MinderTreeNode[]): Set<string> {
 
 export function FeatureCaseMinderView({
   projectId,
+  spaceId,
   moduleId = 'all',
   modulesCount,
   onViewCase,
@@ -731,11 +733,43 @@ export function FeatureCaseMinderView({
           customFields,
         };
 
-        const res: any = await caseManagementService.createCaseRequest({
-          request,
-          fileList: [],
-        });
-        const newCaseId = res?.id ?? res?.data?.id ?? '';
+        const newCaseId = await (spaceId
+          ? caseManagementService.saveUnifiedCase({
+            projectId,
+            spaceId,
+            moduleId: request.moduleId,
+            title: request.name,
+            precondition: request.prerequisite,
+            expectedResult: request.expectedResult,
+            description: request.description,
+            priority: priority === 'P0' ? 1 : priority === 'P1' ? 2 : priority === 'P2' ? 3 : 4,
+            sourceType: 'AI',
+            tags: request.tags,
+            metadata: {
+              templateId,
+              caseEditType: request.caseEditType,
+              aiCreate: true,
+              functionalPriority: priority,
+            },
+            realizations: [
+              {
+                realizationType: 'MANUAL',
+                name: `${request.name} [MANUAL]`,
+                workflowDefinition: {
+                  caseEditType: request.caseEditType,
+                  steps: request.steps,
+                  textDescription: request.textDescription,
+                  expectedResult: request.expectedResult,
+                },
+                status: 'ACTIVE',
+                enabled: true,
+              },
+            ],
+          })
+          : caseManagementService.createCaseRequest({
+            request,
+            fileList: [],
+          }).then((res: any) => res?.id ?? res?.data?.id ?? ''));
         if (newCaseId) {
           toast.success('用例创建成功');
           setShowDetailSidebar(false);

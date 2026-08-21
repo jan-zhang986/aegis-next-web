@@ -14,7 +14,21 @@ import { type ModelConfig } from '@/services/knowledge-base';
 
 export interface MultimodalConfig {
   enabled: boolean;
+  storageType?: 'minio' | 'cos' | 's3';
   vllmModelId?: string;
+  minio: {
+    bucketName: string;
+    useSSL: boolean;
+    pathPrefix: string;
+  };
+  cos: {
+    secretId: string;
+    secretKey: string;
+    region: string;
+    bucketName: string;
+    appId: string;
+    pathPrefix: string;
+  };
   s3: {
     bucketName: string;
     useSSL: boolean;

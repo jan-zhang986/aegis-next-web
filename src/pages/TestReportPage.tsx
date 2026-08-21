@@ -524,7 +524,7 @@ export function TestReportPage({ reportId: propReportId, onBack: propOnBack }: T
                     ) : (
                       <>
                         <h1 className="text-3xl text-gray-900">
-                          {reportDetail?.reportName || (reportId ? `测试报告 - ${reportId}` : '自动化用例测试报告')}
+                          {reportDetail?.reportName || (reportId ? `测试报告 - ${reportId}` : '用例实现测试报告')}
                         </h1>
                         <Button
                           size="sm"

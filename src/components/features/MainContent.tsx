@@ -664,8 +664,9 @@ export function MainContent({ selectedTopMenu }: MainContentProps) {
   const shouldShowTable = currentSelection.level !== 'none' &&
     ['metadata', 'metadata-type', 'metadata-category'].includes(currentSelection.level);
 
-  // 判断是否应该显示左侧模块树（自动化用例 tab、Mock工厂和性能管理不显示，造数工厂需要显示）
-  const shouldShowTreePanel = selectedTopMenu !== 'e2e-auto' && selectedTopMenu !== 'mock-factory' && selectedTopMenu !== 'performance';
+  // 判断是否应该显示左侧模块树（用例实现 tab、Mock工厂和性能管理不显示，造数工厂需要显示）
+  const isRealizationTab = selectedTopMenu === 'realization';
+  const shouldShowTreePanel = !isRealizationTab && selectedTopMenu !== 'mock-factory' && selectedTopMenu !== 'performance';
 
   // 左侧树面板收起状态（造数工厂和Mock工厂支持收起）
   const [isTreePanelCollapsed, setIsTreePanelCollapsed] = useState(() => {
@@ -1041,7 +1042,7 @@ export function MainContent({ selectedTopMenu }: MainContentProps) {
                   </div>
                 </div>
               </div>
-            ) : selectedTopMenu === 'e2e-auto' ? (
+            ) : isRealizationTab ? (
               <WorkflowDesignPageV2
                 projectId={projectId}
               />

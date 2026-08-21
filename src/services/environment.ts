@@ -33,7 +33,7 @@ export interface DataEndpoint {
 
 // XXL-Job 配置（字段已重命名）
 export interface XxlJobInfo {
-  xxjob_url: string;
+  xxjob_url?: string;
   xxljobuser?: string;
   xxljobpassword?: string;
 }

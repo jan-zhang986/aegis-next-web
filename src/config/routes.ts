@@ -282,8 +282,8 @@ export const FRONTEND_ROUTES = {
   // 门禁管理
   GATE_MANAGEMENT: '/gate-management',
   
-  // 测试计划
-  TEST_PLAN: '/test-plan',
+  // @deprecated 旧测试计划入口已下线，保留常量只为旧调用点跳转到需求质量主路径
+  TEST_PLAN: '/quality-workspace?menu=quality-workspace&tab=requirements',
   
   // 用例管理
   CASE_MANAGEMENT: '/case-management',
@@ -295,8 +295,8 @@ export const FRONTEND_ROUTES = {
   TEST_FACTORY: {
     BASE: '/test-factory',
     API: '/test-factory/api',
-    /** 自动化用例入口（tab=e2e-auto）已迁至测试用例二级菜单 */
-    E2E_AUTO: '/case-management?menu=test-case&tab=e2e-auto',
+    /** @deprecated compatibility-only route target; ordinary users should enter realizations from Case pages */
+    E2E_AUTO: '/case-management?menu=test-case&tab=realization',
     PERFORMANCE: '/test-factory/performance',
     TEST_REPORT: '/test-factory/test-report',
     TEST_REPORT_DETAIL: (reportId: string) => `/test-factory/test-report/${reportId}`,
@@ -375,4 +375,3 @@ export interface ApiConfig {
   baseUrl: string;
   apiPrefix: string;
 }
-

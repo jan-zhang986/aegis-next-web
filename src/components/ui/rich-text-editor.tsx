@@ -163,7 +163,9 @@ export function RichTextEditor({
   useEffect(() => {
     if (!editor) return;
     editor.on('update', handleUpdate);
-    return () => editor.off('update', handleUpdate);
+    return () => {
+      editor.off('update', handleUpdate);
+    };
   }, [editor, handleUpdate]);
 
   // 受控：外部 value 变化时同步到编辑器（如表单重置）
@@ -177,7 +179,7 @@ export function RichTextEditor({
   }, [editor, value]);
 
   useEffect(() => {
-    editorRef.current = editor ?? undefined;
+    editorRef.current = editor ? ({ chain: () => editor.chain() } as { chain: () => any }) : null;
   }, [editor]);
 
   // 编辑时 /attachment/ 图片需鉴权：通过 http 拉取后转 blob URL 显示，与 HtmlContent 一致

@@ -28,7 +28,7 @@ export function useTestReportTags(onTagUpdate?: () => void) {
     }
 
     try {
-      await workflowTestReportService.addTag(reportId, normalizedTag);
+      await workflowTestReportService.updateTestReportTags(reportId, [...editingTags, normalizedTag]);
       setEditingTags(prev => [...prev, normalizedTag]);
       setNewTagInput('');
       setTagInputOpen(false);
@@ -42,7 +42,7 @@ export function useTestReportTags(onTagUpdate?: () => void) {
 
   const handleDeleteTag = useCallback(async (reportId: string, tag: string) => {
     try {
-      await workflowTestReportService.deleteTag(reportId, tag);
+      await workflowTestReportService.updateTestReportTags(reportId, editingTags.filter(t => t !== tag));
       setEditingTags(prev => prev.filter(t => t !== tag));
       if (onTagUpdate) {
         onTagUpdate();

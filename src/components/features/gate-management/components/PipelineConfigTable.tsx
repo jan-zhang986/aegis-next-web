@@ -8,7 +8,7 @@ export interface PipelineConfigItem {
   curlCommand?: string;
   serviceName: string;
   envName: string;
-  /** 自动化用例集名称 */
+  /** 用例实现集名称 */
   autoCaseSetName?: string;
   devNotifier?: string;
   testNotifier?: string;
@@ -45,7 +45,7 @@ export function PipelineConfigTable({
           <TableHead className="min-w-[200px] text-gray-600">CURL命令</TableHead>
           <TableHead className="w-[140px] text-gray-600">服务</TableHead>
           <TableHead className="w-[100px] text-gray-600">配置环境</TableHead>
-          <TableHead className="w-[160px] text-gray-600">自动化用例</TableHead>
+          <TableHead className="w-[160px] text-gray-600">用例实现</TableHead>
           <TableHead className="w-[140px] text-gray-600">开发通知人</TableHead>
           <TableHead className="w-[140px] text-gray-600">测试通知人</TableHead>
           <TableHead className="w-[80px] text-gray-600">状态</TableHead>

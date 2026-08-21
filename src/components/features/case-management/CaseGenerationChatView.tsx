@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 
 interface Props {
   projectId?: string;
+  spaceId?: string;
   chatId: string;
   firstQuery?: string;
   firstMentionedItems?: Array<{ id: string; name: string; type: string; kb_type?: string }>;
@@ -147,6 +148,7 @@ function parseThinkFromContent(full: string): {
 
 export function CaseGenerationChatView({
   projectId = localStorage.getItem('currentProjectId') || 'default-project',
+  spaceId,
   chatId,
   firstQuery,
   firstMentionedItems,
@@ -1438,6 +1440,7 @@ export function CaseGenerationChatView({
       <ResizablePanel defaultSize={40} minSize={25} maxSize={60} className="min-w-0">
         <CasePreviewAndSavePanel
           projectId={projectId}
+          spaceId={spaceId}
           previewAction={previewAction}
         />
       </ResizablePanel>

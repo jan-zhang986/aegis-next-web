@@ -26,6 +26,7 @@ export interface DistributionDataItem {
   name: string;
   value: number;
   percentage: number;
+  [key: string]: string | number;
 }
 
 /**

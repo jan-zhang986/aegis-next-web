@@ -116,7 +116,8 @@ export function getCaseDetail(id: string) {
 }
 
 /**
- * 创建用例
+ * 创建用例（legacy functional_case 入口）
+ * Space 主路径禁止调用：新产品写入统一走 saveUnifiedCase。
  * 与 metersphere-frontend / 后端一致：request 为单个 JSON 的 part，文件 part 名为 files
  * 后端：addFunctionalCase(@RequestPart("request") ..., @RequestPart(value = "files", ...) ...)
  */
@@ -137,7 +138,8 @@ export function createCaseRequest(data: Record<string, any>) {
 }
 
 /**
- * 更新用例
+ * 更新用例（legacy functional_case 入口）
+ * Space 主路径禁止调用：新产品写入统一走 saveUnifiedCase。
  * 与 metersphere-frontend 一致：入参可为 { request, fileList } 或平铺 { ...requestBody, fileList }
  * 后端：updateFunctionalCase(@RequestPart("request") ..., @RequestPart(value = "files", ...) ...)
  * customFields.value 为 null 时转为 ''，避免后端 updateByPrimaryKeySelective 生成无效 SQL
@@ -464,6 +466,22 @@ export function createCommentItem(data: CommentParams) {
 }
 
 /**
+ * 获取统一协作评论
+ */
+export function getCollabComments(projectId: string, subjectType: string, subjectId: string) {
+  return http.get(`/api/collab/comment/subject/${subjectType}/${subjectId}`, {
+    params: { projectId },
+  });
+}
+
+/**
+ * 保存统一协作评论
+ */
+export function saveCollabComment(data: Record<string, any>) {
+  return http.post('/api/collab/comment/save', data);
+}
+
+/**
  * 更新评论
  */
 export function updateCommentItem(data: CommentParams) {
@@ -766,4 +784,106 @@ export function getAssociatedTestPlan(data: TableQueryParams) {
  */
 export function getSearchCustomFields(projectId: string) {
   return http.get(`${caseManagementUrls.GetSearchCustomFieldsUrl}/${projectId}`);
+}
+
+// ==================== 统一 Case（Case-first）====================
+
+/**
+ * 获取统一 Case 列表
+ * 新前端应优先使用该接口，而不是继续直接消费 legacy functional case 列表。
+ */
+export function getUnifiedCaseList(data: TableQueryParams) {
+  return http.post('/api/testcase/page', data);
+}
+
+/**
+ * 获取统一 Case 详情
+ */
+export function getUnifiedCaseDetail(id: string) {
+  return http.get(`/api/testcase/${id}`);
+}
+
+/**
+ * 保存统一 Case
+ * Space 主路径唯一写入口，附件通过 uploadFileIds/relateFileMetaIds/unLinkFilesIds 等字段提交。
+ */
+export function saveUnifiedCase(data: Record<string, any>) {
+  return http.post('/api/testcase/save', data);
+}
+
+/**
+ * 删除统一 Case
+ */
+export function deleteUnifiedCase(caseId: string) {
+  return http.post(`/api/testcase/${caseId}/delete`);
+}
+
+/**
+ * 批量删除统一 Case
+ */
+export function batchDeleteUnifiedCase(caseIds: string[]) {
+  return http.post('/api/testcase/batch-delete', { caseIds });
+}
+
+/**
+ * 获取 Case realization 列表
+ */
+export function getCaseRealizations(caseId: string) {
+  return http.get(`/api/testcase/${caseId}/realization/list`);
+}
+
+/**
+ * 合并用例版本
+ */
+export function mergeCaseVersion(data: {
+  projectId: string;
+  sourceVersionId: string;
+  targetVersionId: string;
+}) {
+  return http.post(caseManagementUrls.MergeCaseVersionUrl, data);
+}
+
+/**
+ * 执行用例关联的工作流
+ */
+export function executeCaseWorkflow(id: string) {
+  return http.post(`${caseManagementUrls.ExecuteCaseWorkflowUrl}/${id}`);
+}
+
+
+/**
+ * 获取 Case realization 摘要
+ */
+export function getCaseRealizationSummary(caseId: string) {
+  return http.get(`/api/testcase/${caseId}/realization/summary`);
+}
+
+/**
+ * 获取单个 realization 详情
+ */
+export function getCaseRealizationDetail(caseId: string, realizationType: string) {
+  return http.get(`/api/testcase/${caseId}/realization/${realizationType}`);
+}
+
+/**
+ * 保存 realization
+ */
+export function saveCaseRealization(caseId: string, data: Record<string, any>) {
+  return http.post(`/api/testcase/${caseId}/realization/save`, data);
+}
+
+export function publishCaseRealization(caseId: string, realizationType: string) {
+  return http.post(`/api/testcase/${caseId}/realization/${realizationType}/publish`);
+}
+
+export function enableCaseRealization(caseId: string, realizationType: string) {
+  return http.post(`/api/testcase/${caseId}/realization/${realizationType}/enable`);
+}
+
+export function disableCaseRealization(caseId: string, realizationType: string) {
+  return http.post(`/api/testcase/${caseId}/realization/${realizationType}/disable`);
+}
+
+export function deleteCaseRealization(caseId: string, realizationType: string) {
+  return http.post(`/api/testcase/${caseId}/realization/${realizationType}/delete`);
 }

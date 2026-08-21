@@ -206,6 +206,7 @@ export interface RequirementQualityDetailDTO {
   caseExecutedCount: number;
   executionRate: number;
   passRate: number;
+  defectCount?: number | null;
   /** 用例执行明细（排名、失败/成功次数、耗时、失败率等） */
   caseExecutionList?: RequirementQualityCaseExecutionRowDTO[] | null;
   /** 执行人贡献度（执行人姓名及执行的用例数，按用例数降序） */

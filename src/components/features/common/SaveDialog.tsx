@@ -49,6 +49,8 @@ interface SaveDialogProps {
   moduleType?: 'API' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'FILE' | 'SCRIPT';
   // 项目ID，用于创建模块
   projectId?: string;
+  // Space 详情内快速创建模块时写入当前 spaceId
+  typeId?: string;
   // 刷新模块树的回调
   onModuleTreeRefresh?: () => void | Promise<void>;
   // 是否显示名称输入（默认 false，保持向后兼容）
@@ -76,6 +78,7 @@ export function SaveDialog({
   title = '保存',
   moduleType,
   projectId,
+  typeId,
   onModuleTreeRefresh,
   showNameInput = false,
   showDescription = true,
@@ -152,6 +155,7 @@ export function SaveDialog({
             onModuleIdChange={onModuleIdChange}
             moduleType={moduleType}
             projectId={projectId}
+            typeId={typeId}
             onModuleTreeRefresh={onModuleTreeRefresh ? async () => {
               await onModuleTreeRefresh();
             } : undefined}
@@ -242,4 +246,3 @@ export function SaveDialog({
     </Dialog>
   );
 }
-

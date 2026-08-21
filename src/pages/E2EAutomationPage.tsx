@@ -1,11 +1,12 @@
 /**
- * 自动化用例页面
- * 空间列表页面
+ * 用例实现空间页面
+ * 普通用户应从 Case -> realization 进入；本页保留为实现空间视图与兼容壳。
  */
 
+/** @deprecated compatibility shell file name; prefer CaseRealizationPage symbol and case-realization entry flow */
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Plus, Star, MoreVertical, Folder, Pencil, Users, Activity, Clock, CheckCircle2, XCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Search, Plus, Star, MoreVertical, Folder, Pencil, Users, Activity, Clock, CheckCircle2, XCircle, ArrowLeft, Layers, FileText, Globe, FileCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,16 +22,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
   Table,
   TableBody,
   TableCell,
@@ -42,20 +33,21 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { E2ESpaceDetailPage } from './E2ESpaceDetailPage';
 import { PublicNodesManagementView } from '@/components/features/e2e-space/components';
+import { FeatureCaseDetail, FeatureCaseList } from '@/components/features/case-management';
+import type { CaseItem } from '@/components/features/case-management';
 import WorkflowDesignPageV2 from '@/components/features/WorkflowDesignPageV2';
-import { e2eSpaceService, E2ESpace } from '@/services/e2e-space';
+import { e2eSpaceService, type CaseRealizationSpace } from '@/services/e2e-space';
 import { projectManagementService } from '@/services/project-management';
 import { toast } from 'sonner';
 import { cn } from '@/utils/cn';
+import { SpaceAssetDetailPage } from './SpaceAssetDetailPage';
 
-type E2EViewMode = 'space-list' | 'public-nodes';
+type CaseRealizationViewMode = 'space-list' | 'public-nodes';
 
-export function E2EAutomationPage() {
+export function CaseRealizationPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -63,16 +55,17 @@ export function E2EAutomationPage() {
   const directProjectId = searchParams.get('projectId') ?? undefined;
   const isDirectWorkflowCanvas = Boolean(directWorkflowId && directProjectId);
 
-  const [viewMode, setViewMode] = useState<E2EViewMode>('space-list');
+  const [viewMode, setViewMode] = useState<CaseRealizationViewMode>('space-list');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSpace, setSelectedSpace] = useState<E2ESpace | null>(null);
+  const [selectedSpace, setSelectedSpace] = useState<CaseRealizationSpace | null>(null);
+  const [spaceCaseMode, setSpaceCaseMode] = useState<'list' | 'add' | 'edit' | 'copy'>('list');
+  const [spaceCaseId, setSpaceCaseId] = useState<string | null>(null);
+  const [spaceModuleId, setSpaceModuleId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [spaceToEdit, setSpaceToEdit] = useState<E2ESpace | null>(null);
-  const [spaces, setSpaces] = useState<E2ESpace[]>([]);
+  const [spaceToEdit, setSpaceToEdit] = useState<CaseRealizationSpace | null>(null);
+  const [spaces, setSpaces] = useState<CaseRealizationSpace[]>([]);
   const [loading, setLoading] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [spaceToDelete, setSpaceToDelete] = useState<E2ESpace | null>(null);
   const [newSpaceForm, setNewSpaceForm] = useState({
     name: '',
     description: '',
@@ -181,11 +174,12 @@ export function E2EAutomationPage() {
 
   const totalSpaces = spaces.length;
   const totalTests = spaces.reduce((sum, s) => sum + (s.testCaseCount || 0), 0);
-  const avgPassRate = spaces.length > 0 ? spaces.reduce((sum, s) => sum + (s.passRate || 0), 0) / spaces.length : 0;
+  const totalInterfaces = spaces.reduce((sum, s) => sum + (s.httpAssetCount || 0) + (s.dubboAssetCount || 0) + (s.rocketMqAssetCount || 0), 0);
+  const totalFiles = spaces.reduce((sum, s) => sum + (s.fileAssetCount || 0), 0);
   // 参与成员数：统计所有空间的负责人（去重）
   const totalMembers = new Set(spaces.map(s => s.responsiblePerson).filter(Boolean)).size;
 
-  const getStatusBadge = (status: E2ESpace['status']) => {
+  const getStatusBadge = (status: CaseRealizationSpace['status']) => {
     switch (status) {
       case 'running':
         return (
@@ -231,7 +225,7 @@ export function E2EAutomationPage() {
         <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-white border-b border-gray-200">
           <Button variant="ghost" size="sm" className="gap-1.5" onClick={handleBackFromDirectWorkflow}>
             <ArrowLeft className="w-4 h-4" />
-            返回 自动化用例
+            返回 用例实现
           </Button>
         </div>
         <div className="flex-1 min-h-0 overflow-hidden">
@@ -255,10 +249,43 @@ export function E2EAutomationPage() {
 
   // 如果选择了空间，显示空间详情
   if (selectedSpace) {
+    const selectedProjectId = selectedSpace.projectId || localStorage.getItem('currentProjectId') || 'default-project';
+    const backToSpaceList = () => {
+      setSelectedSpace(null);
+      setSpaceCaseMode('list');
+      setSpaceCaseId(null);
+      setSpaceModuleId(null);
+    };
+    const backToCaseList = () => {
+      setSpaceCaseMode('list');
+      setSpaceCaseId(null);
+    };
+
+    if (spaceCaseMode === 'add' || ((spaceCaseMode === 'edit' || spaceCaseMode === 'copy') && spaceCaseId)) {
+      return (
+        <FeatureCaseDetail
+          mode={spaceCaseMode}
+          caseId={spaceCaseMode !== 'add' ? spaceCaseId ?? undefined : undefined}
+          projectId={selectedProjectId}
+          spaceId={selectedSpace.id}
+          initialModuleId={spaceCaseMode === 'add' ? spaceModuleId ?? undefined : undefined}
+          onBack={backToCaseList}
+          onSuccess={() => backToCaseList()}
+        />
+      );
+    }
+
     return (
-      <E2ESpaceDetailPage
+      <SpaceAssetDetailPage
         space={selectedSpace}
-        onBack={() => setSelectedSpace(null)}
+        projectId={selectedProjectId}
+        onBack={backToSpaceList}
+        spaceCaseMode={spaceCaseMode}
+        spaceCaseId={spaceCaseId}
+        spaceModuleId={spaceModuleId}
+        setSpaceCaseMode={setSpaceCaseMode}
+        setSpaceCaseId={setSpaceCaseId}
+        setSpaceModuleId={setSpaceModuleId}
       />
     );
   }
@@ -270,8 +297,8 @@ export function E2EAutomationPage() {
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">自动化用例</h1>
-            <p className="text-sm text-gray-500 mt-1">按微服务应用管理自动化测试用例</p>
+            <h1 className="text-2xl font-semibold text-gray-900">测试资产</h1>
+            <p className="text-sm text-gray-500 mt-1">按空间管理用例资产、HTTP/DUBBO/RocketMQ接口资产与文件资产</p>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -324,9 +351,9 @@ export function E2EAutomationPage() {
             <CardContent className="pt-4">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Folder className="w-4 h-4 text-blue-600" />
+                  <Layers className="w-4 h-4 text-blue-600" />
                 </div>
-                <div className="text-sm text-gray-600">总空间数</div>
+                <div className="text-sm text-gray-600">空间数</div>
               </div>
               <div className="text-2xl font-bold text-gray-900">{totalSpaces}</div>
             </CardContent>
@@ -335,9 +362,9 @@ export function E2EAutomationPage() {
             <CardContent className="pt-4">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                  <Pencil className="w-4 h-4 text-purple-600" />
+                  <FileText className="w-4 h-4 text-purple-600" />
                 </div>
-                <div className="text-sm text-gray-600">总测试数</div>
+                <div className="text-sm text-gray-600">用例资产数</div>
               </div>
               <div className="text-2xl font-bold text-gray-900">{totalTests}</div>
             </CardContent>
@@ -346,22 +373,22 @@ export function E2EAutomationPage() {
             <CardContent className="pt-4">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <Activity className="w-4 h-4 text-green-600" />
+                  <Globe className="w-4 h-4 text-green-600" />
                 </div>
-                <div className="text-sm text-gray-600">平均通过率</div>
+                <div className="text-sm text-gray-600">接口资产数</div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{avgPassRate.toFixed(0)}%</div>
+              <div className="text-2xl font-bold text-gray-900">{totalInterfaces}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-gray-200">
             <CardContent className="pt-4">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                  <Users className="w-4 h-4 text-orange-600" />
+                  <FileCode className="w-4 h-4 text-orange-600" />
                 </div>
-                <div className="text-sm text-gray-600">参与成员</div>
+                <div className="text-sm text-gray-600">文件资产数</div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{totalMembers}</div>
+              <div className="text-2xl font-bold text-gray-900">{totalFiles}</div>
             </CardContent>
           </Card>
         </div>
@@ -372,21 +399,22 @@ export function E2EAutomationPage() {
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50">
-              <TableHead className="w-[200px]">空间名称</TableHead>
+              <TableHead className="w-[180px]">空间名称</TableHead>
               <TableHead>描述</TableHead>
               <TableHead>负责人</TableHead>
-              <TableHead className="text-center">测试用例</TableHead>
+              <TableHead className="text-center">用例资产</TableHead>
+              <TableHead className="text-center">HTTP接口</TableHead>
+              <TableHead className="text-center">DUBBO服务</TableHead>
+              <TableHead className="text-center">RocketMQ</TableHead>
+              <TableHead className="text-center">文件资产</TableHead>
               <TableHead className="text-center">模块数</TableHead>
-              <TableHead className="text-center">通过率</TableHead>
-              <TableHead className="text-center">状态</TableHead>
-              <TableHead>最后运行</TableHead>
               <TableHead className="text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12">
+                <TableCell colSpan={10} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     <p className="text-gray-500">加载中...</p>
@@ -395,7 +423,7 @@ export function E2EAutomationPage() {
               </TableRow>
             ) : filteredSpaces.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-16">
+                <TableCell colSpan={10} className="text-center py-16">
                   <div className="flex flex-col items-center gap-4">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
                       <Folder className="w-8 h-8 text-gray-400" />
@@ -407,7 +435,7 @@ export function E2EAutomationPage() {
                       <p className="text-sm text-gray-500 mb-4">
                         {searchTerm 
                           ? '请尝试其他搜索关键词' 
-                          : '创建您的第一个自动化用例空间，开始管理微服务应用的自动化测试用例'}
+                          : '创建您的第一个空间测试资产，开始隔离维护各类型资产'}
                       </p>
                       {!searchTerm && (
                         <Button 
@@ -428,7 +456,12 @@ export function E2EAutomationPage() {
                 <TableRow
                   key={space.id}
                   className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => setSelectedSpace(space)}
+                  onClick={() => {
+                    setSpaceCaseMode('list');
+                    setSpaceCaseId(null);
+                    setSpaceModuleId(null);
+                    setSelectedSpace(space);
+                  }}
                 >
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -444,28 +477,12 @@ export function E2EAutomationPage() {
                       ? (userNameMap.get(space.responsiblePerson) || space.responsiblePerson)
                       : space.responsiblePerson || '-'}
                   </TableCell>
-                  <TableCell className="text-center">{space.testCaseCount}</TableCell>
-                  <TableCell className="text-center">{space.moduleCount}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 justify-center">
-                      <span className="text-sm font-medium">{space.passRate != null ? `${space.passRate}%` : '0%'}</span>
-                      <div className="w-20 bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full ${getPassRateColor(space.passRate || 0)}`}
-                          style={{ width: `${Math.min(space.passRate || 0, 100)}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {getStatusBadge(space.status)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-gray-500">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-sm">{space.lastRun}</span>
-                    </div>
-                  </TableCell>
+                  <TableCell className="text-center font-semibold text-indigo-600">{space.testCaseCount || 0}</TableCell>
+                  <TableCell className="text-center font-medium text-emerald-600">{space.httpAssetCount || 0}</TableCell>
+                  <TableCell className="text-center font-medium text-blue-600">{space.dubboAssetCount || 0}</TableCell>
+                  <TableCell className="text-center font-medium text-amber-600">{space.rocketMqAssetCount || 0}</TableCell>
+                  <TableCell className="text-center font-medium text-purple-600">{space.fileAssetCount || 0}</TableCell>
+                  <TableCell className="text-center text-slate-500">{space.moduleCount || 0}</TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -474,7 +491,12 @@ export function E2EAutomationPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setSelectedSpace(space)}>查看详情</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setSpaceCaseMode('list');
+                          setSpaceCaseId(null);
+                          setSpaceModuleId(null);
+                          setSelectedSpace(space);
+                        }}>查看详情</DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => {
                             setSpaceToEdit(space);
@@ -521,16 +543,6 @@ export function E2EAutomationPage() {
                         >
                           复制
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="text-red-600"
-                          onClick={() => {
-                            setSpaceToDelete(space);
-                            setDeleteDialogOpen(true);
-                          }}
-                        >
-                          删除
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -540,54 +552,6 @@ export function E2EAutomationPage() {
           </TableBody>
         </Table>
       </div>
-
-      {/* Delete Space Dialog */}
-      <AlertDialog 
-        open={deleteDialogOpen} 
-        onOpenChange={(open) => {
-          setDeleteDialogOpen(open);
-          if (!open) {
-            setSpaceToDelete(null);
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认删除空间</AlertDialogTitle>
-            <AlertDialogDescription>
-              确定要删除空间 <span className="font-semibold text-gray-900">"{spaceToDelete?.name}"</span> 吗？此操作将同时删除该空间下的所有模块和测试用例，且不可恢复。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                if (!spaceToDelete) return;
-                try {
-                  setLoading(true);
-                  await e2eSpaceService.deleteSpace(spaceToDelete.id);
-                  setSpaces(spaces.filter((s: E2ESpace) => s.id !== spaceToDelete.id));
-                  toast.success('空间删除成功');
-                  // 如果删除的是当前选中的空间，清除选中状态
-                  if (selectedSpace && (selectedSpace as E2ESpace).id === spaceToDelete.id) {
-                    setSelectedSpace(null);
-                  }
-                  setDeleteDialogOpen(false);
-                  setSpaceToDelete(null);
-                } catch (error) {
-                  console.error('删除空间失败:', error);
-                  toast.error('删除空间失败');
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              确定删除
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Create/Edit Space Dialog */}
       <Dialog open={isCreateDialogOpen || isEditDialogOpen} onOpenChange={(open) => {
@@ -621,8 +585,8 @@ export function E2EAutomationPage() {
             <DialogTitle className="text-xl font-semibold">{isEditDialogOpen ? '编辑空间' : '新建空间'}</DialogTitle>
             <DialogDescription className="text-sm text-gray-600 mt-2">
               {isEditDialogOpen 
-                ? '编辑自动化用例空间信息'
-                : '创建一个新的自动化用例空间，用于管理微服务应用的自动化测试用例'}
+                ? '编辑用例实现空间信息'
+                : '创建一个新的用例实现空间，用于管理 Case 的 API、UI 自动化和流程实现'}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-5 py-2">
@@ -758,7 +722,7 @@ export function E2EAutomationPage() {
                   setLoading(true);
                   
                   if (isEditDialogOpen && spaceToEdit) {
-                    const editingSpace: E2ESpace = spaceToEdit;
+                    const editingSpace: CaseRealizationSpace = spaceToEdit;
                     // 编辑模式：更新空间
                     const updatedSpace = await e2eSpaceService.updateSpace({
                       id: editingSpace.id,
@@ -770,10 +734,10 @@ export function E2EAutomationPage() {
                     });
                     
                     // 更新空间列表
-                    setSpaces(spaces.map((s: E2ESpace) => s.id === editingSpace.id ? updatedSpace : s));
+                    setSpaces(spaces.map((s: CaseRealizationSpace) => s.id === editingSpace.id ? updatedSpace : s));
                     
                     // 如果当前选中的是正在编辑的空间，更新选中状态（断言 selectedSpace 因前文 return 被收窄为 null，此处需比较时仍可能非空）
-                    const currentSelected = selectedSpace as E2ESpace | null;
+                    const currentSelected = selectedSpace as CaseRealizationSpace | null;
                     if (currentSelected && currentSelected.id === editingSpace.id) {
                       setSelectedSpace(updatedSpace);
                     }
@@ -854,4 +818,3 @@ export function E2EAutomationPage() {
     </div>
   );
 }
-

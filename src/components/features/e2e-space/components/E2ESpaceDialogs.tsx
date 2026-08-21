@@ -35,12 +35,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { WorkflowModuleSelectDialog } from '@/components/features/common/WorkflowModuleSelectDialog';
-import type { E2ESpace } from '@/services/e2e-space';
+import type { CaseRealizationSpace } from '@/services/e2e-space';
 import type { TestCase } from '@/types/e2e-space';
 import type { Environment } from '@/services/environment';
 
 interface E2ESpaceDialogsProps {
-  space: E2ESpace;
+  space: CaseRealizationSpace;
   // 模块相关对话框
   isCreateModuleDialogOpen: boolean;
   setIsCreateModuleDialogOpen: (open: boolean) => void;

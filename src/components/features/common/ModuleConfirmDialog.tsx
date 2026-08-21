@@ -49,6 +49,8 @@ interface ModuleConfirmDialogProps {
   moduleType?: 'API' | 'SQL' | 'DUBBO' | 'ROCKETMQ' | 'FILE';
   /** 项目ID（用于快速创建模块） */
   projectId?: string;
+  /** Space 详情内快速创建模块时写入当前 spaceId */
+  typeId?: string;
   /** 模块树刷新回调（用于快速创建模块后刷新） */
   onModuleTreeRefresh?: () => Promise<void>;
 }
@@ -65,6 +67,7 @@ export function ModuleConfirmDialog({
   protocolLabel = '接口',
   moduleType,
   projectId,
+  typeId,
   onModuleTreeRefresh,
 }: ModuleConfirmDialogProps) {
   // 打开对话框时，如果没有选中模块，默认选择第一个符合条件的模块（与 HTTP 一致）
@@ -102,6 +105,7 @@ export function ModuleConfirmDialog({
             onModuleIdChange={onModuleChange}
             moduleType={moduleType}
             projectId={projectId}
+            typeId={typeId}
             onModuleTreeRefresh={onModuleTreeRefresh}
             label="所属模块"
             required
@@ -124,4 +128,3 @@ export function ModuleConfirmDialog({
     </Dialog>
   );
 }
-

@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Database, Workflow, MessageSquare, Network, Bot, Info, Code2 } from 'lucide-react';
-import type { AddEnvironmentParams, EnvCode } from '@/services/environment';
+import type { AddEnvironmentParams, EnvCode, DataEndpoint, XxlJobInfo, MqInfo, DubboInfo } from '@/services/environment';
 
 export interface EnvironmentFormDialogProps {
   open: boolean;
@@ -27,10 +27,10 @@ export interface EnvironmentFormDialogProps {
   projectName: string;
   getJsonFieldValue: (f: 'robots' | 'variables') => string;
   updateJsonField: (f: 'robots' | 'variables', v: string) => void;
-  updateDataEndpoint: (k: string, v: string | number | undefined) => void;
-  updateXxlJobInfo: (k: string, v: string) => void;
-  updateMqInfo: (k: string, v: string) => void;
-  updateDubboInfo: (k: string, v: string) => void;
+  updateDataEndpoint: (k: keyof DataEndpoint, v: string | number | undefined) => void;
+  updateXxlJobInfo: (k: keyof XxlJobInfo, v: string) => void;
+  updateMqInfo: (k: keyof MqInfo, v: string) => void;
+  updateDubboInfo: (k: keyof DubboInfo, v: string) => void;
   onSave: () => void;
 }
 
@@ -174,7 +174,7 @@ export function EnvironmentFormDialog({
                           value={
                             k === 'data_port'
                               ? (formData.dataEndpoint?.data_port ?? '')
-                              : String((formData.dataEndpoint as Record<string, string>)?.[k] ?? '')
+                              : String((formData.dataEndpoint as unknown as Record<string, string>)?.[k] ?? '')
                           }
                           onChange={(e) =>
                             updateDataEndpoint(
@@ -207,8 +207,8 @@ export function EnvironmentFormDialog({
                           {label} <span className="text-red-500">*</span>
                         </Label>
                         <Input
-                          value={(formData.xxljobInfo as Record<string, string>)?.[k] ?? ''}
-                          onChange={(e) => updateXxlJobInfo(k, e.target.value)}
+                          value={(formData.xxljobInfo as unknown as Record<string, string>)?.[k] ?? ''}
+                          onChange={(e) => updateXxlJobInfo(k as keyof XxlJobInfo, e.target.value)}
                           placeholder={`请输入${label}`}
                           className="h-9 text-sm border border-gray-300"
                         />

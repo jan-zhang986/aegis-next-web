@@ -486,7 +486,7 @@ export function SqlTestPage({ apiName, onClose, definitionId, definitions = [], 
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                       <span className="text-xs font-medium text-blue-900">数据源连接:</span>
-                      <span className="text-xs font-mono text-blue-700">{selectedDataEndpoint.host}:{selectedDataEndpoint.port}</span>
+                      <span className="text-xs font-mono text-blue-700">{selectedDataEndpoint.data_host}:{selectedDataEndpoint.data_port}</span>
                     </div>
                   </div>
                 ) : (

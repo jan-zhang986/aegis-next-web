@@ -44,6 +44,8 @@ export const GetAssociatedFilePageUrl = '/attachment/page';
 export const SaveCaseMinderUrl = '/functional/mind/case/edit'; // 保存用例脑图
 export const GetCaseMinderUrl = '/functional/mind/case/list'; // 获取脑图数据
 export const GetCaseMinderTreeUrl = '/functional/mind/case/tree'; // 获取脑图模块树（含文本节点）
+export const MergeCaseVersionUrl = '/functional/case/version/merge'; // 合并用例版本
+export const ExecuteCaseWorkflowUrl = '/functional/case/execute'; // 执行关联工作流
 
 // 获取模块树
 export const GetCaseModuleTreeUrl = '/functional/case/module/tree';
@@ -352,6 +354,8 @@ export const caseManagementUrls = {
   GetAssociatedTestPlanUrl,
   associatedProjectOptionsUrl,
   dragSortUrl,
+  MergeCaseVersionUrl,
+  ExecuteCaseWorkflowUrl,
   // 用例评审
   GetReviewListUrl,
   EditReviewUrl,

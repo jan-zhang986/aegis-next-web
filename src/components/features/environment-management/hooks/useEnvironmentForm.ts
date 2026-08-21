@@ -65,7 +65,7 @@ export function useEnvironmentForm(
   const updateXxlJobInfo = useCallback((key: keyof XxlJobInfo, value: string) => {
     setFormData((p) => ({
       ...p,
-      xxljobInfo: { ...(p.xxljobInfo || {}), [key]: value },
+      xxljobInfo: { xxjob_url: '', ...(p.xxljobInfo || {}), [key]: value },
     }));
   }, []);
 

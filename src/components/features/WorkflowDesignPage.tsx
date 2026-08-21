@@ -620,19 +620,13 @@ export function WorkflowDesignPage() {
       return;
     }
 
-    if (!workflowName.trim()) {
-      toast.error('请输入工作流名称');
-      return;
-    }
-
     setIsSaving(true);
     try {
       const saveData = {
         ...(currentWorkflowId && { workflowId: currentWorkflowId }),
         projectId,
         moduleId,
-        name: workflowName,
-        description: workflowDescription,
+        description: [workflowName.trim(), workflowDescription].filter(Boolean).join('\n\n') || undefined,
         category: 'API',
         type: 'TEST_CASE',
         nodes: workflowNodes.map((node, index) => ({

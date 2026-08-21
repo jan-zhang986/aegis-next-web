@@ -13,6 +13,7 @@ export interface UseRocketMQSaveOptions {
   selectedSite: string;
   editor: UseApiEditorResult;
   projectId: string;
+  spaceId?: string;
   onRefresh?: () => void;
   isSyncData: boolean;
   nodeId: string;
@@ -28,6 +29,7 @@ export function useRocketMQSave({
   selectedSite,
   editor,
   projectId,
+  spaceId,
   onRefresh,
   isSyncData,
   nodeId,
@@ -55,8 +57,8 @@ export function useRocketMQSave({
       const common = { name, moduleId, description: editor.state.description || undefined, tags: editor.state.tags?.length ? editor.state.tags : undefined };
       const isUpdate = !!editor.state.definitionId;
       const result = isUpdate
-        ? await metadataService.updateDefinition({ id: editor.state.definitionId!, ...common, requestConfig, scriptContent: null } as Parameters<typeof metadataService.updateDefinition>[0])
-        : await metadataService.addDefinition({ ...common, protocol: 'ROCKETMQ', projectId, requestConfig, scriptContent: null } as Parameters<typeof metadataService.addDefinition>[0]);
+        ? await metadataService.updateDefinition({ id: editor.state.definitionId!, ...(spaceId ? { spaceId } : {}), ...common, requestConfig, scriptContent: null } as Parameters<typeof metadataService.updateDefinition>[0])
+        : await metadataService.addDefinition({ ...common, protocol: 'ROCKETMQ', projectId, ...(spaceId ? { spaceId } : {}), requestConfig, scriptContent: null } as Parameters<typeof metadataService.addDefinition>[0]);
       if (!result) {
         toast.error('保存失败：服务器返回数据为空');
         return;

@@ -16,6 +16,7 @@ export interface SortOption {
 
 interface UseCaseListOptions {
   projectId: string;
+  spaceId?: string;
   selectedModuleId: string;
   /** 当前选中模块的所有子孙节点 ID，用于包含下级模块用例（参考 spotter-metersphere） */
   offspringIds?: string[];
@@ -32,6 +33,12 @@ interface UseCaseListOptions {
   initialCurrentPage?: number;
   /** 初始每页条数（从 URL 恢复） */
   initialPageSize?: number;
+}
+
+/** 与后端 BasePageRequest 一致：pageSize ∈ [5, 500]，否则 /testcase/page 与 /functional/case/page 校验失败，整段请求失败会表现为列表被清空 */
+function clampPageSize(size: number): number {
+  const n = Number.isFinite(size) ? Math.floor(size) : 20;
+  return Math.min(500, Math.max(5, n));
 }
 
 /** 判断条件是否有有效值（非空），与后端 CombineCondition.valid() 一致 */
@@ -123,6 +130,7 @@ function columnFilterToFilter(columnFilter?: Record<string, string[]>): Record<s
 
 export function useCaseList({
   projectId,
+  spaceId,
   selectedModuleId,
   offspringIds = [],
   searchKeyword,
@@ -139,7 +147,7 @@ export function useCaseList({
   const [caseList, setCaseList] = useState<CaseItem[]>([]);
   const [selectedCases, setSelectedCases] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(initialCurrentPage ?? 1);
-  const [pageSize, setPageSize] = useState(initialPageSize ?? 20);
+  const [pageSize, setPageSize] = useState(() => clampPageSize(initialPageSize ?? 20));
   const [total, setTotal] = useState(0);
 
   const onFetchSuccessRef = useRef(onFetchSuccess);
@@ -152,12 +160,19 @@ export function useCaseList({
       const flatParams = filterToFlatParams(filter);
       const params: Record<string, unknown> = {
         projectId,
+        ...(spaceId ? { spaceId } : {}),
         current: currentPage,
-        pageSize,
+        pageSize: clampPageSize(pageSize),
         moduleIds:
           (flatParams.moduleIds as string[]) ??
           (selectedModuleId !== 'all' ? [selectedModuleId, ...offspringIds] : []),
       };
+      /** 版本只属于 legacy 用例库；Space 统一 Case 资产始终按当前态查询。 */
+      const filterVersionId =
+        filter && typeof filter === 'object' && 'versionId' in filter
+          ? String((filter as { versionId?: string }).versionId || '').trim()
+          : '';
+      if (!spaceId && filterVersionId) params.versionId = filterVersionId;
       const kw = searchKeyword?.trim() || (flatParams.keyword as string);
       if (kw) params.keyword = kw;
       if (viewId === 'my_create') params.createByMe = 'true';
@@ -179,7 +194,26 @@ export function useCaseList({
           ? { ...(tableFilter ?? {}), ...(advanceFilter ?? {}) }
           : undefined;
       if (mergedFilter && Object.keys(mergedFilter).length > 0) params.filter = mergedFilter;
-      const result = await caseManagementService.getCaseList(params);
+      let result: any;
+      try {
+        result = await caseManagementService.getUnifiedCaseList(params);
+        // Fallback to legacy list if unified list is empty (transition phase)
+        const hasData = (Array.isArray(result) && result.length > 0)
+          || (Array.isArray(result?.list) && result.list.length > 0)
+          || (Array.isArray(result?.data) && result.data.length > 0)
+          || (Array.isArray(result?.records) && result.records.length > 0);
+
+        if (!hasData && !spaceId) {
+          console.log('统一 Case 列表为空，尝试从 legacy 列表接口获取数据');
+          result = await caseManagementService.getCaseList(params);
+        }
+      } catch (unifiedError) {
+        if (spaceId) {
+          throw unifiedError;
+        }
+        console.warn('统一 Case 列表获取失败，回退到 legacy 列表接口', unifiedError);
+        result = await caseManagementService.getCaseList(params);
+      }
       let rawList: any[] = [];
       if (Array.isArray(result)) rawList = result;
       else if (Array.isArray(result?.list)) rawList = result.list;
@@ -187,13 +221,20 @@ export function useCaseList({
       else if (Array.isArray(result?.records)) rawList = result.records;
       // 统一 aiCreate；并确保 caseLevel 可从 customFields/functionalPriority 解析，便于表格展示（原项目列表可能不返 caseLevel，需从 customFields 解析）
       const list: CaseItem[] = rawList.map((item: any) => {
+        const meta = item.metadata && typeof item.metadata === 'object' ? item.metadata : null;
         const normalizedItem = {
           ...item,
+          id: item.id ?? item.caseId,
+          caseId: item.caseId ?? item.id,
+          name: item.name ?? item.title,
           aiCreate: item.aiCreate ?? item.ai_create ?? false,
           customFields: item.customFields ?? item.customFieldList ?? item.custom_fields,
+          reviewStatus: item.reviewStatus ?? item.lifecycleStatus,
+          lastExecuteResult: item.lastExecuteResult ?? item.lastRunStatus ?? meta?.lastExecuteResult,
+          moduleName: item.moduleName ?? item.modulePath,
         };
         const parsed = getCaseLevel(normalizedItem);
-        const level = item.caseLevel ?? item.functionalPriority ?? parsed;
+        const level = normalizedItem.name ? (item.caseLevel ?? item.functionalPriority ?? parsed) : '-';
         const caseLevelVal = level !== '-' ? level : (parsed !== '-' ? parsed : undefined);
         return {
           ...normalizedItem,
@@ -214,7 +255,7 @@ export function useCaseList({
       setLoading(false);
     }
     // 不将 modulesCount、onFetchSuccess 放入依赖，避免循环：onFetchSuccess 会更新 modulesCount，导致 fetchCaseList 重建并再次触发
-  }, [projectId, currentPage, pageSize, searchKeyword, selectedModuleId, offspringIds, viewId, filter, sort, columnFilter]);
+  }, [projectId, spaceId, currentPage, pageSize, searchKeyword, selectedModuleId, offspringIds, viewId, filter, sort, columnFilter]);
 
   useEffect(() => {
     fetchCaseList();
@@ -225,7 +266,7 @@ export function useCaseList({
   const setPage = useCallback((page: number) => setCurrentPage(page), []);
   const resetPage = useCallback(() => setCurrentPage(1), []);
   const onPageSizeChange = useCallback((size: number) => {
-    setPageSize(size);
+    setPageSize(clampPageSize(size));
     setCurrentPage(1);
   }, []);
   const totalPages = Math.ceil(total / pageSize);
