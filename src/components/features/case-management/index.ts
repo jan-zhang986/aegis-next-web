@@ -4,6 +4,7 @@
  */
 
 export { FeatureCaseList } from './FeatureCaseList';
+export { CaseRepositorySpaceManager } from './CaseRepositorySpaceManager';
 export { ImportCaseDrawer } from './ImportCaseDrawer';
 export { FeatureCaseMinderView } from './FeatureCaseMinderView';
 export { FeatureCaseDetail } from './FeatureCaseDetail';

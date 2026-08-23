@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import {
   FeatureCaseList,
+  CaseRepositorySpaceManager,
   FeatureCaseDetail,
   CreateSuccess,
   RecycleCaseList,
@@ -228,6 +229,20 @@ export function CaseManagementPage({
       </Card>
     </div>
   );
+
+  if (tab === 'space') {
+    return (
+      <CaseRepositorySpaceManager
+        repoList={repoList}
+        selectedRepo={selectedRepo}
+        onSelectRepo={(repo) => {
+          handleRepoChange(repo);
+          updateParams({ tab: 'feature-case' });
+        }}
+        onCreateRepo={() => setIsCreateRepoOpen(true)}
+      />
+    );
+  }
 
   if (tab === 'test-suite') {
     if (!spaceId) return renderSpaceRequired('请先进入 Space');
