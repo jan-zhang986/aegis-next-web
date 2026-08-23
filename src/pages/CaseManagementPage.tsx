@@ -33,7 +33,15 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Layers3, Plus, FolderPlus, GitBranch, FolderGit2, Check, PackageCheck, Sparkles } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Layers3, Plus, FolderPlus, GitBranch, FolderGit2, Check, PackageCheck, Sparkles, ChevronDown } from 'lucide-react';
 
 interface CaseManagementPageProps {
   selectedTopMenu?: string;
@@ -287,67 +295,86 @@ export function CaseManagementPage({
 
     return (
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50">
-        {/* 极简单行超紧凑 顶栏 (零空间浪费，用例列表最大化) */}
-        <div className="bg-white border-b border-slate-200 px-5 py-2 shrink-0 flex items-center justify-between h-11 shadow-2xs">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1">
-              <FolderGit2 className="w-3.5 h-3.5 text-blue-600" />
-              用例库
-            </span>
-
-            {/* 紧凑胶囊段卡片 (Segmented Repo Pills) */}
-            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 shrink-0">
-              {repoList.map((r) => {
-                const isSelected = selectedRepo === r;
-                return (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => handleRepoChange(r)}
-                    className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
-                      isSelected
-                        ? 'bg-white text-blue-600 shadow-2xs border border-slate-200/60'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-                    }`}
-                  >
-                    <span>📦 {r}</span>
-                    {isSelected && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
-                    )}
+        {/* 参考空间/项目选择器的标准 AegisOne Dropdown 风格顶栏 */}
+        <div className="bg-white border-b border-gray-200 px-6 py-2.5 shrink-0 flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-4">
+            {/* 用例库 Dropdown 选择器 (同空间选择器) */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-500">用例库:</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-800 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-colors shadow-2xs">
+                    <FolderGit2 className="w-4 h-4 text-blue-600" />
+                    <span>{selectedRepo}</span>
+                    <ChevronDown className="w-4 h-4 text-gray-400" />
                   </button>
-                );
-              })}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-60">
+                  <DropdownMenuLabel className="text-xs text-gray-500 font-semibold">用例库列表 (Repositories)</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {repoList.map((r) => (
+                    <DropdownMenuItem
+                      key={r}
+                      onClick={() => handleRepoChange(r)}
+                      className={`flex items-center justify-between text-sm ${
+                        selectedRepo === r ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>📦 {r}</span>
+                      </div>
+                      {selectedRepo === r && <Check className="w-4 h-4 text-blue-600" />}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setIsCreateRepoOpen(true)}
+                    className="text-sm font-medium text-blue-600 hover:bg-blue-50 flex items-center gap-2 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 text-blue-600" />
+                    新建用例库 (Repo)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
-              <button
-                type="button"
-                onClick={() => setIsCreateRepoOpen(true)}
-                title="新建用例库"
-                className="p-1 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-200/60 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
+            <div className="h-4 w-px bg-gray-200" />
+
+            {/* 版本基线 Dropdown 选择器 (同空间选择器) */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-500">版本基线:</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-800 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-colors shadow-2xs">
+                    <GitBranch className="w-4 h-4 text-emerald-600" />
+                    <span>{selectedVersion === 'master' ? 'master (主干分支)' : selectedVersion}</span>
+                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuLabel className="text-xs text-gray-500 font-semibold">分支与基线 Tag</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {['master', 'v1.0.0', 'v2.0.0'].map((ver) => (
+                    <DropdownMenuItem
+                      key={ver}
+                      onClick={() => handleVersionChange(ver)}
+                      className={`flex items-center justify-between text-sm ${
+                        selectedVersion === ver ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-gray-700'
+                      }`}
+                    >
+                      <span>🏷️ {ver} {ver === 'master' ? '(主干分支)' : '(Release Tag)'}</span>
+                      {selectedVersion === ver && <Check className="w-4 h-4 text-blue-600" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">基线:</span>
-              <select
-                value={selectedVersion}
-                onChange={(e) => handleVersionChange(e.target.value)}
-                className="h-7 rounded-lg border border-slate-200 bg-slate-50 px-2 text-xs font-bold text-slate-700 hover:bg-slate-100 focus:outline-none"
-              >
-                <option value="master">🏷️ master</option>
-                <option value="v1.0.0">🏷️ v1.0.0</option>
-                <option value="v2.0.0">🏷️ v2.0.0</option>
-              </select>
-            </div>
-
-            <div className="h-3.5 w-px bg-slate-200" />
-
-            <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/50">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 border border-emerald-200/60">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              {selectedVersion === 'master' ? 'Master 主机' : selectedVersion}
+              当前运行环境: {selectedVersion === 'master' ? 'Master 主干测试机' : `基线快照 ${selectedVersion}`}
             </span>
           </div>
         </div>
