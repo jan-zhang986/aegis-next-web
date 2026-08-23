@@ -22,7 +22,17 @@ import type { CaseItem } from '@/components/features/case-management';
 import { TestSuiteManager, GateBindingManager } from '@/components/features/test-asset';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Layers3 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Layers3, Plus, FolderPlus, GitBranch } from 'lucide-react';
 
 interface CaseManagementPageProps {
   selectedTopMenu?: string;
@@ -59,8 +69,26 @@ export function CaseManagementPage({
   const firstModelId = params.firstModelId ?? null;
   const spaceId = params.spaceId ?? null;
 
+  const defaultRepos = ['订单系统用例库', '用户中心用例库', '全量核心功能用例库'];
+  const [repoList, setRepoList] = useState<string[]>(() => {
+    const saved = localStorage.getItem('customCaseRepos');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return Array.from(new Set([...defaultRepos, ...parsed]));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return defaultRepos;
+  });
+
   const [selectedRepo, setSelectedRepo] = useState(localStorage.getItem('currentCaseRepo') || '订单系统用例库');
   const [selectedVersion, setSelectedVersion] = useState(localStorage.getItem('currentCaseVersion') || 'master');
+
+  const [isCreateRepoOpen, setIsCreateRepoOpen] = useState(false);
+  const [newRepoName, setNewRepoName] = useState('');
+  const [newRepoDesc, setNewRepoDesc] = useState('');
 
   const handleRepoChange = (repo: string) => {
     setSelectedRepo(repo);
@@ -72,6 +100,29 @@ export function CaseManagementPage({
     setSelectedVersion(ver);
     localStorage.setItem('currentCaseVersion', ver);
     toast.info(`已切换版本基线: ${ver}`);
+  };
+
+  const handleCreateRepoSubmit = () => {
+    const trimmed = newRepoName.trim();
+    if (!trimmed) {
+      toast.error('请输入用例库名称');
+      return;
+    }
+    if (repoList.includes(trimmed)) {
+      toast.error('用例库已存在');
+      return;
+    }
+
+    const updated = [...repoList, trimmed];
+    setRepoList(updated);
+    localStorage.setItem('customCaseRepos', JSON.stringify(updated.filter(r => !defaultRepos.includes(r))));
+    setSelectedRepo(trimmed);
+    localStorage.setItem('currentCaseRepo', trimmed);
+
+    toast.success(`成功创建并切换到用例库: ${trimmed}`);
+    setNewRepoName('');
+    setNewRepoDesc('');
+    setIsCreateRepoOpen(false);
   };
 
   const updateParams = (updates: Record<string, string | null>) => {
@@ -218,7 +269,7 @@ export function CaseManagementPage({
 
     return (
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50">
-        {/* 代码库风格 顶栏：用例库选择 + Master/Tag 版本基线控制器 */}
+        {/* 代码库风格 顶栏：用例库选择 + 新建用例库 + Master/Tag 版本基线控制器 */}
         <div className="bg-white border-b border-slate-200 px-6 py-3 shrink-0 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -228,10 +279,21 @@ export function CaseManagementPage({
                 onChange={(e) => handleRepoChange(e.target.value)}
                 className="h-8 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               >
-                <option value="订单系统用例库">📦 订单系统用例库</option>
-                <option value="用户中心用例库">📦 用户中心用例库</option>
-                <option value="全量核心功能用例库">📦 全量核心功能用例库</option>
+                {repoList.map((r) => (
+                  <option key={r} value={r}>
+                    📦 {r}
+                  </option>
+                ))}
               </select>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs font-medium gap-1 text-slate-700 hover:text-blue-600 hover:bg-blue-50 border-slate-200"
+                onClick={() => setIsCreateRepoOpen(true)}
+              >
+                <Plus className="w-3.5 h-3.5 text-blue-500" />
+                新建用例库
+              </Button>
             </div>
 
             <div className="h-4 w-px bg-slate-200" />
@@ -257,6 +319,75 @@ export function CaseManagementPage({
             </span>
           </div>
         </div>
+
+        {/* 新建用例库弹窗 */}
+        <Dialog open={isCreateRepoOpen} onOpenChange={setIsCreateRepoOpen}>
+          <DialogContent className="sm:max-w-[480px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-slate-900 font-bold">
+                <FolderPlus className="w-5 h-5 text-blue-600" />
+                新建测试用例库 (Repository)
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                用例库类似独立的代码仓库，支持独立的模块划分与以 <code className="text-blue-600 bg-blue-50 px-1 rounded">master</code> 为首的主干版本基线管理。
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="repo-name" className="text-xs font-semibold text-slate-700">
+                  用例库名称 <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="repo-name"
+                  placeholder="例如：交易结算用例库 / 供应链中心测试库"
+                  value={newRepoName}
+                  onChange={(e) => setNewRepoName(e.target.value)}
+                  className="h-9 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="repo-version" className="text-xs font-semibold text-slate-700">
+                  默认主干版本
+                </Label>
+                <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-mono">
+                  <GitBranch className="w-4 h-4 text-emerald-600" />
+                  master (主分支自动创建)
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="repo-desc" className="text-xs font-semibold text-slate-700">
+                  用例库描述
+                </Label>
+                <Input
+                  id="repo-desc"
+                  placeholder="例如：包含全量结算与开票业务用例集"
+                  value={newRepoDesc}
+                  onChange={(e) => setNewRepoDesc(e.target.value)}
+                  className="h-9 text-sm"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsCreateRepoOpen(false)}
+                className="h-9"
+              >
+                取消
+              </Button>
+              <Button
+                onClick={handleCreateRepoSubmit}
+                className="h-9 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                立即创建
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           <FeatureCaseList
