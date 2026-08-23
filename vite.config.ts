@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
   // 优先使用当前环境的配置，如果没有则使用默认值
   const AEGIS_BACKEND_URL = env.VITE_AEGIS_BACKEND_URL ||
     (mode === 'development'
-      ? (env.VITE_AEGIS_BACKEND_URL_DEVELOPMENT || 'http://aegis.tst.spotter.ink')
+      ? (env.VITE_AEGIS_BACKEND_URL_DEVELOPMENT || 'http://localhost:8081')
       : (env.VITE_AEGIS_BACKEND_URL_PRODUCTION || 'http://aegis.tst.spotter.ink'));
 
   // SnapTest 后端服务地址（Snap API）
