@@ -3,7 +3,9 @@
  * 从 aegis-next-server 迁移，整合用例、用例评审与生成流程
  */
 
+import { useState } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import {
   FeatureCaseList,
@@ -56,6 +58,21 @@ export function CaseManagementPage({
   const firstMentioned = params.firstMentioned ?? null;
   const firstModelId = params.firstModelId ?? null;
   const spaceId = params.spaceId ?? null;
+
+  const [selectedRepo, setSelectedRepo] = useState(localStorage.getItem('currentCaseRepo') || '订单系统用例库');
+  const [selectedVersion, setSelectedVersion] = useState(localStorage.getItem('currentCaseVersion') || 'master');
+
+  const handleRepoChange = (repo: string) => {
+    setSelectedRepo(repo);
+    localStorage.setItem('currentCaseRepo', repo);
+    toast.info(`已切换用例库: ${repo}`);
+  };
+
+  const handleVersionChange = (ver: string) => {
+    setSelectedVersion(ver);
+    localStorage.setItem('currentCaseVersion', ver);
+    toast.info(`已切换版本基线: ${ver}`);
+  };
 
   const updateParams = (updates: Record<string, string | null>) => {
     const next = new URLSearchParams(urlSearchParams);
@@ -198,23 +215,68 @@ export function CaseManagementPage({
         />
       );
     }
+
     return (
-      <FeatureCaseList
-        projectId={params.pId ? String(params.pId) : projectId}
-        spaceId={spaceId ?? undefined}
-        initialCaseId={caseId}
-        initialSelectedModuleId={params.moduleId ?? undefined}
-        onViewCase={(item: CaseItem, selectedModuleId?: string) => {
-          const updates: Record<string, string | null> = { caseId: item.id, mode: null, success: null, recycle: null };
-          if (selectedModuleId != null && selectedModuleId !== '') updates.moduleId = selectedModuleId;
-          updateParams(updates);
-        }}
-        onEditCase={(item: CaseItem, selectedModuleId?: string) => goToCaseDetail(item.id, 'edit', selectedModuleId)}
-        onCopyCase={(item: CaseItem, selectedModuleId?: string) => goToCaseDetail(item.id, 'copy', selectedModuleId)}
-        onCreateCase={(selectedModuleId?: string) => goToCaseDetail(null, 'add', selectedModuleId)}
-        onNavigateToRecycle={goToRecycle}
-        onAiGenerate={() => onNavigate?.(currentMenu, 'case-generation')}
-      />
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50">
+        {/* 代码库风格 顶栏：用例库选择 + Master/Tag 版本基线控制器 */}
+        <div className="bg-white border-b border-slate-200 px-6 py-3 shrink-0 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">用例库</span>
+              <select
+                value={selectedRepo}
+                onChange={(e) => handleRepoChange(e.target.value)}
+                className="h-8 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              >
+                <option value="订单系统用例库">📦 订单系统用例库</option>
+                <option value="用户中心用例库">📦 用户中心用例库</option>
+                <option value="全量核心功能用例库">📦 全量核心功能用例库</option>
+              </select>
+            </div>
+
+            <div className="h-4 w-px bg-slate-200" />
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">版本基线</span>
+              <select
+                value={selectedVersion}
+                onChange={(e) => handleVersionChange(e.target.value)}
+                className="h-8 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              >
+                <option value="master">🏷️ master (主干分支)</option>
+                <option value="v1.0.0">🏷️ v1.0.0 (Release Tag)</option>
+                <option value="v2.0.0">🏷️ v2.0.0 (Release Tag)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 border border-emerald-200/60">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              当前运行环境: {selectedVersion === 'master' ? 'Master 主干测试机' : `基线快照 ${selectedVersion}`}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <FeatureCaseList
+            projectId={params.pId ? String(params.pId) : projectId}
+            spaceId={spaceId ?? undefined}
+            initialCaseId={caseId}
+            initialSelectedModuleId={params.moduleId ?? undefined}
+            onViewCase={(item: CaseItem, selectedModuleId?: string) => {
+              const updates: Record<string, string | null> = { caseId: item.id, mode: null, success: null, recycle: null };
+              if (selectedModuleId != null && selectedModuleId !== '') updates.moduleId = selectedModuleId;
+              updateParams(updates);
+            }}
+            onEditCase={(item: CaseItem, selectedModuleId?: string) => goToCaseDetail(item.id, 'edit', selectedModuleId)}
+            onCopyCase={(item: CaseItem, selectedModuleId?: string) => goToCaseDetail(item.id, 'copy', selectedModuleId)}
+            onCreateCase={(selectedModuleId?: string) => goToCaseDetail(null, 'add', selectedModuleId)}
+            onNavigateToRecycle={goToRecycle}
+            onAiGenerate={() => onNavigate?.(currentMenu, 'case-generation')}
+          />
+        </div>
+      </div>
     );
   }
 

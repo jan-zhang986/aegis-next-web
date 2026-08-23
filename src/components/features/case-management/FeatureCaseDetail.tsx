@@ -158,6 +158,7 @@ export function FeatureCaseDetail({
 }: FeatureCaseDetailProps) {
   const [loading, setLoading] = useState(false);
   const [defaultCaseInfo, setDefaultCaseInfo] = useState<CaseDetail | null>(null);
+  const [viewMode, setViewMode] = useState<'text' | 'workflow'>('text');
   const formRef = useRef<CaseDetailFormRef>(null);
 
   const title = mode === 'edit' ? '编辑用例' : mode === 'copy' ? '复制用例' : '创建用例';
@@ -339,21 +340,49 @@ export function FeatureCaseDetail({
   return (
     <div className="flex-1 flex flex-col bg-gray-50 min-h-0 overflow-hidden">
       <Card className="flex-1 m-4 min-h-0 flex flex-col overflow-hidden">
-        {/* 头部：面包屑 + 标题 */}
+        {/* 头部：面包屑 + 标题 + 一体化视图切换器 */}
         <div className="px-6 pt-6 shrink-0">
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            {onBack && (
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="hover:text-gray-800 flex items-center gap-1 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  用例
+                </button>
+              )}
+              {onBack && <ChevronRight className="w-4 h-4 text-gray-400" />}
+              <span className="text-gray-800 font-medium">{title}</span>
+            </div>
+
+            {/* 一体化双视图切换 (📖 业务文本视图 vs ⚡ 自动化 Workflow 视图) */}
+            <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
               <button
                 type="button"
-                onClick={onBack}
-                className="hover:text-gray-800 flex items-center gap-1 transition-colors"
+                onClick={() => setViewMode('text')}
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                  viewMode === 'text'
+                    ? 'bg-white text-blue-600 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
               >
-                <ArrowLeft className="w-4 h-4" />
-                用例
+                📖 业务文本视图
               </button>
-            )}
-            {onBack && <ChevronRight className="w-4 h-4 text-gray-400" />}
-            <span className="text-gray-800 font-medium">{title}</span>
+              <button
+                type="button"
+                onClick={() => setViewMode('workflow')}
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                  viewMode === 'workflow'
+                    ? 'bg-white text-blue-600 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                ⚡ 自动化 Workflow 视图
+              </button>
+            </div>
           </div>
           <div className="h-px bg-gray-200 -mx-6" />
         </div>
@@ -366,13 +395,62 @@ export function FeatureCaseDetail({
                 <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
               </div>
             )}
-            <CaseDetailForm
-              ref={formRef}
-              caseId={mode === 'edit' ? caseId : undefined}
-              projectId={projectId}
-              defaultCaseInfo={defaultCaseInfo}
-              initialModuleId={mode === 'add' ? initialModuleId : undefined}
-            />
+            
+            {viewMode === 'text' ? (
+              <CaseDetailForm
+                ref={formRef}
+                caseId={mode === 'edit' ? caseId : undefined}
+                projectId={projectId}
+                defaultCaseInfo={defaultCaseInfo}
+                initialModuleId={mode === 'add' ? initialModuleId : undefined}
+              />
+            ) : (
+              <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/50 to-indigo-50/30 p-6 space-y-6">
+                <div className="flex items-center justify-between pb-4 border-b border-blue-100">
+                  <div>
+                    <h4 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-white text-xs font-black">⚡</span>
+                      自动化 Workflow 可执行绑定
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-1">
+                      本用例直接绑定底层 Workflow。服务端派发时将自动进行 Sub-Workflow 递归展开与参数映射。
+                    </p>
+                  </div>
+                  {defaultCaseInfo?.workflowId ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold border border-emerald-200">
+                      已绑定 Workflow: {defaultCaseInfo.workflowId}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold border border-amber-200">
+                      未绑定可执行 Workflow
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-2xs">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">子工作流引用 (Sub-Workflow Inline)</span>
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      包含依赖时，直接插入类型为 <code className="bg-slate-100 text-blue-600 px-1.5 py-0.5 rounded text-xs">sub_workflow</code> 的节点引用公共 Workflow（例如：订单造数流程），服务端在调度前自动进行零冗余递归展开。
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-2xs">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">执行调度模式</span>
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      展开后的扁平化通用指令节点（HTTP / SQL / UI）将直接下发给无状态 <code className="bg-slate-100 text-emerald-600 px-1.5 py-0.5 rounded text-xs">aegis-runner</code> 节点极速顺序运行。
+                    </p>
+                  </div>
+                </div>
+
+                <CaseDetailForm
+                  ref={formRef}
+                  caseId={mode === 'edit' ? caseId : undefined}
+                  projectId={projectId}
+                  defaultCaseInfo={defaultCaseInfo}
+                  initialModuleId={mode === 'add' ? initialModuleId : undefined}
+                />
+              </div>
+            )}
           </div>
         </CardContent>
 
