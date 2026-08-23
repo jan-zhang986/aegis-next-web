@@ -887,3 +887,25 @@ export function disableCaseRealization(caseId: string, realizationType: string) 
 export function deleteCaseRealization(caseId: string, realizationType: string) {
   return http.post(`/api/testcase/${caseId}/realization/${realizationType}/delete`);
 }
+
+// ==================== 用例库 (Repository) 管理 ====================
+
+export interface CaseRepositoryItem {
+  id: string;
+  name: string;
+  code?: string;
+  defaultBranch?: string;
+  description?: string;
+  branches?: string[];
+  caseCount?: number;
+}
+
+export function getCaseRepositories(projectId?: string, spaceId?: string) {
+  return http.get<CaseRepositoryItem[]>('/api/case/repository/list', {
+    params: { projectId, spaceId },
+  });
+}
+
+export function createCaseRepository(data: { name: string; code?: string; defaultBranch?: string; description?: string }) {
+  return http.post<CaseRepositoryItem>('/api/case/repository/create', data);
+}

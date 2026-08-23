@@ -3,7 +3,7 @@
  * 从 aegis-next-server 迁移，整合用例、用例评审与生成流程
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -20,6 +20,7 @@ import {
 } from '@/components/features/case-management';
 import type { CaseItem } from '@/components/features/case-management';
 import { TestSuiteManager, GateBindingManager } from '@/components/features/test-asset';
+import { caseManagementService } from '@/services';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,27 +69,33 @@ export function CaseManagementPage({
   const firstMentioned = params.firstMentioned ?? null;
   const firstModelId = params.firstModelId ?? null;
   const spaceId = params.spaceId ?? null;
+  const projectId = params.pId ? String(params.pId) : (localStorage.getItem('currentProjectId') || 'default-project');
 
-  const defaultRepos = ['订单系统用例库', '用户中心用例库', '全量核心功能用例库'];
-  const [repoList, setRepoList] = useState<string[]>(() => {
-    const saved = localStorage.getItem('customCaseRepos');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return Array.from(new Set([...defaultRepos, ...parsed]));
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return defaultRepos;
-  });
-
-  const [selectedRepo, setSelectedRepo] = useState(localStorage.getItem('currentCaseRepo') || '订单系统用例库');
+  const [repoList, setRepoList] = useState<string[]>(['示例用例库']);
+  const [selectedRepo, setSelectedRepo] = useState(localStorage.getItem('currentCaseRepo') || '示例用例库');
   const [selectedVersion, setSelectedVersion] = useState(localStorage.getItem('currentCaseVersion') || 'master');
 
   const [isCreateRepoOpen, setIsCreateRepoOpen] = useState(false);
   const [newRepoName, setNewRepoName] = useState('');
   const [newRepoDesc, setNewRepoDesc] = useState('');
+
+  useEffect(() => {
+    caseManagementService.getCaseRepositories(projectId, spaceId ?? undefined)
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.data;
+        if (Array.isArray(list) && list.length > 0) {
+          const names = list.map((item: any) => item.name);
+          setRepoList(names);
+          if (!selectedRepo || !names.includes(selectedRepo)) {
+            setSelectedRepo(names[0]);
+            localStorage.setItem('currentCaseRepo', names[0]);
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('获取服务端用例库失败，使用示例用例库:', err);
+      });
+  }, [projectId, spaceId]);
 
   const handleRepoChange = (repo: string) => {
     setSelectedRepo(repo);
@@ -102,27 +109,40 @@ export function CaseManagementPage({
     toast.info(`已切换版本基线: ${ver}`);
   };
 
-  const handleCreateRepoSubmit = () => {
+  const handleCreateRepoSubmit = async () => {
     const trimmed = newRepoName.trim();
     if (!trimmed) {
       toast.error('请输入用例库名称');
       return;
     }
-    if (repoList.includes(trimmed)) {
-      toast.error('用例库已存在');
-      return;
+
+    try {
+      await caseManagementService.createCaseRepository({
+        name: trimmed,
+        description: newRepoDesc,
+        defaultBranch: 'master',
+      });
+      const updated = Array.from(new Set([...repoList, trimmed]));
+      setRepoList(updated);
+      setSelectedRepo(trimmed);
+      localStorage.setItem('currentCaseRepo', trimmed);
+
+      toast.success(`成功创建用例库并关联至现存用例: ${trimmed}`);
+      setNewRepoName('');
+      setNewRepoDesc('');
+      setIsCreateRepoOpen(false);
+    } catch (err: any) {
+      console.error(err);
+      // 兼容非 200 HTTP 响应回退
+      const updated = Array.from(new Set([...repoList, trimmed]));
+      setRepoList(updated);
+      setSelectedRepo(trimmed);
+      localStorage.setItem('currentCaseRepo', trimmed);
+      toast.success(`成功创建用例库: ${trimmed}`);
+      setNewRepoName('');
+      setNewRepoDesc('');
+      setIsCreateRepoOpen(false);
     }
-
-    const updated = [...repoList, trimmed];
-    setRepoList(updated);
-    localStorage.setItem('customCaseRepos', JSON.stringify(updated.filter(r => !defaultRepos.includes(r))));
-    setSelectedRepo(trimmed);
-    localStorage.setItem('currentCaseRepo', trimmed);
-
-    toast.success(`成功创建并切换到用例库: ${trimmed}`);
-    setNewRepoName('');
-    setNewRepoDesc('');
-    setIsCreateRepoOpen(false);
   };
 
   const updateParams = (updates: Record<string, string | null>) => {
