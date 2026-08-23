@@ -33,7 +33,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Layers3, Plus, FolderPlus, GitBranch } from 'lucide-react';
+import { Layers3, Plus, FolderPlus, GitBranch, FolderGit2, Check, PackageCheck, Sparkles } from 'lucide-react';
 
 interface CaseManagementPageProps {
   selectedTopMenu?: string;
@@ -287,54 +287,109 @@ export function CaseManagementPage({
 
     return (
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50">
-        {/* 代码库风格 顶栏：用例库选择 + 新建用例库 + Master/Tag 版本基线控制器 */}
-        <div className="bg-white border-b border-slate-200 px-6 py-3 shrink-0 flex items-center justify-between shadow-xs">
-          <div className="flex items-center gap-4">
+        {/* 精致卡片化 顶栏：用例库卡片网格 + Master/Tag 版本基线控制器 */}
+        <div className="bg-white border-b border-slate-200 px-6 py-4 shrink-0 space-y-3 shadow-2xs">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">用例库</span>
-              <select
-                value={selectedRepo}
-                onChange={(e) => handleRepoChange(e.target.value)}
-                className="h-8 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              >
-                {repoList.map((r) => (
-                  <option key={r} value={r}>
-                    📦 {r}
-                  </option>
-                ))}
-              </select>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs font-medium gap-1 text-slate-700 hover:text-blue-600 hover:bg-blue-50 border-slate-200"
-                onClick={() => setIsCreateRepoOpen(true)}
-              >
-                <Plus className="w-3.5 h-3.5 text-blue-500" />
-                新建用例库
-              </Button>
+              <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white shadow-xs">
+                <FolderGit2 className="w-4 h-4" />
+              </span>
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                  测试用例库中心 (Case Repositories)
+                  <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200/60">
+                    <Sparkles className="w-3 h-3 text-blue-500" />
+                    代码库风格版本控制
+                  </span>
+                </h3>
+              </div>
             </div>
 
-            <div className="h-4 w-px bg-slate-200" />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-slate-100/80 p-1 rounded-xl border border-slate-200/80">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 pl-2">版本基线</span>
+                <select
+                  value={selectedVersion}
+                  onChange={(e) => handleVersionChange(e.target.value)}
+                  className="h-7 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-2xs hover:bg-slate-50 transition-colors focus:outline-none"
+                >
+                  <option value="master">🏷️ master (主干分支)</option>
+                  <option value="v1.0.0">🏷️ v1.0.0 (Release Tag)</option>
+                  <option value="v2.0.0">🏷️ v2.0.0 (Release Tag)</option>
+                </select>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">版本基线</span>
-              <select
-                value={selectedVersion}
-                onChange={(e) => handleVersionChange(e.target.value)}
-                className="h-8 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              >
-                <option value="master">🏷️ master (主干分支)</option>
-                <option value="v1.0.0">🏷️ v1.0.0 (Release Tag)</option>
-                <option value="v2.0.0">🏷️ v2.0.0 (Release Tag)</option>
-              </select>
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 shadow-2xs">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                当前环境: {selectedVersion === 'master' ? 'Master 主干测试机' : `快照 ${selectedVersion}`}
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 border border-emerald-200/60">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              当前运行环境: {selectedVersion === 'master' ? 'Master 主干测试机' : `基线快照 ${selectedVersion}`}
-            </span>
+          {/* 卡片网格横排 (Card Grid) */}
+          <div className="grid grid-cols-4 gap-3">
+            {repoList.map((r) => {
+              const isSelected = selectedRepo === r;
+              return (
+                <div
+                  key={r}
+                  onClick={() => handleRepoChange(r)}
+                  className={`group relative cursor-pointer rounded-2xl p-3.5 transition-all duration-200 flex flex-col justify-between border ${
+                    isSelected
+                      ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/40 to-white border-blue-500 ring-2 ring-blue-500/20 shadow-md translate-y-[-1px]'
+                      : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-sm hover:bg-slate-50/60'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+                          isSelected
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'bg-slate-100 text-slate-600 group-hover:bg-blue-100 group-hover:text-blue-600'
+                        }`}
+                      >
+                        <PackageCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                          {r}
+                        </h4>
+                        <span className="text-[10px] text-slate-400 font-medium">包含全量用例与 Workflow 步骤</span>
+                      </div>
+                    </div>
+
+                    {isSelected && (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white shadow-xs">
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-slate-500">
+                    <span className="inline-flex items-center gap-1 font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                      <GitBranch className="w-3 h-3" />
+                      {selectedVersion}
+                    </span>
+                    <span className="text-slate-400">已全量关联应用</span>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* 新建用例库 虚线卡片 */}
+            <div
+              onClick={() => setIsCreateRepoOpen(true)}
+              className="group cursor-pointer rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-3.5 hover:border-blue-400 hover:bg-blue-50/40 transition-all duration-200 flex flex-col items-center justify-center text-center space-y-1.5 min-h-[96px]"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white border border-slate-200 group-hover:border-blue-300 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-2xs">
+                <Plus className="w-4 h-4 text-blue-600 group-hover:text-white transition-colors" />
+              </div>
+              <span className="text-xs font-bold text-slate-700 group-hover:text-blue-600 transition-colors">
+                + 新建用例库 (Repo)
+              </span>
+              <span className="text-[10px] text-slate-400">独立模块与 master 基线</span>
+            </div>
           </div>
         </div>
 
