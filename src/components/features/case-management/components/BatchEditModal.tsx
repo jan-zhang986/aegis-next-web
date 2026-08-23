@@ -1,6 +1,6 @@
 /**
  * 批量编辑弹窗
- * 参考 spotter-metersphere batchEditModal.vue
+ * 参考 aegis-next-server batchEditModal.vue
  */
 
 import { useState, useEffect } from 'react';

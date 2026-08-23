@@ -1,6 +1,6 @@
 /**
  * 创建/编辑评审
- * 完整迁移自 spotter-metersphere caseReview/create.vue
+ * 完整迁移自 aegis-next-server caseReview/create.vue
  */
 
 import { useState, useEffect, useCallback } from 'react';

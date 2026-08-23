@@ -1,5 +1,5 @@
 /**
- * 系统设置-资源池（迁移自 MeterSphere）
+ * 系统设置-资源池（迁移自 AegisOne）
  * 资源池列表、创建/编辑/删除/启用/禁用资源池
  */
 import { useState, useEffect, useCallback } from 'react';

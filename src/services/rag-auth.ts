@@ -16,7 +16,7 @@ export function getRagApiKey(): string {
 }
 
 /**
- * 获取当前登录用户 ID（从 MeterSphere 登录态中提取）
+ * 获取当前登录用户 ID（从 AegisOne 登录态中提取）
  * 用作 X-User-ID header，实现按用户隔离 RAG 会话
  */
 export function getCurrentUserId(): string {

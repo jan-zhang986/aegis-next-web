@@ -1,6 +1,6 @@
 /**
  * 用例详情抽屉
- * 1:1 迁移自 spotter-metersphere caseDetailDrawer.vue
+ * 1:1 迁移自 aegis-next-server caseDetailDrawer.vue
  * 完整功能：导航、分享、关注、多 Tab、评论等
  */
 
@@ -189,7 +189,7 @@ function buildStepsPayload(steps: StepListItem[]): string {
 }
 
 /**
- * 与 metersphere-frontend caseDetailDrawer getParams 一致：拼出 { request, fileList } 用于 updateCaseRequest
+ * 与 aegis-next-web caseDetailDrawer getParams 一致：拼出 { request, fileList } 用于 updateCaseRequest
  * customFields 格式：{ fieldId, value: Array.isArray ? JSON.stringify : value }，value 空时传 '' 避免后端 SQL 异常
  */
 function getUpdateParams(
@@ -1081,7 +1081,7 @@ export function CaseDetailDrawer({
     if (!caseId || !detail) return;
     setCaseLevel(value);
     setLevelSaving(true);
-    // 与 metersphere-frontend handleStatusChange 一致：整份 customFields，仅改 functional_priority
+    // 与 aegis-next-web handleStatusChange 一致：整份 customFields，仅改 functional_priority
     const customFieldsArr = (detail.customFields as { fieldId?: string; internalFieldKey?: string; value?: string }[]) ?? [];
     const hasPriority = customFieldsArr.some((f) => f.fieldId === 'functional_priority' || f.internalFieldKey === 'functional_priority');
     const customFieldsList = customFieldsArr.map((f) => ({

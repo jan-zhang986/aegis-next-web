@@ -1,6 +1,6 @@
 /**
  * 用例步骤编辑器
- * 从 spotter-metersphere addStep.vue 迁移
+ * 从 aegis-next-server addStep.vue 迁移
  */
 
 import { Plus, Copy, Trash2, MoreVertical, GripVertical } from 'lucide-react';

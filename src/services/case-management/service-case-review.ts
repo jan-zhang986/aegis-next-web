@@ -1,6 +1,6 @@
 /**
  * 用例管理 - 用例评审服务
- * 从 MeterSphere 迁移并转换为 React 格式
+ * 从 AegisOne 迁移并转换为 React 格式
  */
 
 import { http } from '@/utils/request';
@@ -151,7 +151,7 @@ export function getReviewDetail(id: string) {
 }
 
 /**
- * 获取评审人员列表（与 metersphere-frontend 一致：keyword 作为 query 参数）
+ * 获取评审人员列表（与 aegis-next-web 一致：keyword 作为 query 参数）
  */
 export function getReviewUsers(projectId: string, keyword: string) {
   return http.get(`${caseManagementUrls.GetReviewUsersUrl}/${projectId}`, { params: { keyword } });
@@ -237,7 +237,7 @@ export function getCaseReviewHistoryList(reviewId: string, caseId: string) {
 }
 
 /**
- * 评审详情-提交评审（与 metersphere-frontend saveCaseReviewResult 请求体一致）
+ * 评审详情-提交评审（与 aegis-next-web saveCaseReviewResult 请求体一致）
  */
 export function saveCaseReviewResult(data: CommitReviewResultParams) {
   return http.post(caseManagementUrls.SaveCaseReviewResultUrl, data);

@@ -1,6 +1,6 @@
 /**
  * 测试计划枚举定义
- * 从 MeterSphere 迁移
+ * 从 AegisOne 迁移
  */
 
 /**

@@ -1,6 +1,6 @@
 /**
  * 关联第三方需求抽屉
- * 迁移自 spotter-metersphere thirdDemandDrawer.vue
+ * 迁移自 aegis-next-server thirdDemandDrawer.vue
  */
 
 import { useState, useEffect } from 'react';

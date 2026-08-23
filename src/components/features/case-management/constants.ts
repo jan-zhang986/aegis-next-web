@@ -1,6 +1,6 @@
 /**
  * 用例管理 - 常量定义
- * 从 spotter-metersphere 迁移，与源项目保持一致
+ * 从 aegis-next-server 迁移，与源项目保持一致
  */
 
 // 评审结果：未评审/评审中/通过/不通过/重新提审（通过绿色、不通过红色）
@@ -43,7 +43,7 @@ export const MINDER_CONTENT_TAGS = {
   remark: '备注',
 } as const;
 
-// 思维导图分页限制（与 metersphere-frontend 一致）
+// 思维导图分页限制（与 aegis-next-web 一致）
 export const MINDER_MODULE_LIMIT = 50; // 每层最多展示 50 个模块，超出显示「更多模块」
 export const MINDER_CASE_PAGE_SIZE = 100; // 用例分页每页 100 条
 export const MINDER_MORE_MODULE_TEXT = '更多模块...';

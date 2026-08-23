@@ -1,5 +1,5 @@
 /**
- * 系统设置-组织与项目（迁移自 MeterSphere）
+ * 系统设置-组织与项目（迁移自 AegisOne）
  * Tab：组织 | 项目；表格 + 搜索 + 创建/编辑/删除/启用/禁用/恢复
  */
 import { useState, useEffect, useCallback } from 'react';

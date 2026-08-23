@@ -11,22 +11,22 @@ const currentMode = import.meta.env.MODE || 'development';
 // ==================== API 后端地址配置 ====================
 
 /**
- * MeterSphere 后端配置（用例模块 API）
+ * AegisOne 后端配置（用例模块 API）
  * 效能数据展示大屏 - 用例模块
  */
 export const METERSPHERE_CONFIG = {
   // 本地开发环境
   development: {
-    baseUrl: import.meta.env.VITE_METERSPHERE_BACKEND_URL_DEVELOPMENT || 
-             import.meta.env.VITE_METERSPHERE_BACKEND_URL || 
+    baseUrl: import.meta.env.VITE_AEGIS_BACKEND_URL_DEVELOPMENT || 
+             import.meta.env.VITE_AEGIS_BACKEND_URL || 
              'http://localhost:8080',
     // API 路径前缀（如果需要）
     apiPrefix: '/api',
   },
   // 生产环境
   production: {
-    baseUrl: import.meta.env.VITE_METERSPHERE_BACKEND_URL_PRODUCTION || 
-             import.meta.env.VITE_METERSPHERE_BACKEND_URL || 
+    baseUrl: import.meta.env.VITE_AEGIS_BACKEND_URL_PRODUCTION || 
+             import.meta.env.VITE_AEGIS_BACKEND_URL || 
              'http://aegis.tst.spotter.ink',
     apiPrefix: '/api',
   },
@@ -56,21 +56,21 @@ export const SNAPTEST_CONFIG = {
 
 /**
  * Aegis 后端配置（keeper-one-web 项目后端路由）
- * 注意：keeper-one-web 项目的后端就是 MeterSphere，所以使用相同的配置
+ * 注意：keeper-one-web 项目的后端就是 AegisOne，所以使用相同的配置
  * 数据监控大盘接口：metrics/efficiency/overview、metrics/efficiency/activity 均走此配置（开发环境由 vite 代理 /metrics/efficiency）
  */
 export const AEGIS_CONFIG = {
-  // 本地开发环境（使用 MeterSphere 的配置）
+  // 本地开发环境（使用 AegisOne 的配置）
   development: {
-    baseUrl: import.meta.env.VITE_METERSPHERE_BACKEND_URL_DEVELOPMENT || 
-             import.meta.env.VITE_METERSPHERE_BACKEND_URL || 
+    baseUrl: import.meta.env.VITE_AEGIS_BACKEND_URL_DEVELOPMENT || 
+             import.meta.env.VITE_AEGIS_BACKEND_URL || 
              'http://localhost:8081',
     apiPrefix: '/api',
   },
-  // 生产环境（使用 MeterSphere 的配置）
+  // 生产环境（使用 AegisOne 的配置）
   production: {
-    baseUrl: import.meta.env.VITE_METERSPHERE_BACKEND_URL_PRODUCTION || 
-             import.meta.env.VITE_METERSPHERE_BACKEND_URL || 
+    baseUrl: import.meta.env.VITE_AEGIS_BACKEND_URL_PRODUCTION || 
+             import.meta.env.VITE_AEGIS_BACKEND_URL || 
              'http://aegis.tst.spotter.ink',
     apiPrefix: '/api',
   },
@@ -133,9 +133,9 @@ export const SPOTTER_PLATFORM_CONFIG = {
 // ==================== 当前环境配置 ====================
 
 /**
- * 获取当前环境的 MeterSphere 配置
+ * 获取当前环境的 AegisOne 配置
  */
-export const getMeterSphereConfig = () => {
+export const getAegisOneConfig = () => {
   return isDevelopment ? METERSPHERE_CONFIG.development : METERSPHERE_CONFIG.production;
 };
 
@@ -187,13 +187,13 @@ export const getSpotterPlatformApiUrl = (path: string): string => {
 // ==================== API 基础 URL ====================
 
 /**
- * MeterSphere API 基础 URL（用例模块）
+ * AegisOne API 基础 URL（用例模块）
  * 开发环境：使用相对路径（通过 vite 代理）
  * 生产环境：使用完整 URL（通过 nginx 代理或直接访问）
  */
 export const METERSPHERE_API_BASE_URL = isDevelopment 
   ? '' // 开发环境使用相对路径，通过 vite 代理
-  : getMeterSphereConfig().baseUrl; // 生产环境使用完整 URL
+  : getAegisOneConfig().baseUrl; // 生产环境使用完整 URL
 
 /**
  * SnapTest API 基础 URL
@@ -228,10 +228,10 @@ export const DATA_FORGE_API_BASE_URL = isDevelopment
   : getDataForgeConfig().baseUrl; // 生产环境使用完整 URL
 
 /**
- * 获取完整的 MeterSphere API URL（用于需要完整 URL 的场景，如跨域请求）
+ * 获取完整的 AegisOne API URL（用于需要完整 URL 的场景，如跨域请求）
  */
-export const getMeterSphereApiUrl = (path: string): string => {
-  const config = getMeterSphereConfig();
+export const getAegisOneApiUrl = (path: string): string => {
+  const config = getAegisOneConfig();
   return path.startsWith('http') ? path : `${config.baseUrl}${path}`;
 };
 
@@ -245,7 +245,7 @@ export const getSnapTestApiUrl = (path: string): string => {
 
 /**
  * 获取完整的 Aegis API URL（用于需要完整 URL 的场景，如跨域请求）
- * 注意：keeper-one-web 项目的后端就是 MeterSphere
+ * 注意：keeper-one-web 项目的后端就是 AegisOne
  */
 export const getAegisApiUrl = (path: string): string => {
   const config = getAegisConfig();
@@ -322,7 +322,7 @@ export const FRONTEND_ROUTES = {
 // ==================== API 路径配置 ====================
 
 /**
- * MeterSphere API 路径（用例模块）
+ * AegisOne API 路径（用例模块）
  */
 export const METERSPHERE_API_PATHS = {
   // 登录相关

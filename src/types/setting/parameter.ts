@@ -1,5 +1,5 @@
 /**
- * 系统设置-系统参数 相关类型（与 MeterSphere 对齐）
+ * 系统设置-系统参数 相关类型（与 AegisOne 对齐）
  */
 
 /** 基础信息配置 */
@@ -108,7 +108,7 @@ export interface QrCodeItem {
   edit?: boolean;
 }
 
-/** 平台来源（接口返回，与 spotter-metersphere 一致） */
+/** 平台来源（接口返回，与 aegis-next-server 一致） */
 export interface PlatformSource {
   platform: string;
   enable: boolean;
@@ -116,7 +116,7 @@ export interface PlatformSource {
   hasConfig: boolean;
 }
 
-/** 飞书扫码登录配置（与 spotter-metersphere LarkInfo 一致） */
+/** 飞书扫码登录配置（与 aegis-next-server LarkInfo 一致） */
 export interface LarkInfo {
   agentId: string;
   appSecret: string;

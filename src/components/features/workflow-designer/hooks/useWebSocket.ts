@@ -51,13 +51,13 @@ export function useWebSocket({
     
     if (isDevelopment) {
       // 开发环境：从环境变量获取后端地址，或使用默认值
-      backendUrl = import.meta.env.VITE_METERSPHERE_BACKEND_URL_DEVELOPMENT || 
-                   import.meta.env.VITE_METERSPHERE_BACKEND_URL || 
+      backendUrl = import.meta.env.VITE_AEGIS_BACKEND_URL_DEVELOPMENT || 
+                   import.meta.env.VITE_AEGIS_BACKEND_URL || 
                    'http://localhost:8081';
     } else {
       // 生产环境：优先使用环境变量配置的后端地址
-      backendUrl = import.meta.env.VITE_METERSPHERE_BACKEND_URL_PRODUCTION || 
-                   import.meta.env.VITE_METERSPHERE_BACKEND_URL || 
+      backendUrl = import.meta.env.VITE_AEGIS_BACKEND_URL_PRODUCTION || 
+                   import.meta.env.VITE_AEGIS_BACKEND_URL || 
                    window.location.origin; // 如果没有配置，则使用当前域名
       
       // 如果环境变量中的地址是 http:// 开头，但当前页面是 https://，则使用 https://

@@ -1,5 +1,5 @@
 /**
- * 系统设置-用户组 相关类型（与 MeterSphere 对齐）
+ * 系统设置-用户组 相关类型（与 AegisOne 对齐）
  */
 
 export type UserGroupScope = 'SYSTEM' | 'ORGANIZATION' | 'PROJECT';
@@ -79,7 +79,7 @@ export interface UserGroupOptionItem {
   exclude?: boolean;
 }
 
-/** 用户组权限配置（与 MeterSphere 对齐） */
+/** 用户组权限配置（与 AegisOne 对齐） */
 export interface UserGroupPermissionItem {
   id: string;
   name: string;

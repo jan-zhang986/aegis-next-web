@@ -1,6 +1,6 @@
 /**
  * 测试计划报告 API URL 常量
- * 从 MeterSphere 迁移
+ * 从 AegisOne 迁移
  */
 
 // 报告列表

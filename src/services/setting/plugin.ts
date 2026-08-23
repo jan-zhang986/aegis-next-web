@@ -1,5 +1,5 @@
 /**
- * 系统设置-插件管理 API（与 MeterSphere 路径一致）
+ * 系统设置-插件管理 API（与 AegisOne 路径一致）
  */
 import { http } from '@/utils/request';
 import type { PluginItem, UpdatePluginParams, PluginOptionsParams } from '@/types/setting/plugin';

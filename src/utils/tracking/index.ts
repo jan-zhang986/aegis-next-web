@@ -1,6 +1,6 @@
 /**
  * 效能埋点工具类统一导出
- * 从 metersphere-frontend 迁移
+ * 从 aegis-next-web 迁移
  */
 
 export {

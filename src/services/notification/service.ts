@@ -1,12 +1,12 @@
 /**
- * 顶部消息通知 API（逻辑与 MeterSphere 对齐）
+ * 顶部消息通知 API（逻辑与 AegisOne 对齐）
  */
 import { http } from '@/utils/request';
 import { NOTIFICATION_URLS } from './constants';
 import type { MessageRecord, MessageHistoryItem } from './types';
 
 export const notificationService = {
-  /** 获取未读消息数量（用于顶部角标）；与 MeterSphere 一致用 path 传 projectId；接口失败时返回 0，不抛错 */
+  /** 获取未读消息数量（用于顶部角标）；与 AegisOne 一致用 path 传 projectId；接口失败时返回 0，不抛错 */
   getUnReadCount: (projectId: string): Promise<number> => {
     return http
       .get(NOTIFICATION_URLS.unRead(projectId))

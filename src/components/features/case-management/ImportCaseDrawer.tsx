@@ -1,6 +1,6 @@
 /**
  * 用例导入
- * 与 metersphere-frontend caseManagementFeature/components/import 保持一致
+ * 与 aegis-next-web caseManagementFeature/components/import 保持一致
  */
 
 import { useState, useRef } from 'react';

@@ -1,5 +1,5 @@
 /**
- * 系统设置-用户 列表与操作（迁移自 MeterSphere 系统设置-用户）
+ * 系统设置-用户 列表与操作（迁移自 AegisOne 系统设置-用户）
  */
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -293,7 +293,7 @@ export function SystemUserView() {
       description: isBatch
         ? `确认重置选中的 ${ids.length} 个用户的密码吗？初始密码为用户邮箱。`
         : (record.id === 'admin'
-          ? '初始密码为 metersphere，下次登录时生效。'
+          ? '初始密码为 aegis，下次登录时生效。'
           : '初始密码为用户邮箱，下次登录时生效。确认重置「' + record.name + '」的密码吗？'),
       action: async () => {
         await systemUserService.resetUserPassword({

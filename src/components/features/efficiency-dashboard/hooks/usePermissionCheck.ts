@@ -89,11 +89,11 @@ function checkIsSystemAdmin(u: Record<string, unknown>): boolean {
     typeVal === 'admin' ||
     typeVal === 1 ||
     (typeof typeVal === 'string' && roleStr(typeVal) === 'ADMIN');
-  // MeterSphere：userRoles 为角色对象数组，仅当存在 id===admin 的角色的用户为系统管理员（不按 type===SYSTEM 判断，避免系统成员等其它系统级角色被误判）
+  // AegisOne：userRoles 为角色对象数组，仅当存在 id===admin 的角色的用户为系统管理员（不按 type===SYSTEM 判断，避免系统成员等其它系统级角色被误判）
   const hasSystemAdminRole =
     Array.isArray(u.userRoles) &&
     (u.userRoles as Record<string, unknown>[]).some((r) => r?.id === 'admin');
-  // MeterSphere：userRoleRelations 中存在 roleId===admin 即为系统管理员
+  // AegisOne：userRoleRelations 中存在 roleId===admin 即为系统管理员
   const hasAdminRelation =
     Array.isArray(u.userRoleRelations) &&
     (u.userRoleRelations as Record<string, unknown>[]).some((r) => r?.roleId === 'admin');

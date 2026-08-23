@@ -1,5 +1,5 @@
 /**
- * 项目管理-模板管理（迁移自 MeterSphere）
+ * 项目管理-模板管理（迁移自 AegisOne）
  * 参考组织内模板管理（OrgTemplateView）：入口布局与文案一致，子视图复用 TemplateFieldSetting / TemplateManagementList / TemplateWorkflowView
  */
 import { useState, useCallback } from 'react';

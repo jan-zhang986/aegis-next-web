@@ -2,7 +2,7 @@
  * 富文本 HTML 内容渲染
  * 使用 DOMPurify 安全渲染 TipTap 输出的 HTML
  * 图片需鉴权：/attachment/ 路径的图片通过 http 带 token 拉取后转 blob URL 显示
- * 参考 metersphere-frontend：img src 存相对路径 /attachment/download/file/{projectId}/{fileId}/true
+ * 参考 aegis-next-web：img src 存相对路径 /attachment/download/file/{projectId}/{fileId}/true
  * 请求时走 /api 前缀以便代理转发并携带 X-AUTH-TOKEN
  */
 
@@ -82,7 +82,7 @@ export function HtmlContent({ content, className }: HtmlContentProps) {
         return;
       }
       // 对于 /attachment/ 路径的图片，通过 axios 请求 blob 以携带认证 token
-      // 参考 metersphere-frontend：虽然它直接使用图片 URL，但那是基于 cookie 认证
+      // 参考 aegis-next-web：虽然它直接使用图片 URL，但那是基于 cookie 认证
       // 当前项目使用 header 认证（X-AUTH-TOKEN），所以必须通过 axios 请求
       http.get<Blob>(requestPath, { responseType: 'blob' })
         .then((blob) => {

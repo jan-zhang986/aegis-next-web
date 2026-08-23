@@ -348,7 +348,7 @@ export function ModuleTreePanel({
       const parsed = parseDropId(String(over.id));
       if (!parsed) return;
       const { dropNodeId, dropPosition } = parsed;
-      // 与原项目 spotter-metersphere caseTree.vue + ms-tree 一致：不转换语义，-1=前/0=放入/1=后，完全由放置区决定
+      // 与原项目 aegis-next-server caseTree.vue + ms-tree 一致：不转换语义，-1=前/0=放入/1=后，完全由放置区决定
 
       if (dropPosition === 0) {
         if (dropNodeId === dragNodeId) return;

@@ -18,7 +18,7 @@ interface UseCaseListOptions {
   projectId: string;
   spaceId?: string;
   selectedModuleId: string;
-  /** 当前选中模块的所有子孙节点 ID，用于包含下级模块用例（参考 spotter-metersphere） */
+  /** 当前选中模块的所有子孙节点 ID，用于包含下级模块用例（参考 aegis-next-server） */
   offspringIds?: string[];
   searchKeyword: string;
   modulesCount: Record<string, number>;

@@ -1,7 +1,7 @@
 /**
  * 认证服务
  * 提供用户登录、登出、用户信息等功能
- * 集成 spotter-metersphere 后端登录
+ * 集成 aegis-next-server 后端登录
  */
 
 import { http } from '@/utils/request';
@@ -34,7 +34,7 @@ export interface LarkLoginResponse {
 export const authService = {
   /**
    * 用户登录（用户名密码）
-   * 使用 MeterSphere 标准登录接口 /login
+   * 使用 AegisOne 标准登录接口 /login
    */
   login: async (data: { username: string; password: string }) => {
     return http.post('/login', data);
@@ -42,7 +42,7 @@ export const authService = {
 
   /**
    * 用户登出
-   * 使用 MeterSphere 标准登出接口 /signout
+   * 使用 AegisOne 标准登出接口 /signout
    */
   logout: async () => {
     return http.get('/signout');
@@ -50,7 +50,7 @@ export const authService = {
 
   /**
    * 获取当前用户信息
-   * 使用 MeterSphere 标准接口 /is-login
+   * 使用 AegisOne 标准接口 /is-login
    */
   getCurrentUser: async () => {
     return http.get('/is-login');

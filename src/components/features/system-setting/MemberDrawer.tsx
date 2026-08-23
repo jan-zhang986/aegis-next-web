@@ -1,5 +1,5 @@
 /**
- * 系统组织/项目 - 成员列表侧滑（参考 MeterSphere UserDrawer）
+ * 系统组织/项目 - 成员列表侧滑（参考 AegisOne UserDrawer）
  * 查看当前成员、添加成员、移除成员
  */
 import { useState, useEffect, useCallback } from 'react';

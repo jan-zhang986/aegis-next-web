@@ -1,6 +1,6 @@
 /**
  * 测试计划类型定义
- * 从 MeterSphere 迁移
+ * 从 AegisOne 迁移
  */
 
 import { PlanStatusType, TestPlanType } from '@/constants/testPlanEnums';
@@ -288,7 +288,7 @@ export interface ReportCaseItem {
 
 // ==================== 测试计划脑图（关联用例） ====================
 
-/** 脑图节点关联 DTO（与 spotter-metersphere PlanMinderAssociateDTO 一致） */
+/** 脑图节点关联 DTO（与 aegis-next-server PlanMinderAssociateDTO 一致） */
 export interface PlanMinderAssociateDTO {
     projectId?: string;
     selectIds?: string[];
@@ -300,7 +300,7 @@ export interface PlanMinderAssociateDTO {
     [key: string]: any;
 }
 
-/** 脑图编辑项（与 spotter-metersphere PlanMinderEditListItem 一致） */
+/** 脑图编辑项（与 aegis-next-server PlanMinderEditListItem 一致） */
 export interface PlanMinderEditListItem {
     id: string;
     name?: string;
@@ -311,7 +311,7 @@ export interface PlanMinderEditListItem {
     [key: string]: any;
 }
 
-/** 脑图编辑入参（与 spotter-metersphere editPlanMinder 一致） */
+/** 脑图编辑入参（与 aegis-next-server editPlanMinder 一致） */
 export interface PlanMinderEditParams {
     planId: string;
     editList: PlanMinderEditListItem[];

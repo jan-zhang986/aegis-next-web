@@ -1,6 +1,6 @@
 /**
  * Message Management API URLs
- * 与 spotter-metersphere 原项目一致：/notice/...
+ * 与 aegis-next-server 原项目一致：/notice/...
  */
 
 export const MESSAGE_API = {

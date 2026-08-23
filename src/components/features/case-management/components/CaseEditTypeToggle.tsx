@@ -1,6 +1,6 @@
 /**
  * 用例编辑类型切换：步骤描述 / 文本描述
- * 从 spotter-metersphere stepDescription.vue 迁移
+ * 从 aegis-next-server stepDescription.vue 迁移
  */
 
 import { ChevronDown } from 'lucide-react';

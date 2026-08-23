@@ -1,5 +1,5 @@
 /**
- * 项目管理-模板管理（迁移自 MeterSphere 项目模板）
+ * 项目管理-模板管理（迁移自 AegisOne 项目模板）
  * 与 OrgTemplateView 布局一致，使用 projectId 与项目级模板 API
  */
 import { useState, useCallback } from 'react';

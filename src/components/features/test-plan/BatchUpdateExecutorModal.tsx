@@ -1,6 +1,6 @@
 /**
  * 批量修改执行人弹窗
- * 参考原项目 spotter-metersphere batchUpdateExecutorModal.vue
+ * 参考原项目 aegis-next-server batchUpdateExecutorModal.vue
  */
 
 import { useState, useEffect } from 'react';

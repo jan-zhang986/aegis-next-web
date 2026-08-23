@@ -346,7 +346,7 @@ export function LoginPage() {
         password: password.trim(),
       });
 
-      // MeterSphere 登录成功返回 SessionUser 对象，包含 sessionId 和 csrfToken
+      // AegisOne 登录成功返回 SessionUser 对象，包含 sessionId 和 csrfToken
       // 响应拦截器已经提取了 data.data，所以 response 就是 SessionUser 对象
       if (response) {
         const userData = response as any;
@@ -404,7 +404,7 @@ export function LoginPage() {
     }
   };
 
-  // 飞书快捷登录处理（与 spotter-metersphere 保持一致）
+  // 飞书快捷登录处理（与 aegis-next-server 保持一致）
   const handleFeishuLogin = async () => {
     if (isLoading) return;
 

@@ -1,6 +1,6 @@
 /**
  * 测试计划 API URL 常量
- * 从 MeterSphere 迁移
+ * 从 AegisOne 迁移
  */
 
 // ==================== 测试计划基础 ====================
@@ -197,11 +197,11 @@ export const BatchAssociatedBugToCaseUrl = '/test-plan/functional/case/batch/ass
 
 // ==================== 测试计划脑图 ====================
 
-// 获取测试计划脑图（与 spotter-metersphere-frontend 一致：/test-plan/mind/data/:id 路径参数）
+// 获取测试计划脑图（与 aegis-next-web 一致：/test-plan/mind/data/:id 路径参数）
 export const GetPlanMindDataUrl = '/test-plan/mind/data';
 // 兼容旧路径（部分后端仍用 /test-plan/minder/get/:id）
 export const GetTestPlanMinderUrl = '/test-plan/minder/get';
-// 编辑测试计划脑图（与 spotter-metersphere 后端一致：POST /test-plan/mind/data/edit）
+// 编辑测试计划脑图（与 aegis-next-server 后端一致：POST /test-plan/mind/data/edit）
 export const EditPlanMinderUrl = '/test-plan/mind/data/edit';
 // 测试计划-任务结果
 export const TaskResultUrl = '/test-plan-execute/task-result';

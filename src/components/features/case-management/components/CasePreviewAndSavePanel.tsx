@@ -30,7 +30,7 @@ import type { ModuleTreeNode } from '../types';
 import type { StepListItem } from '../types';
 import { toast } from 'sonner';
 
-/** spotter-metersphere 用例等级 */
+/** aegis-next-server 用例等级 */
 const CASE_LEVELS = ['P0', 'P1', 'P2', 'P3'] as const;
 
 export interface ParsedCaseItem {
@@ -40,7 +40,7 @@ export interface ParsedCaseItem {
   selected: boolean;
   /** 用例等级 */
   caseLevel?: string;
-  /** 步骤模式 STEP / 文本模式 TEXT，与 spotter-metersphere 一致 */
+  /** 步骤模式 STEP / 文本模式 TEXT，与 aegis-next-server 一致 */
   caseEditType?: 'STEP' | 'TEXT';
   prerequisite?: string;
   textDescription?: string;

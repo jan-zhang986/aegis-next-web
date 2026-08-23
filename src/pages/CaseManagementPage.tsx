@@ -1,6 +1,6 @@
 /**
  * 用例管理页面
- * 从 spotter-metersphere 迁移，整合用例、用例评审与生成流程
+ * 从 aegis-next-server 迁移，整合用例、用例评审与生成流程
  */
 
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';

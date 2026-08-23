@@ -1,6 +1,6 @@
 /**
  * 用例管理 - 类型定义
- * 从 spotter-metersphere 迁移，与 CaseManagementTable 保持一致
+ * 从 aegis-next-server 迁移，与 CaseManagementTable 保持一致
  */
 
 export interface CaseItem {
@@ -155,7 +155,7 @@ export interface CaseCustomField {
   options?: { value: string; text: string }[];
 }
 
-/** 评审列表项，与 spotter-metersphere ReviewItem 保持一致 */
+/** 评审列表项，与 aegis-next-server ReviewItem 保持一致 */
 export interface ReviewItem {
   id: string;
   num?: number;

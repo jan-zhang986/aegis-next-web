@@ -1,6 +1,6 @@
 /**
  * 批量移动/复制到模块
- * 参考 spotter-metersphere caseTable.vue handleCaseMoveOrCopy
+ * 参考 aegis-next-server caseTable.vue handleCaseMoveOrCopy
  * 支持按模块名称搜索匹配
  */
 

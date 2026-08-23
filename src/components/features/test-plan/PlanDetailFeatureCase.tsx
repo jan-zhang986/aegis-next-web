@@ -491,7 +491,7 @@ export function PlanDetailFeatureCase({ planId, projectId, canEdit, onRefresh, e
         }).catch(() => { });
     }, [treeTab, planId, searchKeyword]);
 
-    /** 与 metersphere caseTable handleEditLastExecResult 一致：id 为计划用例关联 id，caseId 为功能用例 id */
+    /** 与 aegis caseTable handleEditLastExecResult 一致：id 为计划用例关联 id，caseId 为功能用例 id */
     const handleUpdateResult = async (planCaseId: string, functionalCaseId: string, result: string) => {
         const resultVal = (result ?? '').trim();
         if (!resultVal) return;

@@ -1,6 +1,6 @@
 /**
- * 通知相关 API 路径（与 MeterSphere 对齐，便于后端对接）
- * MeterSphere: GET /notification/un-read/{projectId}（path 传参，见 api/modules/message getMessageUnReadCount）
+ * 通知相关 API 路径（与 AegisOne 对齐，便于后端对接）
+ * AegisOne: GET /notification/un-read/{projectId}（path 传参，见 api/modules/message getMessageUnReadCount）
  */
 export const NOTIFICATION_URLS = {
   /** 未读数：GET /notification/un-read/{projectId} */

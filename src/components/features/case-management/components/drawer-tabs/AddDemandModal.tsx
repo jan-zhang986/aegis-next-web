@@ -1,6 +1,6 @@
 /**
  * 添加/编辑需求弹窗
- * 迁移自 spotter-metersphere addDemandModal.vue
+ * 迁移自 aegis-next-server addDemandModal.vue
  */
 
 import { useState, useEffect } from 'react';

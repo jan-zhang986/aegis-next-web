@@ -1,7 +1,7 @@
 /**
  * 关联用例抽屉
  * 用于评审创建时选择用例、评审详情中追加关联用例
- * 迁移自 spotter-metersphere caseReview/components/create/associateDrawer.vue
+ * 迁移自 aegis-next-server caseReview/components/create/associateDrawer.vue
  * - 左侧模块树默认收起（仅展示一级，点击展开子级）
  * - 右侧表格补充：用例等级、所属模块、创建人
  */

@@ -1,6 +1,6 @@
 /**
  * MinderFloatMenu - 思维导图悬浮菜单组件
- * 参考 metersphere-frontend 的浮动菜单实现
+ * 参考 aegis-next-web 的浮动菜单实现
  * 
  * 功能：
  * - 插入同级/子级节点菜单

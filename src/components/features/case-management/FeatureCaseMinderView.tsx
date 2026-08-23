@@ -1,12 +1,12 @@
 /**
  * 功能用例思维导图
  * 使用 React Flow 实现图形化思维导图：从左到右树形布局、弯曲连线
- * 逻辑参考 metersphere-frontend featureCaseMinder
+ * 逻辑参考 aegis-next-web featureCaseMinder
  *
  * 已支持：
  * - 模块树 + 用例树展示
  * - 「全部用例」根节点包裹多模块
- * - 每层超过 50 个模块时显示「更多模块...」点击加载下一批（与 metersphere 一致）
+ * - 每层超过 50 个模块时显示「更多模块...」点击加载下一批（与 aegis 一致）
  * - 用例分页：每页 100 条，超出显示「更多用例...」点击加载下一页
  * - 用例展开后显示前置条件、步骤描述、预期结果、文本描述、备注（MINDER_CONTENT_TAGS）
  * - 用例等级（P0-P3）展示
@@ -87,9 +87,9 @@ export interface MinderTreeNode {
   isContent?: boolean;
   resourceType?: string;
   isLoaded?: boolean;
-  /** 更多模块占位节点（与 metersphere tmpModule 一致） */
+  /** 更多模块占位节点（与 aegis tmpModule 一致） */
   isMoreModule?: boolean;
-  /** 更多用例占位节点（与 metersphere tmp 一致） */
+  /** 更多用例占位节点（与 aegis tmp 一致） */
   isMoreCase?: boolean;
   /** 更多用例时的当前页码 */
   currentPage?: number;
@@ -398,7 +398,7 @@ export function FeatureCaseMinderView({
   const [loadedModules, setLoadedModules] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [loadingNodeId, setLoadingNodeId] = useState<string | null>(null);
-  /** 存储每层超过 50 个的剩余模块（与 metersphere largeModulesMap 一致） */
+  /** 存储每层超过 50 个的剩余模块（与 aegis largeModulesMap 一致） */
   const largeModulesMapRef = useRef<Record<string, MinderTreeNode[]>>({});
 
   // ========== 新增：交互状态 ==========

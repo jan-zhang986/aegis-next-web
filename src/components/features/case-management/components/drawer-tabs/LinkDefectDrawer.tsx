@@ -1,6 +1,6 @@
 /**
  * 关联缺陷抽屉
- * 迁移自 spotter-metersphere linkDefectDrawer.vue
+ * 迁移自 aegis-next-server linkDefectDrawer.vue
  */
 
 import { useState, useEffect } from 'react';

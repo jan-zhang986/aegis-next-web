@@ -1,6 +1,6 @@
 /**
  * 项目管理-消息通知
- * 逻辑与交互参考 spotter-metersphere：消息列表 DTO、补全 projectRobotConfigMap、保存完整参数、接收人必填
+ * 逻辑与交互参考 aegis-next-server：消息列表 DTO、补全 projectRobotConfigMap、保存完整参数、接收人必填
  */
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/utils/cn';

@@ -473,7 +473,7 @@ export function FeatureCaseList({
   };
 
   /**
-   * 与原项目 spotter-metersphere caseTable getCustomMaps 一致：详情接口返回的 customFields 使用 defaultValue 作为提交值（value 可能为空）
+   * 与原项目 aegis-next-server caseTable getCustomMaps 一致：详情接口返回的 customFields 使用 defaultValue 作为提交值（value 可能为空）
    * 仅改名称时必须用 defaultValue 回填，否则会把用例等级等自定义字段清空
    */
   const getCustomMaps = (detailResult: any) => {

@@ -1,5 +1,5 @@
 /**
- * 组织/项目模板相关类型（与 MeterSphere 对齐）
+ * 组织/项目模板相关类型（与 AegisOne 对齐）
  */
 
 export type SceneType = 'FUNCTIONAL' | 'BUG' | 'API' | 'UI' | 'TEST_PLAN';

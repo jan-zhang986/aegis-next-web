@@ -1,7 +1,7 @@
 
 /**
  * 用例管理 - 功能用例服务
- * 从 MeterSphere 迁移并转换为 React 格式
+ * 从 AegisOne 迁移并转换为 React 格式
  */
 
 import { http } from '@/utils/request';
@@ -16,7 +16,7 @@ type UpdateModule = any;
 type MoveModules = {
   dragNodeId: string;
   dropNodeId: string;
-  dropPosition: number; // -1: 节点前, 0: 节点内, 1: 节点后（与 spotter-metersphere 一致）
+  dropPosition: number; // -1: 节点前, 0: 节点内, 1: 节点后（与 aegis-next-server 一致）
 };
 type ModulesTreeType = any;
 type CaseManagementTable = any;
@@ -118,7 +118,7 @@ export function getCaseDetail(id: string) {
 /**
  * 创建用例（legacy functional_case 入口）
  * Space 主路径禁止调用：新产品写入统一走 saveUnifiedCase。
- * 与 metersphere-frontend / 后端一致：request 为单个 JSON 的 part，文件 part 名为 files
+ * 与 aegis-next-web / 后端一致：request 为单个 JSON 的 part，文件 part 名为 files
  * 后端：addFunctionalCase(@RequestPart("request") ..., @RequestPart(value = "files", ...) ...)
  */
 export function createCaseRequest(data: Record<string, any>) {
@@ -140,7 +140,7 @@ export function createCaseRequest(data: Record<string, any>) {
 /**
  * 更新用例（legacy functional_case 入口）
  * Space 主路径禁止调用：新产品写入统一走 saveUnifiedCase。
- * 与 metersphere-frontend 一致：入参可为 { request, fileList } 或平铺 { ...requestBody, fileList }
+ * 与 aegis-next-web 一致：入参可为 { request, fileList } 或平铺 { ...requestBody, fileList }
  * 后端：updateFunctionalCase(@RequestPart("request") ..., @RequestPart(value = "files", ...) ...)
  * customFields.value 为 null 时转为 ''，避免后端 updateByPrimaryKeySelective 生成无效 SQL
  */
@@ -717,7 +717,7 @@ export function getCaseExportConfig(projectId: string) {
 }
 
 /**
- * 获取导出的文件（与 metersphere-frontend 一致：GET /download/file/{projectId}/{fileId}）
+ * 获取导出的文件（与 aegis-next-web 一致：GET /download/file/{projectId}/{fileId}）
  */
 export function getCaseDownloadFile(projectId: string, fileId: string) {
   return http.get<Blob>(

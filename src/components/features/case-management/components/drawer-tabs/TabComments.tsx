@@ -1,6 +1,6 @@
 /**
  * 用例详情抽屉 - 评论 Tab
- * 参考 spotter-metersphere tabCommentIndex.vue + reviewCommentList.vue
+ * 参考 aegis-next-server tabCommentIndex.vue + reviewCommentList.vue
  * 支持：用例评论、评审评论、执行评论 三种类型
  */
 

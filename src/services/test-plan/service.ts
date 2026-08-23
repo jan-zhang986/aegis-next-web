@@ -1,6 +1,6 @@
 /**
  * 测试计划服务
- * 从 MeterSphere 迁移并转换为 React 格式
+ * 从 AegisOne 迁移并转换为 React 格式
  */
 
 import { http } from '@/utils/request';
@@ -182,7 +182,7 @@ export function followPlan(data: FollowPlanParams) {
 }
 
 /**
- * 生成报告（与 metersphere 一致：需传 projectId、testPlanId、triggerMode）
+ * 生成报告（与 aegis 一致：需传 projectId、testPlanId、triggerMode）
  */
 export function generateReport(data: { projectId: string; testPlanId: string; triggerMode?: string }) {
   return http.post(testPlanUrls.GenerateReportUrl, {
@@ -385,7 +385,7 @@ export function batchExecutePlan(data: any) {
 
 /**
  * 获取测试计划脑图
- * 与 spotter-metersphere-frontend 一致：GET /test-plan/mind/data/:id（路径参数，非 query testPlanId），
+ * 与 aegis-next-web 一致：GET /test-plan/mind/data/:id（路径参数，非 query testPlanId），
  * 无数据时通常返回 200 空数据；若该接口 404 则回退到 GET /test-plan/minder/get/:id
  */
 export async function getTestPlanMinder(id: string): Promise<PlanMinderNode | PlanMinderNode[] | null> {
@@ -414,7 +414,7 @@ export function editPlanMinder(data: PlanMinderEditParams) {
 }
 
 /**
- * 从脑图原始数据构建 editList（与 spotter-metersphere makeMinderParams 一致：遍历 level<=2 的节点）
+ * 从脑图原始数据构建 editList（与 aegis-next-server makeMinderParams 一致：遍历 level<=2 的节点）
  * 后端 /test-plan/mind/data 返回的节点无 level 字段，需在遍历时注入 depth 作为 level（与原项目 mapTree 注入 level 一致）
  */
 function buildEditListFromMinderRaw(rawData: any): PlanMinderEditListItem[] {
@@ -594,7 +594,7 @@ const CATEGORY_LABEL: Record<PlanCollectionCategoryType, string> = {
 
 /**
  * 在测试规划指定分类下新增测试点（功能用例 / 接口用例 / 场景用例）
- * 与 spotter-metersphere testPlanMinder addTestSet + editPlanMinder 逻辑一致
+ * 与 aegis-next-server testPlanMinder addTestSet + editPlanMinder 逻辑一致
  * @param planId 测试计划 ID
  * @param category 分类：FUNCTIONAL | API | SCENARIO
  * @param insertAfterCollectionId 可选，在该测试点后插入（同级）；不传则在该分类下追加

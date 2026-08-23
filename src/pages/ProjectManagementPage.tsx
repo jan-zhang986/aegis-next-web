@@ -2,7 +2,7 @@
  * 项目管理页面
  * 路由: /project-management
  * 这是与路由对应的顶层页面组件
- * 基于 MeterSphere 项目管理功能
+ * 基于 AegisOne 项目管理功能
  */
 
 import { useState, useEffect } from 'react';

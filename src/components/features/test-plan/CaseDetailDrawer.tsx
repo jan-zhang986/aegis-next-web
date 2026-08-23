@@ -1,6 +1,6 @@
 /**
  * 用例详情抽屉
- * 参考 spotter-metersphere-frontend 测试计划功能用例详情实现
+ * 参考 aegis-next-web 测试计划功能用例详情实现
  */
 
 import { useState, useEffect, useMemo } from 'react';

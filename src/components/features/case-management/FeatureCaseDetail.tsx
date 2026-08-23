@@ -1,6 +1,6 @@
 /**
  * 用例详情（创建/编辑）
- * 参考 spotter-metersphere caseDetail.vue 与 MsCard 布局
+ * 参考 aegis-next-server caseDetail.vue 与 MsCard 布局
  * 埋点：创建/复制时统计编写时长（UserActivityTracker），复用用例编辑时统计修改时长（ModificationTracker）
  */
 

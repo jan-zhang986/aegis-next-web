@@ -1,6 +1,6 @@
 /**
  * 评审用例详情
- * 与 metersphere-frontend caseReview/caseDetail.vue 布局一致：左侧用例列表 + 右侧详情（Tab + 开始评审）
+ * 与 aegis-next-web caseReview/caseDetail.vue 布局一致：左侧用例列表 + 右侧详情（Tab + 开始评审）
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -36,7 +36,7 @@ import { CaseLevelBadge } from './components/CaseLevelBadge';
 import { getCaseLevel } from './utils/getCaseLevel';
 import { REVIEW_STATUS_MAP, REVIEW_PASS_RULE_MAP } from './constants';
 
-// 开始评审选项：通过/不通过/建议（与 metersphere reviewForm 一致）
+// 开始评审选项：通过/不通过/建议（与 aegis reviewForm 一致）
 const REVIEW_RESULT_OPTIONS = [
   { value: 'PASS', label: '通过', icon: CheckCircle },
   { value: 'UN_PASS', label: '不通过', icon: XCircle },
@@ -204,7 +204,7 @@ export function ReviewCaseDetail({
     }
     setSubmitLoading(true);
     try {
-      // 与 spotter-metersphere reviewForm.vue 完全一致：字段名、类型、顺序与后端 ReviewFunctionalCaseRequest 一致，避免后端绑定失败
+      // 与 aegis-next-server reviewForm.vue 完全一致：字段名、类型、顺序与后端 ReviewFunctionalCaseRequest 一致，避免后端绑定失败
       const projectIdVal = String(reviewInfo?.projectId ?? projectId ?? '');
       const caseIdVal = String(caseId ?? '');
       const reviewIdVal = String(reviewId ?? '');

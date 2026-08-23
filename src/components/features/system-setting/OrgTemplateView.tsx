@@ -1,5 +1,5 @@
 /**
- * 系统设置-组织-模板管理（迁移自 MeterSphere）
+ * 系统设置-组织-模板管理（迁移自 AegisOne）
  * 与项目管理内模板管理（ProjectTemplateView）共用一套交互与样式，仅 scope 为组织
  */
 import { useState, useCallback } from 'react';

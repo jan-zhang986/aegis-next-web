@@ -1,6 +1,6 @@
 /**
  * MessageManagementPage Component
- * 消息管理主页面 - 交互与原项目（spotter-metersphere）一致，复用 ProjectMessageView
+ * 消息管理主页面 - 交互与原项目（aegis-next-server）一致，复用 ProjectMessageView
  */
 
 import { usePermissionCheck } from '@/components/features/efficiency-dashboard/hooks/usePermissionCheck';

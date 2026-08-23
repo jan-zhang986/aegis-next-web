@@ -16,7 +16,7 @@ export interface ProjectSimple {
 export const projectService = {
   /**
    * 获取项目列表（公开接口，无需认证）
-   * 调用 MeterSphere 后端的 /project/list/public 接口
+   * 调用 AegisOne 后端的 /project/list/public 接口
    * 注意：此接口返回所有项目，不进行权限过滤
    */
   getProjectList: async (): Promise<ProjectSimple[]> => {
@@ -25,7 +25,7 @@ export const projectService = {
 
   /**
    * 根据组织ID获取有权限的项目列表（需要权限过滤）
-   * 调用 MeterSphere 后端的 /project/list/options/{organizationId} 接口
+   * 调用 AegisOne 后端的 /project/list/options/{organizationId} 接口
    * 此接口会根据组织ID和用户权限返回该组织下有权限的项目
    */
   getProjectListByOrg: async (organizationId: string): Promise<ProjectSimple[]> => {

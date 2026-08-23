@@ -1,6 +1,6 @@
 /**
  * 测试用例 - 筛选抽屉（优化版）
- * 参考 spotter-metersphere filterDrawer.vue
+ * 参考 aegis-next-server filterDrawer.vue
  * 优化：UI/UX 改进、重要按钮蓝色、更好的布局和交互
  */
 

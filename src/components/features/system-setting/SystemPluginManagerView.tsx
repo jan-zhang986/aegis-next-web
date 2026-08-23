@@ -1,5 +1,5 @@
 /**
- * 系统设置-插件管理（迁移自 MeterSphere）
+ * 系统设置-插件管理（迁移自 AegisOne）
  * 插件列表、上传/编辑/删除插件
  */
 import { useState, useEffect, useCallback } from 'react';

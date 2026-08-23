@@ -1144,7 +1144,7 @@ export function TestPlanPage() {
   const handleCopy = async (plan: TestPlanItem) => {
     const toastId = toast.loading('正在复制测试计划...');
     try {
-      // 与 spotter-metersphere 一致：优先使用 GET /quality-workspace/copy/{id}
+      // 与 aegis-next-server 一致：优先使用 GET /quality-workspace/copy/{id}
       try {
         await testPlanManagementService.testPlanAndGroupCopy(plan.id);
       } catch (getErr: any) {

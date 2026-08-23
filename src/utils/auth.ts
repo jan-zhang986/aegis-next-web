@@ -1,6 +1,6 @@
 /**
  * 认证工具
- * 基于 MeterSphere 的鉴权机制
+ * 基于 AegisOne 的鉴权机制
  */
 
 const SESSION_ID = 'sessionId';

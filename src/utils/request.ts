@@ -24,7 +24,7 @@ const request: AxiosInstance = axios.create({
 
 /**
  * /api/v1 下属于 aegis-rag 的路径片段（与 e32e8d 及 aegis-rag-frontend 一致）
- * 仅这些请求走 X-API-Key + X-User-ID；新增 RAG Chat API 时需同步扩展此正则，否则误带 MeterSphere 头会 403
+ * 仅这些请求走 X-API-Key + X-User-ID；新增 RAG Chat API 时需同步扩展此正则，否则误带 AegisOne 头会 403
  */
 const RAG_API_V1_SEGMENT_RE =
   /\/(sessions|knowledge-chat|agent-chat|messages|auth|tenants|knowledgebases|knowledges|models|agents|web-search)/;
@@ -51,7 +51,7 @@ function isRagRequest(url: string | undefined): boolean {
   return false;
 }
 
-/** 去掉与 RAG（X-API-Key + X-User-ID）冲突的 MeterSphere / Bearer 头，避免后端按 JWT 分支返回 403 */
+/** 去掉与 RAG（X-API-Key + X-User-ID）冲突的 AegisOne / Bearer 头，避免后端按 JWT 分支返回 403 */
 function stripHeadersForRag(
   headers: InternalAxiosRequestConfig['headers'] | undefined
 ): void {
@@ -81,7 +81,7 @@ function isRagLoginRequest(url: string | undefined): boolean {
   return url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh');
 }
 
-// 判断是否为拨测管理平台请求（spotter-* 与 test-platform 同域，不使用 MeterSphere 鉴权）
+// 判断是否为拨测管理平台请求（spotter-* 与 test-platform 同域，不使用 AegisOne 鉴权）
 function isSpotterPlatformRequest(url: string | undefined): boolean {
   if (!url) return false;
   return (
@@ -121,14 +121,14 @@ request.interceptors.request.use(
       return config;
     }
 
-    // ==================== 拨测平台请求：不添加 MeterSphere 鉴权 ====================
+    // ==================== 拨测平台请求：不添加 AegisOne 鉴权 ====================
     // spotter-aegis-web / spotter-task-maestro / spotter-aegis-perf 与 test-platform 同域，无需上述头，避免后端 500
     if (isSpotterPlatformRequest(url)) {
       return config;
     }
 
-    // ==================== MeterSphere 请求 ====================
-    // 在请求发送前添加认证 token（兼容 MeterSphere 鉴权机制）
+    // ==================== AegisOne 请求 ====================
+    // 在请求发送前添加认证 token（兼容 AegisOne 鉴权机制）
     let token = getToken();
 
     // 如果 token 存在但 csrfToken 为空，尝试通过 /lark/user 接口获取 csrfToken
@@ -242,7 +242,7 @@ request.interceptors.response.use(
     // 如果后端统一返回格式为 { code, data, message }
     if (data && typeof data === 'object' && 'code' in data) {
       // 成功状态码（根据实际后端定义修改）
-      // MeterSphere 的成功状态码是 100200
+      // AegisOne 的成功状态码是 100200
       if (data.code === 200 || data.code === 0 || data.code === 100200) {
         return data.data !== undefined ? data.data : data;
       } else {
@@ -343,7 +343,7 @@ request.interceptors.response.use(
               }
             }
           } else {
-            // 脑图接口 500/404 视为暂无数据，与 spotter-metersphere-frontend 一致静默，不打印
+            // 脑图接口 500/404 视为暂无数据，与 aegis-next-web 一致静默，不打印
             const isMindApi = String(requestUrl).includes('test-plan/minder/get') || String(requestUrl).includes('test-plan/mind/data');
             // 未读通知、消息配置等为可选能力，后端未实现或异常时静默，不刷控制台
             const msg = typeof (data as any)?.message === 'string' ? (data as any).message : '';

@@ -1,6 +1,6 @@
 /**
  * 测试计划 - 用例详情页（双栏布局）
- * 参考 spotter-metersphere-frontend 及设计图：左侧用例列表，右侧详情 + 步骤执行
+ * 参考 aegis-next-web 及设计图：左侧用例列表，右侧详情 + 步骤执行
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -560,7 +560,7 @@ export function TestPlanCaseDetailPage() {
             toast.error('请选择阻塞原因');
             return;
         }
-        // 与 metersphere 一致：projectId 优先用计划详情，否则用当前项目
+        // 与 aegis 一致：projectId 优先用计划详情，否则用当前项目
         const projectId = (planDetail as any)?.projectId || localStorage.getItem('currentProjectId') || '';
         if (!projectId) {
             toast.error('缺少项目信息，无法提交');

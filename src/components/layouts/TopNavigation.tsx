@@ -180,7 +180,7 @@ export function TopNavigation({ selectedTopMenu = 'api', onSelectTopMenu, showSe
     { id: 'test-factory', label: '数据监控大盘' },
   ];
 
-  // 用例管理的二级菜单项（从 spotter-metersphere 迁移）
+  // 用例管理的二级菜单项（从 aegis-next-server 迁移）
   const caseManagementNavItems = [
     { id: 'space', label: '空间' },
     { id: 'feature-case', label: '用例库' },

@@ -1,5 +1,5 @@
 /**
- * 系统设置-组织-服务集成（迁移自 MeterSphere）
+ * 系统设置-组织-服务集成（迁移自 AegisOne）
  * 服务集成列表、创建/编辑/测试/重置服务集成
  */
 import { useState, useEffect, useCallback } from 'react';

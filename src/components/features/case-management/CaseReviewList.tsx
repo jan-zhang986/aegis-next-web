@@ -1,6 +1,6 @@
 /**
  * 用例评审列表
- * 完整迁移自 spotter-metersphere caseReview/index.vue + reviewTable.vue
+ * 完整迁移自 aegis-next-server caseReview/index.vue + reviewTable.vue
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -481,7 +481,7 @@ export function CaseReviewList({
     setModuleDialogOpen(true);
   };
 
-  /** 获取同级模块名称列表（用于新建/重命名时重名校验，与 spotter-metersphere popConfirm allNames 一致） */
+  /** 获取同级模块名称列表（用于新建/重命名时重名校验，与 aegis-next-server popConfirm allNames 一致） */
   const getSiblingNames = (parentId: string, excludeNodeId?: string): string[] => {
     if (parentId === 'root' || parentId === 'NONE') {
       return moduleTree.map((n) => (n.name || '').trim()).filter(Boolean);
@@ -690,7 +690,7 @@ export function CaseReviewList({
               {count}
             </span>
           )}
-          {/* 与 spotter-metersphere moduleTree 一致：节点右侧添加子模块 + 重命名/删除 */}
+          {/* 与 aegis-next-server moduleTree 一致：节点右侧添加子模块 + 重命名/删除 */}
           <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/node:opacity-100" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"

@@ -1,6 +1,6 @@
 /**
  * 用例详情表单
- * 1:1 迁移自 spotter-metersphere caseTemplateDetail.vue
+ * 1:1 迁移自 aegis-next-server caseTemplateDetail.vue
  */
 
 import { useRef, useEffect, useImperativeHandle, forwardRef, useCallback, useState } from 'react';

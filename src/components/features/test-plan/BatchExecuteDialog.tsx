@@ -38,7 +38,7 @@ export function BatchExecuteDialog({
     selectedCaseIds,
     onSuccess
 }: BatchExecuteDialogProps) {
-    // 与原项目 spotter-metersphere 保持一致：默认执行结果为 SUCCESS，后端字段为 lastExecResult
+    // 与原项目 aegis-next-server 保持一致：默认执行结果为 SUCCESS，后端字段为 lastExecResult
     const [executeResult, setExecuteResult] = useState<string>('SUCCESS');
     const [executeRemark, setExecuteRemark] = useState<string>('');
     const [loading, setLoading] = useState(false);

@@ -1,6 +1,6 @@
 /**
  * 将 AI 生成的用例内容保存到平台
- * 参考 spotter-metersphere createCaseRequest 与 CaseDetailForm
+ * 参考 aegis-next-server createCaseRequest 与 CaseDetailForm
  */
 
 import { useState, useEffect } from 'react';
@@ -200,7 +200,7 @@ export function SaveCaseToPlatformDrawer({
         description: '',
         tags: [] as string[],
         customFields,
-        aiCreate: true, // AI 生成用例保存到平台，与 metersphere-frontend 一致
+        aiCreate: true, // AI 生成用例保存到平台，与 aegis-next-web 一致
       };
 
       const caseId = await (spaceId

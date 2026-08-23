@@ -1,6 +1,6 @@
 /**
  * useMinderOperations - 思维导图节点操作 hook
- * 参考 metersphere-frontend/components/business/ms-minders/featureCaseMinder/useMinderBaseApi.ts
+ * 参考 aegis-next-web/components/business/ms-minders/featureCaseMinder/useMinderBaseApi.ts
  * 
  * 功能：
  * - 节点新增（模块、用例、前置条件、步骤、预期结果、备注）

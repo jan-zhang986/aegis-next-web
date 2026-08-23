@@ -1,6 +1,6 @@
 /**
  * 功能用例回收站
- * 从 spotter-metersphere 迁移
+ * 从 aegis-next-server 迁移
  */
 
 import { useState, useEffect } from 'react';

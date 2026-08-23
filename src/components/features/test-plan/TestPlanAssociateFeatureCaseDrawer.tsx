@@ -1,6 +1,6 @@
 /**
  * 测试计划关联功能用例抽屉
- * 参考原项目 spotter-metersphere testPlanMinder 关联用例流程：选择用例后通过脑图 edit 接口写入
+ * 参考原项目 aegis-next-server testPlanMinder 关联用例流程：选择用例后通过脑图 edit 接口写入
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';

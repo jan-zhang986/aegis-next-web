@@ -1,6 +1,6 @@
 /**
  * 收集模块树中某节点的所有子孙节点 ID
- * 参考 spotter-metersphere caseTree.vue mapTree(node.children, e => offspringIds.push(e.id))
+ * 参考 aegis-next-server caseTree.vue mapTree(node.children, e => offspringIds.push(e.id))
  * 用于模块查询时包含本级及下级用例
  */
 

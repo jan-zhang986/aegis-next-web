@@ -1,6 +1,6 @@
 /**
  * 测试计划报告列表页
- * 从 spotter-metersphere-frontend/views/test-plan/report 迁移
+ * 从 aegis-next-web/views/test-plan/report 迁移
  * 支持：类型筛选、搜索、高级筛选、批量删除、重命名、单条导出
  */
 

@@ -1,7 +1,7 @@
 /**
  * 评审详情 - 脑图视图
  * 展示评审关联用例的思维导图，根节点「全部用例」下为模块，展开模块加载用例（getCaseReviewMinder）
- * 参考 metersphere-frontend caseReviewMinder 与本地 FeatureCaseMinderView
+ * 参考 aegis-next-web caseReviewMinder 与本地 FeatureCaseMinderView
  */
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -347,7 +347,7 @@ export interface ReviewMinderViewProps {
   moduleTree: Array<{ id: string; name: string; children?: any[] }>;
   modulesCount: Record<string, number>;
   selectedModuleId?: string;
-  /** 多人评审时仅看我的评审状态，与 metersphere viewStatusFlag 一致 */
+  /** 多人评审时仅看我的评审状态，与 aegis viewStatusFlag 一致 */
   viewStatusFlag?: boolean;
   onViewCase?: (caseId: string) => void;
 }

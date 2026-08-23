@@ -1,6 +1,6 @@
 /**
  * 组织/项目 - 添加成员弹窗
- * 与 spotter-metersphere addUserModal 对齐：搜索用户、多选、确认添加
+ * 与 aegis-next-server addUserModal 对齐：搜索用户、多选、确认添加
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Search } from 'lucide-react';

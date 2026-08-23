@@ -1,6 +1,6 @@
 /**
  * MinderDetailSidebar - 思维导图用例详情侧边栏组件
- * 参考 metersphere-frontend 的抽屉实现
+ * 参考 aegis-next-web 的抽屉实现
  * 
  * 功能：
  * - 基本信息 Tab：用例名称、等级、标签、前置条件、步骤/文本描述、备注

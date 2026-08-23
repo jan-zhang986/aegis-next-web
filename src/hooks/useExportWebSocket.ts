@@ -24,7 +24,7 @@ export interface UseExportWebSocketReturn {
 }
 
 /**
- * 获取 WebSocket URL（参考 metersphere-frontend getSocket 实现）
+ * 获取 WebSocket URL（参考 aegis-next-web getSocket 实现）
  */
 function getWebSocketUrl(reportId: string, socketUrl: string = '/ws/export', host?: string): string {
   let protocol = 'ws://';
@@ -44,8 +44,8 @@ function getWebSocketUrl(reportId: string, socketUrl: string = '/ws/export', hos
     // 使用环境变量或当前页面主机
     const isDevelopment = import.meta.env.DEV;
     if (isDevelopment) {
-      const backendUrl = import.meta.env.VITE_METERSPHERE_BACKEND_URL_DEVELOPMENT || 
-                        import.meta.env.VITE_METERSPHERE_BACKEND_URL || 
+      const backendUrl = import.meta.env.VITE_AEGIS_BACKEND_URL_DEVELOPMENT || 
+                        import.meta.env.VITE_AEGIS_BACKEND_URL || 
                         'localhost:8081';
       hostname = backendUrl.replace(/^https?:\/\//, '');
     } else {

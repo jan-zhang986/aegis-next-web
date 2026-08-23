@@ -1,6 +1,6 @@
 /**
  * Bug 管理页面
- * 对标老版本 spotter-metersphere bug-management/index.vue 的完整功能
+ * 对标老版本 aegis-next-server bug-management/index.vue 的完整功能
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';

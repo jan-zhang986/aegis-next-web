@@ -1,5 +1,5 @@
 /**
- * 系统设置-组织-日志（迁移自 MeterSphere，复用 SystemLogView 逻辑）
+ * 系统设置-组织-日志（迁移自 AegisOne，复用 SystemLogView 逻辑）
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Search, RotateCcw } from 'lucide-react';

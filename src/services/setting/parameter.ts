@@ -1,5 +1,5 @@
 /**
- * 系统设置-系统参数 API（与 MeterSphere 路径一致）
+ * 系统设置-系统参数 API（与 AegisOne 路径一致）
  */
 import { http } from '@/utils/request';
 import type {
@@ -109,7 +109,7 @@ export const systemParameterService = {
     return http.get(`/system/authsource/delete/${id}`);
   },
 
-  /** 获取二维码配置列表（与 spotter-metersphere 一致：从平台接口拉取并合并本地平台列表） */
+  /** 获取二维码配置列表（与 aegis-next-server 一致：从平台接口拉取并合并本地平台列表） */
   getQrCodeList: (): Promise<QrCodeItem[]> => {
     return http.get('/setting/get/platform/info').then((res: any) => {
       const raw = res?.data ?? res;
@@ -133,7 +133,7 @@ export const systemParameterService = {
     ]);
   },
 
-  /** 获取飞书配置（与 spotter-metersphere getLarkInfo 一致） */
+  /** 获取飞书配置（与 aegis-next-server getLarkInfo 一致） */
   getLarkInfo: (): Promise<LarkInfo> => {
     return http.get('/lark/info/with_detail').then((res: any) => {
       const d = res?.data ?? res ?? {};

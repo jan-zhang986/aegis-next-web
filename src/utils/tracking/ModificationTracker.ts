@@ -1,6 +1,6 @@
 /**
  * 复用用例修改耗时统计
- * 从 metersphere-frontend 迁移
+ * 从 aegis-next-web 迁移
  * 场景：编辑「复用」来源的用例时，统计修改耗时并上报
  */
 

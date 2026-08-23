@@ -1,5 +1,5 @@
 /**
- * 系统设置-用户 API（与 MeterSphere 路径一致）
+ * 系统设置-用户 API（与 AegisOne 路径一致）
  */
 import { http } from '@/utils/request';
 import type {
@@ -112,7 +112,7 @@ export const systemUserService = {
     return http.get(`${BASE}/get/project`).then((res: any) => res ?? []);
   },
 
-  /** 邮箱邀请（发送邀请邮件，与 MeterSphere 系统用户邀请一致） */
+  /** 邮箱邀请（发送邀请邮件，与 AegisOne 系统用户邀请一致） */
   sendInvite: (data: { inviteEmails: string[]; userRoleIdList: string[] }): Promise<void> => {
     return http.post(`${BASE}/send/invite`, data);
   },

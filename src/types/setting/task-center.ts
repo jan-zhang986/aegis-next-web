@@ -1,5 +1,5 @@
 /**
- * 系统设置-任务中心 相关类型（与 MeterSphere 对齐）
+ * 系统设置-任务中心 相关类型（与 AegisOne 对齐）
  */
 
 export type TaskCenterType = 'system' | 'organization';

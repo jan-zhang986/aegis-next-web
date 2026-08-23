@@ -1,6 +1,6 @@
 /**
  * 测试计划执行耗时统计
- * 从 metersphere-frontend 迁移
+ * 从 aegis-next-web 迁移
  * 核心算法：切出即执行 (Focus-out Heuristic)，区分「执行」与「阅读」时间
  */
 

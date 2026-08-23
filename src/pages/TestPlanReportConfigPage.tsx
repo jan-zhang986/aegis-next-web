@@ -1,6 +1,6 @@
 /**
  * 测试计划 - 自定义配置报告
- * 参考 metersphere-frontend report/detail/configReport.vue + component/config.vue
+ * 参考 aegis-next-web report/detail/configReport.vue + component/config.vue
  * 双栏布局：左侧基础字段（点击添加）+ 自定义，右侧已选模块（拖拽排序），自定义模块支持富文本
  */
 
@@ -500,7 +500,7 @@ export function TestPlanReportConfigPage() {
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      {/* 顶部：报告名称 + 取消 / 保存（与 metersphere 配置头一致） */}
+      {/* 顶部：报告名称 + 取消 / 保存（与 aegis 配置头一致） */}
       <div className="flex items-center justify-between shrink-0 h-14 px-4 bg-white border-b border-gray-100">
         <div className="flex items-center gap-3 min-w-0">
           <Button variant="ghost" size="sm" className="h-8 gap-1 shrink-0" onClick={handleBack}>
@@ -536,7 +536,7 @@ export function TestPlanReportConfigPage() {
 
       {/* 双栏：左侧基础字段，右侧已选报告模块 */}
       <div className="flex-1 flex min-h-0">
-        {/* 左侧：基础字段（参考 metersphere config-left-container） */}
+        {/* 左侧：基础字段（参考 aegis config-left-container） */}
         <div className="w-[300px] shrink-0 flex flex-col bg-white border-r border-gray-100 overflow-hidden">
           <div className="p-4 pb-2 flex items-center justify-between">
             <div className="flex items-center gap-1.5">

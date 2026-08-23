@@ -1,5 +1,5 @@
 /**
- * 系统组织 - 该项目列表侧滑（参考 MeterSphere ProjectDrawer）
+ * 系统组织 - 该项目列表侧滑（参考 AegisOne ProjectDrawer）
  * 只读展示该组织下的项目列表
  */
 import { useState, useEffect, useCallback } from 'react';

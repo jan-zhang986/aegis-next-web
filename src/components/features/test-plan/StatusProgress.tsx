@@ -37,7 +37,7 @@ const defaultDetail: PassRateCountDetail = {
     pass: false,
 };
 
-// MeterSphere 标准颜色
+// AegisOne 标准颜色
 const COLORS = {
     SUCCESS: '#00b42a',    // 成功（绿）
     FAILURE: '#f53f3f',    // 失败（红）

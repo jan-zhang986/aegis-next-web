@@ -1,6 +1,6 @@
 /**
  * 创建用例成功页
- * 参考 spotter-metersphere createSuccess.vue：倒计时、按钮顺序、可能还想
+ * 参考 aegis-next-server createSuccess.vue：倒计时、按钮顺序、可能还想
  */
 
 import { useState, useEffect } from 'react';

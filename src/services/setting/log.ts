@@ -1,5 +1,5 @@
 /**
- * 系统设置-日志 API（系统级别，与 MeterSphere 路径一致）
+ * 系统设置-日志 API（系统级别，与 AegisOne 路径一致）
  */
 import { http } from '@/utils/request';
 import type { LogListParams, LogListResult, LogOptions, LogUserItem } from '@/types/setting/log';

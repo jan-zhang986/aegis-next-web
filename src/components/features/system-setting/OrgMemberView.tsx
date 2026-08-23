@@ -1,5 +1,5 @@
 /**
- * 系统设置-组织成员（迁移自 MeterSphere）
+ * 系统设置-组织成员（迁移自 AegisOne）
  * 成员列表、添加/编辑/删除成员、邀请成员
  */
 import { useState, useEffect, useCallback } from 'react';

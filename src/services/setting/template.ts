@@ -1,5 +1,5 @@
 /**
- * 组织模板 API（与 MeterSphere 路径一致）
+ * 组织模板 API（与 AegisOne 路径一致）
  */
 import { http } from '@/utils/request';
 import type {
@@ -113,7 +113,7 @@ export function updateOrgWorkFlowStateFlow(data: UpdateWorkFlowSettingParams): P
   return http.post(`${BASE}/organization/status/flow/setting/status/flow/update`, data);
 }
 
-// ---------- 项目模板（与 MeterSphere /project/template 对齐） ----------
+// ---------- 项目模板（与 AegisOne /project/template 对齐） ----------
 
 /** 项目模板列表 */
 export function getProjectTemplateList(projectId: string, scene: SceneType): Promise<OrganizeTemplateItem[]> {

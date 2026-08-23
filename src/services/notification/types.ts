@@ -1,5 +1,5 @@
 /**
- * 顶部消息通知相关类型（参考 MeterSphere message-box）
+ * 顶部消息通知相关类型（参考 AegisOne message-box）
  */
 
 /** 消息记录（弹层列表用） */

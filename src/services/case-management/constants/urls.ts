@@ -1,17 +1,17 @@
 /**
  * 用例管理 API URL 常量
- * 从 MeterSphere 迁移
+ * 从 AegisOne 迁移
  */
 
 // ==================== 后端服务地址配置 ====================
-// spotter-metersphere 后端服务地址
+// aegis-next-server 后端服务地址
 // 使用相对路径，通过 nginx 代理转发到后端，避免跨域问题
 // nginx 配置中已添加代理规则：/metrics/dashboard 和 /functional/case/metrics -> http://aegis.tst.spotter.ink
-const METERSPHERE_BACKEND_URL = '';
+const AEGIS_BACKEND_URL = '';
 
 // 效能埋点上报（用例创建编写时长、复用用例修改时长）
-export const MetricsTrackWriteUrl = `${METERSPHERE_BACKEND_URL}/api/metrics/track/write`;
-export const MetricsTrackModificationUrl = `${METERSPHERE_BACKEND_URL}/api/metrics/track/modification`;
+export const MetricsTrackWriteUrl = `${AEGIS_BACKEND_URL}/api/metrics/track/write`;
+export const MetricsTrackModificationUrl = `${AEGIS_BACKEND_URL}/api/metrics/track/modification`;
 
 // ==================== 功能用例管理 ====================
 
@@ -172,7 +172,7 @@ export const exportXMindCheckUrl = '/functional/case/pre-check/xmind';
 export const importExcelCaseUrl = '/functional/case/import/excel';
 // 导入xmind文件
 export const importXMindCaseUrl = '/functional/case/import/xmind';
-// 导出 Excel/XMind、检查任务、下载文件、停止导出（与 metersphere-frontend / 后端一致）
+// 导出 Excel/XMind、检查任务、下载文件、停止导出（与 aegis-next-web / 后端一致）
 export const ExportExcelCaseUrl = '/functional/case/export/excel';
 export const ExportXMindCaseUrl = '/functional/case/export/xmind';
 export const CheckCaseExportTaskUrl = '/functional/case/check/export-task';
@@ -187,10 +187,10 @@ export const CaseAiChatUrl = '/functional/case/ai/chat';
 export const CaseAiTransformUrl = '/functional/case/ai/transform';
 export const CaseAiBatchSaveUrl = '/functional/case/ai/batch/save';
 
-// 变更历史（与 spotter-metersphere 一致）
+// 变更历史（与 aegis-next-server 一致）
 export const getChangeHistoryListUrl = '/functional/case/operation-history';
 
-// 获取已关联测试计划列表（与 spotter-metersphere 一致）
+// 获取已关联测试计划列表（与 aegis-next-server 一致）
 export const GetAssociatedTestPlanUrl = '/functional/case/test/has/associate/plan/page';
 // 关联需求选项
 export const associatedProjectOptionsUrl = '/functional/case/demand/options';
@@ -245,22 +245,22 @@ export const CASE_METRICS_URLS = {
   // Dashboard综合指标API（开放接口，无需认证）
   // 后端Controller: @RequestMapping("/metrics/dashboard")
   // 使用相对路径，通过 nginx 代理转发到后端 http://aegis.tst.spotter.ink，避免跨域问题
-  GET_PROJECT_OVERVIEW: `${METERSPHERE_BACKEND_URL}/metrics/dashboard/project-overview`,
-  GET_PERSONAL_STATS: `${METERSPHERE_BACKEND_URL}/metrics/dashboard/personal-stats`,
-  GET_CHANGE_REASON_DISTRIBUTION: `${METERSPHERE_BACKEND_URL}/metrics/dashboard/change-reason-distribution`,
-  GET_BLOCKED_REASON_DISTRIBUTION: `${METERSPHERE_BACKEND_URL}/metrics/dashboard/blocked-reason-distribution`,
-  GET_REQUIREMENTS_LIST: `${METERSPHERE_BACKEND_URL}/metrics/dashboard/requirements`,  // 获取需求列表（支持模糊搜索）
-  GET_CASES_BY_CHANGE_REASON: `${METERSPHERE_BACKEND_URL}/metrics/dashboard/cases-by-change-reason`,  // 根据变更原因查询用例
-  GET_CASES_BY_BLOCK_REASON: `${METERSPHERE_BACKEND_URL}/metrics/dashboard/cases-by-block-reason`,    // 根据阻塞原因查询用例
-  GET_CASE_LIST_BY_METRIC: `${METERSPHERE_BACKEND_URL}/functional/case/metrics/case-list`,            // 根据指标类型查询用例列表及其CS值
+  GET_PROJECT_OVERVIEW: `${AEGIS_BACKEND_URL}/metrics/dashboard/project-overview`,
+  GET_PERSONAL_STATS: `${AEGIS_BACKEND_URL}/metrics/dashboard/personal-stats`,
+  GET_CHANGE_REASON_DISTRIBUTION: `${AEGIS_BACKEND_URL}/metrics/dashboard/change-reason-distribution`,
+  GET_BLOCKED_REASON_DISTRIBUTION: `${AEGIS_BACKEND_URL}/metrics/dashboard/blocked-reason-distribution`,
+  GET_REQUIREMENTS_LIST: `${AEGIS_BACKEND_URL}/metrics/dashboard/requirements`,  // 获取需求列表（支持模糊搜索）
+  GET_CASES_BY_CHANGE_REASON: `${AEGIS_BACKEND_URL}/metrics/dashboard/cases-by-change-reason`,  // 根据变更原因查询用例
+  GET_CASES_BY_BLOCK_REASON: `${AEGIS_BACKEND_URL}/metrics/dashboard/cases-by-block-reason`,    // 根据阻塞原因查询用例
+  GET_CASE_LIST_BY_METRIC: `${AEGIS_BACKEND_URL}/functional/case/metrics/case-list`,            // 根据指标类型查询用例列表及其CS值
 
   // 旧版兼容接口（已废弃，保留用于迁移）
-  // 这些接口也属于 spotter-metersphere 后端项目，直接写死后端地址
-  GET_COMPREHENSIVE_METRICS: `${METERSPHERE_BACKEND_URL}/functional/case/metrics/comprehensive/public`,
-  GET_TIME_METRICS: `${METERSPHERE_BACKEND_URL}/functional/case/metrics/time`,
-  GET_BEHAVIOR_METRICS: `${METERSPHERE_BACKEND_URL}/functional/case/metrics/behavior`,
-  GET_QUALITY_METRICS: `${METERSPHERE_BACKEND_URL}/functional/case/metrics/quality`,
-  GET_VALUE_METRICS: `${METERSPHERE_BACKEND_URL}/functional/case/metrics/value`,
+  // 这些接口也属于 aegis-next-server 后端项目，直接写死后端地址
+  GET_COMPREHENSIVE_METRICS: `${AEGIS_BACKEND_URL}/functional/case/metrics/comprehensive/public`,
+  GET_TIME_METRICS: `${AEGIS_BACKEND_URL}/functional/case/metrics/time`,
+  GET_BEHAVIOR_METRICS: `${AEGIS_BACKEND_URL}/functional/case/metrics/behavior`,
+  GET_QUALITY_METRICS: `${AEGIS_BACKEND_URL}/functional/case/metrics/quality`,
+  GET_VALUE_METRICS: `${AEGIS_BACKEND_URL}/functional/case/metrics/value`,
 } as const;
 
 export const caseManagementUrls = {

@@ -1,6 +1,6 @@
 /**
  * 测试计划 - 接口场景服务
- * 从 MeterSphere 迁移并转换为 React 格式
+ * 从 AegisOne 迁移并转换为 React 格式
  */
 
 import { http } from '@/utils/request';

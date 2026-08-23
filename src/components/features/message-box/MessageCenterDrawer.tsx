@@ -33,7 +33,7 @@ const SHOW_TYPES = [
 
 const PAGE_SIZE = 10;
 
-/** 模块 type 到展示名的兜底映射（与 MeterSphere 一致） */
+/** 模块 type 到展示名的兜底映射（与 AegisOne 一致） */
 const MODULE_TYPE_LABELS: Record<string, string> = {
   TEST_PLAN_MANAGEMENT: '测试计划',
   BUG_MANAGEMENT: '缺陷管理',
@@ -301,7 +301,7 @@ export function MessageCenterDrawer({ open, onOpenChange, onReadChange }: Messag
               </Button>
             </div>
 
-            {/* 消息列表：参考 MeterSphere 布局 - 左侧头像 + 右侧三行（标题/正文/时间），留足行高与间距 */}
+            {/* 消息列表：参考 AegisOne 布局 - 左侧头像 + 右侧三行（标题/正文/时间），留足行高与间距 */}
             <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 pr-10">
               {loading && list.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-sm text-muted-foreground">
@@ -330,7 +330,7 @@ export function MessageCenterDrawer({ open, onOpenChange, onReadChange }: Messag
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1 flex flex-col">
-                        {/* 第一行：标题 + 未读角标，行高与 MeterSphere leading-[22px] 一致 */}
+                        {/* 第一行：标题 + 未读角标，行高与 AegisOne leading-[22px] 一致 */}
                         <div className="flex items-center gap-2 leading-[22px]">
                           {item.status === 'UNREAD' && (
                             <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" aria-hidden />

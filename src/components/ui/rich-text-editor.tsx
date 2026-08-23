@@ -1,7 +1,7 @@
 /**
  * 富文本编辑器
  * 基于 TipTap，支持加粗、斜体、标题、列表、图片等
- * 参考 metersphere-frontend：支持粘贴/拖拽图片，uploadImage 上传后插入
+ * 参考 aegis-next-web：支持粘贴/拖拽图片，uploadImage 上传后插入
  */
 
 import { useEffect, useCallback, useRef, useState } from 'react';

@@ -1,6 +1,6 @@
 /**
  * 用例管理功能组件
- * 从 spotter-metersphere 迁移
+ * 从 aegis-next-server 迁移
  */
 
 export { FeatureCaseList } from './FeatureCaseList';

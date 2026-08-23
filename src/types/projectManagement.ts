@@ -1,6 +1,6 @@
 /**
  * 项目管理相关类型定义
- * 基于 MeterSphere 项目管理功能
+ * 基于 AegisOne 项目管理功能
  */
 
 import { PaginationParams } from './api';

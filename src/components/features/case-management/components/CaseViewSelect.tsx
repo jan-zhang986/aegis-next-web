@@ -1,6 +1,6 @@
 /**
  * 测试用例 - 视图选择
- * 参考 spotter-metersphere ms-advance-filter 视图下拉
+ * 参考 aegis-next-server ms-advance-filter 视图下拉
  * 系统视图：全部数据、我关注的、我创建的
  * 我的视图：用户保存的自定义视图
  */

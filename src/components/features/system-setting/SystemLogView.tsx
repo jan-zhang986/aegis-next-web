@@ -1,5 +1,5 @@
 /**
- * 系统设置-日志 列表与筛选（迁移自 MeterSphere 系统设置-日志）
+ * 系统设置-日志 列表与筛选（迁移自 AegisOne 系统设置-日志）
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Search, RotateCcw, History } from 'lucide-react';

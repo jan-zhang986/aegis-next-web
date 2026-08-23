@@ -7,13 +7,13 @@ export default defineConfig(({ mode }) => {
   // 加载环境变量
   const env = loadEnv(mode, process.cwd(), '')
 
-  // MeterSphere 后端服务地址（用例模块 API）
+  // AegisOne 后端服务地址（用例模块 API）
   // 可通过 .env.local 配置
   // 优先使用当前环境的配置，如果没有则使用默认值
-  const METERSPHERE_BACKEND_URL = env.VITE_METERSPHERE_BACKEND_URL ||
+  const AEGIS_BACKEND_URL = env.VITE_AEGIS_BACKEND_URL ||
     (mode === 'development'
-      ? (env.VITE_METERSPHERE_BACKEND_URL_DEVELOPMENT || 'http://aegis.tst.spotter.ink')
-      : (env.VITE_METERSPHERE_BACKEND_URL_PRODUCTION || 'http://aegis.tst.spotter.ink'));
+      ? (env.VITE_AEGIS_BACKEND_URL_DEVELOPMENT || 'http://aegis.tst.spotter.ink')
+      : (env.VITE_AEGIS_BACKEND_URL_PRODUCTION || 'http://aegis.tst.spotter.ink'));
 
   // SnapTest 后端服务地址（Snap API）
   // 可通过 .env.local 配置
@@ -68,7 +68,7 @@ export default defineConfig(({ mode }) => {
   // 打印当前配置
   console.log('🔧 Vite 配置:')
   console.log(`   环境模式: ${mode}`)
-  console.log(`   MeterSphere 后端: ${METERSPHERE_BACKEND_URL}`)
+  console.log(`   AegisOne 后端: ${AEGIS_BACKEND_URL}`)
   console.log(`   SnapTest 后端: ${SNAPTEST_BACKEND_URL}`)
   console.log(`   WebTest 后端: ${WEBTEST_BACKEND_URL}`)
   console.log(`   SnapRPC 后端: ${SNAPRPC_BACKEND_URL}`)
@@ -139,7 +139,7 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
-        // /api/v1 全部 RAG 路径 -> RAG 后端（必须在 /api 之前，否则会被 MeterSphere 代理抢走）
+        // /api/v1 全部 RAG 路径 -> RAG 后端（必须在 /api 之前，否则会被 AegisOne 代理抢走）
         // 覆盖 sessions、knowledge-chat、agent-chat、messages 等所有 RAG Chat API
         '/api/v1': {
           target: RAG_BACKEND_URL,
@@ -170,10 +170,10 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
-        // ==================== MeterSphere 后端代理（用例模块 API）====================
+        // ==================== AegisOne 后端代理（用例模块 API）====================
         // 登录相关接口代理：只代理 POST 和 OPTIONS 请求，GET 请求由前端路由处理
         '/login': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
           bypass(req, res, options) {
@@ -185,103 +185,103 @@ export default defineConfig(({ mode }) => {
           },
         },
         '/signout': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         '/is-login': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         '/get-key': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
-        // 代理所有以 /api 开头的请求到 MeterSphere 后端
+        // 代理所有以 /api 开头的请求到 AegisOne 后端
         '/api': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
           // 重写路径：/api/functional/... -> /functional/...（去掉 /api 前缀）
           rewrite: (path) => path.replace(/^\/api/, ''),
         },
-        // 附件下载代理（与 metersphere-frontend 一致）
+        // 附件下载代理（与 aegis-next-web 一致）
         // 直接代理 /attachment 路径，用于图片等静态资源加载
         '/attachment': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         // 项目列表 API 代理（排除 /project-management 路由）
         '^\/project\/(?!management)': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         // 用户列表 API 代理
         '/system/user': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         // 用户环境配置 API 代理
         '/user/profile': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         // metrics dashboard API 代理
         '/metrics/dashboard': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         // metrics efficiency API 代理（数据监控大盘 - Aegis 后端）
         '/metrics/efficiency': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         // 需求质量视图 API 代理
         '/metrics/requirement-quality': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         // functional case metrics API 代理
         '/functional/case/metrics': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         // 飞书相关 API 代理
         '/lark': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         '/devops/feishu': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         // Workflow 工作空间 API 代理（自动化用例）
         '/workflow': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         // Metadata 模块 API 代理（自动化用例）
         '/metadata': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },
         // Analytics 埋点 API 代理
         '/analytics': {
-          target: METERSPHERE_BACKEND_URL,
+          target: AEGIS_BACKEND_URL,
           changeOrigin: true,
           secure: false,
         },

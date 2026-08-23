@@ -1,6 +1,6 @@
 /**
  * 飞书 / Lark 官方风格蓝鸟 Logo
- * 路径来自 spotter-metersphere 前端 iconfont 的 glyph logo_lark（与 MsIcon type="icon-logo_lark" 一致）
+ * 路径来自 aegis-next-server 前端 iconfont 的 glyph logo_lark（与 MsIcon type="icon-logo_lark" 一致）
  */
 import { cn } from '@/utils/cn';
 

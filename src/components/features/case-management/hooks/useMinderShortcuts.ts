@@ -1,6 +1,6 @@
 /**
  * useMinderShortcuts - 思维导图键盘快捷键 hook
- * 参考 metersphere-frontend/components/pure/ms-minder-editor/hooks/useShortCut.ts
+ * 参考 aegis-next-web/components/pure/ms-minder-editor/hooks/useShortCut.ts
  * 
  * 快捷键：
  * - M: 添加同级模块

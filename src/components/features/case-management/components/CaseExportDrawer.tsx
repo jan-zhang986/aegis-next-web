@@ -1,6 +1,6 @@
 /**
  * 用例导出抽屉（优化版）
- * 支持 Excel 和 XMind 导出，参考 metersphere-frontend MsExportDrawer
+ * 支持 Excel 和 XMind 导出，参考 aegis-next-web MsExportDrawer
  * 优化：双栏布局、拖拽排序、搜索功能、更好的视觉效果
  */
 

@@ -1,5 +1,5 @@
 /**
- * 系统设置-系统参数（迁移自 MeterSphere 系统参数/基础配置）
+ * 系统设置-系统参数（迁移自 AegisOne 系统参数/基础配置）
  * Tab：基础配置 | 邮件配置 | 内存清理
  */
 import { useState, useEffect, useCallback } from 'react';
@@ -122,7 +122,7 @@ export function SystemParameterView() {
   });
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
-  // 二维码配置（与 spotter-metersphere 一致）
+  // 二维码配置（与 aegis-next-server 一致）
   const [qrCodeList, setQrCodeList] = useState<QrCodeItem[]>([]);
   const [qrCodeLoading, setQrCodeLoading] = useState(false);
   const [qrCodeModalOpen, setQrCodeModalOpen] = useState(false);
@@ -1536,7 +1536,7 @@ export function SystemParameterView() {
         </DialogContent>
       </Dialog>
 
-      {/* 二维码配置-飞书参数弹窗（与 spotter-metersphere larkModal 一致） */}
+      {/* 二维码配置-飞书参数弹窗（与 aegis-next-server larkModal 一致） */}
       <Dialog
         open={qrCodeModalOpen && selectedQrPlatform?.key === 'LARK'}
         onOpenChange={(open) => {

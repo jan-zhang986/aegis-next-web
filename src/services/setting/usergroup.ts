@@ -1,5 +1,5 @@
 /**
- * 系统设置-用户组 API（与 MeterSphere 路径一致）
+ * 系统设置-用户组 API（与 AegisOne 路径一致）
  * 系统级：/user/role/global/*  组织级：/user/role/organization/*
  */
 import { http } from '@/utils/request';

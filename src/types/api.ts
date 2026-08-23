@@ -101,7 +101,7 @@ export interface WorkflowEdge {
   target: string;
 }
 
-// ==================== 测试用例管理类型（基于 MeterSphere） ====================
+// ==================== 测试用例管理类型（基于 AegisOne） ====================
 
 // 测试用例状态
 export type TestCaseStatus = 'PENDING' | 'UNDERWAY' | 'PASS' | 'UN_PASS' | 'RE_REVIEW';

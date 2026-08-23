@@ -1,7 +1,7 @@
 /**
  * 测试计划测试规划脑图视图
  * 使用 React Flow 展示测试计划脑图：根 → 功能用例/接口用例/场景 → 测试点 → 用例数/环境/资源池
- * 参考 spotter-metersphere testPlanMinder 与 FeatureCaseMinderView 实现
+ * 参考 aegis-next-server testPlanMinder 与 FeatureCaseMinderView 实现
  */
 
 import { useState, useMemo, useCallback, useEffect } from 'react';

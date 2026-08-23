@@ -1,6 +1,6 @@
 /**
  * 用例详情抽屉 - 变更历史 Tab
- * 迁移自 spotter-metersphere tabChangeHistory.vue
+ * 迁移自 aegis-next-server tabChangeHistory.vue
  * 说明：若后端提供「另存为版本」API（如根据变更历史 id 恢复为用例版本），可在此 Tab 增加「另存为版本」按钮与版本选择弹窗。
  */
 
