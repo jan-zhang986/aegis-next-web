@@ -19,6 +19,7 @@ import {
   ReviewCaseDetail,
   CaseGenerationLayout,
 } from '@/components/features/case-management';
+import { CaseRealizationPage } from './E2EAutomationPage';
 import type { CaseItem } from '@/components/features/case-management';
 import { TestSuiteManager, GateBindingManager } from '@/components/features/test-asset';
 import { caseManagementService } from '@/services';
@@ -231,17 +232,7 @@ export function CaseManagementPage({
   );
 
   if (tab === 'space') {
-    return (
-      <CaseRepositorySpaceManager
-        repoList={repoList}
-        selectedRepo={selectedRepo}
-        onSelectRepo={(repo) => {
-          handleRepoChange(repo);
-          updateParams({ tab: 'feature-case' });
-        }}
-        onCreateRepo={() => setIsCreateRepoOpen(true)}
-      />
-    );
+    return <CaseRealizationPage />;
   }
 
   if (tab === 'test-suite') {
