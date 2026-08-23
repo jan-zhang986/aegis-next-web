@@ -204,8 +204,6 @@ export function CaseManagementPage({
     updateParams({ reviewId: rId, caseId: cId, moduleId: moduleId ?? null });
   };
 
-  const projectId = localStorage.getItem('currentProjectId') || 'default-project';
-
   const renderSpaceRequired = (title: string) => (
     <div className="flex h-full w-full items-center justify-center bg-slate-50">
       <Card className="max-w-md rounded-3xl border-dashed border-slate-200 p-10 text-center shadow-sm">
